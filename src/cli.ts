@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { scanDisk } from "./scanner/index.js";
 import chalk from "chalk";
 import { formatBytes } from "./utils/format.js";
+import { loadConfig } from "./config.js";
 
 const program = new Command();
 
@@ -15,6 +16,8 @@ program
     .command("scan")
     .description("Scan disk and report safe-to-clean files")
     .action(async () => {
+        const config=loadConfig();
+        const warnLimit=config.warnAboveGB*1024*1024*1024;
         console.log(chalk.cyan.bold("\n🔍 DiskCare tarama başlatıldı\n"));
 
         const results = await scanDisk();
@@ -24,7 +27,7 @@ program
             total += r.size;
 
             const sizeLabel = formatBytes(r.size);
-            const isLarge = r.size > 1024 * 1024 * 1024; // 1 GB
+            const isLarge = r.size > warnLimit; // 1 GB
 
             console.log(chalk.white.bold(r.name));
             console.log(`  ${chalk.gray("Path")} : ${r.path}`);
