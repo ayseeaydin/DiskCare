@@ -4,6 +4,7 @@ import { scanDisk } from "./scanner/index.js";
 import chalk from "chalk";
 import { formatBytes } from "./utils/format.js";
 import { loadConfig } from "./config.js";
+import { findCleanCandidates } from "./utils/cleanCandidates.js";
 
 const program = new Command();
 
@@ -16,8 +17,8 @@ program
     .command("scan")
     .description("Scan disk and report safe-to-clean files")
     .action(async () => {
-        const config=loadConfig();
-        const warnLimit=config.warnAboveGB*1024*1024*1024;
+        const config = loadConfig();
+        const warnLimit = config.warnAboveGB * 1024 * 1024 * 1024;
         console.log(chalk.cyan.bold("\n🔍 DiskCare tarama başlatıldı\n"));
 
         const results = await scanDisk();
@@ -41,5 +42,46 @@ program
         console.log(chalk.yellow(formatBytes(total)));
         console.log("");
     });
+
+program
+    .command("clean")
+    .description("Simulate disk cleanup (dry-run only")
+    .option("--dry-run", "Show what would be deleted without deleting")
+    .action(async (options) => {
+        if (!options.dryRun) {
+            console.log("Güvenlik nedeniyle --dry-run zorunludur.");
+            return;
+        }
+
+        console.log("\n DiskCare temizleme simülasyonu (dry-run)\n");
+
+        const config = loadConfig();
+        const targets = await scanDisk();
+
+        let total = 0;
+
+        for (const target of targets) {
+            const candidates = await findCleanCandidates(
+                target.path,
+                config.exclude
+            );
+
+            if (candidates.length === 0) continue;
+
+            console.log(`${target.name}`);
+
+            for (const c of candidates) {
+                total += c.size;
+                console.log(` • ${c.path}`);
+            }
+
+            console.log("");
+        }
+
+        console.log("Toplam silinebilir alan (simülasyon): ");
+        console.log(formatBytes(total));
+        console.log("");
+    });
+
 
 program.parse(process.argv);
