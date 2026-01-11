@@ -8,6 +8,8 @@
   },
   "scripts": {
     "dev": "node --loader ts-node/esm src/cli.ts",
+    "scan":"npm run dev -- scan",
+    "clean":"npm run dev -- clean",
     "build": "tsc"
   },
   "keywords": [
