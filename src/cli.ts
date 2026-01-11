@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { scanDisk } from "./scanner/index.js";
+import chalk from "chalk";
+import { formatBytes } from "./utils/format.js";
 
 const program = new Command();
 
@@ -13,15 +15,28 @@ program
     .command("scan")
     .description("Scan disk and report safe-to-clean files")
     .action(async () => {
-        console.log("🔍 Disk taranıyor...\n");
+        console.log(chalk.cyan.bold("\n🔍 DiskCare tarama başlatıldı\n"));
 
         const results = await scanDisk();
+        let total = 0;
 
         for (const r of results) {
-            console.log(`${r.name}`);
-            console.log(`  Path : ${r.path}`);
-            console.log(`  Size : ${(r.size / 1024 / 1024).toFixed(2)} MB\n`);
+            total += r.size;
+
+            const sizeLabel = formatBytes(r.size);
+            const isLarge = r.size > 1024 * 1024 * 1024; // 1 GB
+
+            console.log(chalk.white.bold(r.name));
+            console.log(`  ${chalk.gray("Path")} : ${r.path}`);
+            console.log(
+                `  ${chalk.gray("Size")} : ${isLarge ? chalk.red.bold(sizeLabel + " ⚠️") : chalk.green(sizeLabel)
+                }\n`
+            );
         }
+
+        console.log(chalk.yellow.bold("Toplam temizlenebilir alan:"));
+        console.log(chalk.yellow(formatBytes(total)));
+        console.log("");
     });
 
 program.parse(process.argv);
