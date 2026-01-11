@@ -140,6 +140,28 @@ Gerçek temizlik yapılmadan önce kullanıcı:
 
 ---
 
+## 🧪 Testler
+
+DiskCare, dosya sistemine dokunan kritik bölümler için **bilinçli ve güvenli testler** içerir.
+
+### cleanCandidates testi
+
+Bu test, gerçek sisteme dokunmadan sahte bir klasör yapısı üzerinde çalışır.
+
+Çalıştırmak için:
+
+```bash
+node --loader ts-node/esm test/cleanCandidates.test.ts
+```
+
+Test şunları doğrular:
+
+* `.tmp` ve `.log` dosyaları listelenir
+* Diğer dosya türleri hariç tutulur
+* Dosya sistemi güvenliği korunur
+
+---
+
 ## 🛣️ Yol Haritası
 
 * [ ] Gerçek `clean --force` modu (çok kontrollü)
