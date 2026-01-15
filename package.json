@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run -w @diskcare/cli build",
+    "build": "npm --workspaces run build",
     "dev": "npm run -w @diskcare/cli dev",
     "lint": "npm run -w @diskcare/cli lint",
     "format": "prettier -w ."
