@@ -1,11 +1,13 @@
 import type { Command } from "commander";
 import { ScannerService, OsTempScanner, NpmCacheScanner } from "@diskcare/scanner-core";
+import path from "node:path";
 
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { formatBytes } from "../formatters/formatBytes.js";
 import { formatDate } from "../formatters/formatDate.js";
 import { truncate } from "../formatters/truncate.js";
+import { LogWriter } from "../logging/LogWriter.js";
 
 type ScanOptions = {
   json?: boolean;
@@ -30,7 +32,20 @@ export class ScanCommand extends BaseCommand {
     const scannerService = new ScannerService([new OsTempScanner(), new NpmCacheScanner()]);
     const targets = await scannerService.scanAll();
 
+    const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
+
+    const payload = {
+      version: "0.0.1",
+      timestamp: new Date().toISOString(),
+      command: "scan",
+      dryRun,
+      targets,
+    };
+
+    const logPath = await logWriter.writeRunLog(payload);
+
     if (asJson) {
+      // JSON output intentionally stays stable; we don't add logPath yet.
       context.output.info(JSON.stringify({ command: "scan", dryRun, targets }, null, 2));
       return;
     }
@@ -56,10 +71,13 @@ export class ScanCommand extends BaseCommand {
       context.output.info(`  atime:   ${accessed}`);
 
       if (t.metrics?.skipped && t.metrics.error) {
-        context.output.warn(`  error:   ${truncate(t.metrics.error, 140)}`);
+        const cleanError = t.metrics.error.replace(/\r?\n/g, " ");
+        context.output.warn(`  error:   ${truncate(cleanError, 140)}`);
       }
 
       context.output.info("");
     }
+
+    context.output.info(`Saved log: ${logPath}`);
   }
 }
