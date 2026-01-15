@@ -1,3 +1,5 @@
+import type { ScanMetrics } from "./ScanMetrics.js";
+
 export type ScanTargetKind = "os-temp" | "npm-cache";
 
 export type ScanTarget = {
@@ -20,4 +22,9 @@ export type ScanTarget = {
    * Human-friendly label for CLI output.
    */
   displayName: string;
+
+  /**
+   * Disk analysis metrics (computed later).
+   */
+  metrics?: ScanMetrics;
 };
