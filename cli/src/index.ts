@@ -1,10 +1,14 @@
-import { Command } from "commander";
+import { CliApp } from "./app/CliApp.js";
+import { ScanCommand } from "./commands/ScanCommand.js";
+import { CleanCommand } from "./commands/CleanCommand.js";
+import { ReportCommand } from "./commands/ReportCommand.js";
+import { ScheduleCommand } from "./commands/ScheduleCommand.js";
 
-const program = new Command();
+const app = new CliApp([
+  new ScanCommand(),
+  new CleanCommand(),
+  new ReportCommand(),
+  new ScheduleCommand(),
+]);
 
-program
-  .name("diskcare")
-  .description("Developer-focused disk hygiene CLI (safe-by-default)")
-  .version("0.0.1");
-
-program.parse();
+app.run(process.argv);
