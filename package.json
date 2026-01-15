@@ -1,0 +1,19 @@
+{
+  "name": "diskcare",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Developer-focused disk hygiene CLI",
+  "workspaces": [
+    "cli",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run -w @diskcare/cli build",
+    "dev": "npm run -w @diskcare/cli dev",
+    "lint": "npm run -w @diskcare/cli lint",
+    "format": "prettier -w ."
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

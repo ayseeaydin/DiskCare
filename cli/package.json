@@ -1,0 +1,25 @@
+{
+  "name": "@diskcare/cli",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "diskcare": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "node --enable-source-maps dist/index.js --help",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "eslint": "^9.10.0",
+    "@eslint/js": "^9.10.0",
+    "typescript": "^5.5.4",
+    "prettier": "^3.3.3"
+  }
+}

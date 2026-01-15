@@ -5,11 +5,41 @@ node_modules
 dist
 build
 
-# logs
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# logs (keep folder)
 *.log
 logs/*
 !logs/.gitkeep
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# env / secrets
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+
+# coverage
+coverage
+
+# tooling caches
+.eslintcache
+.cache
+.turbo
+.nx
+.parcel-cache
+
+# IDE
+.vscode
+.idea
 
 # OS
 .DS_Store
 Thumbs.db
+
+# local rule overrides
+config/*.local.json
