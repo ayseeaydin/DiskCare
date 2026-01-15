@@ -24,6 +24,11 @@ export type ScanTarget = {
   displayName: string;
 
   /**
+   * Whether the target path exists at scan time.
+   */
+  exists?: boolean;
+
+  /**
    * Disk analysis metrics (computed later).
    */
   metrics?: ScanMetrics;
