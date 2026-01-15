@@ -8,7 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm --workspaces run build",
+    "build": "npm run build:packages && npm run build:cli",
+    "build:packages": "npm -w @diskcare/scanner-core run build && npm -w @diskcare/rules-engine run build",
+    "build:cli": "npm -w @diskcare/cli run build",
     "dev": "npm run -w @diskcare/cli dev",
     "lint": "npm run -w @diskcare/cli lint",
     "format": "prettier -w ."

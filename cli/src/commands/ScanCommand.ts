@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import { ScannerService, OsTempScanner, NpmCacheScanner } from "@diskcare/scanner-core";
+import { RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
 import path from "node:path";
 
 import { BaseCommand } from "./BaseCommand.js";
@@ -31,6 +32,9 @@ export class ScanCommand extends BaseCommand {
 
     const scannerService = new ScannerService([new OsTempScanner(), new NpmCacheScanner()]);
     const targets = await scannerService.scanAll();
+
+    // Load rules config (do not crash CLI if missing; stay explainable)
+    const rulesEngine = await this.tryCreateRulesEngine(context);
 
     const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
 
@@ -70,6 +74,17 @@ export class ScanCommand extends BaseCommand {
       context.output.info(`  mtime:   ${modified}`);
       context.output.info(`  atime:   ${accessed}`);
 
+      if (rulesEngine) {
+        const decision = rulesEngine.decide(t.id);
+        context.output.info(
+          `  risk:    ${decision.risk}   safeAfterDays: ${decision.safeAfterDays}`
+        );
+        context.output.info(`  rule:    ${decision.reasons[0] ?? "-"}`);
+      } else {
+        context.output.info(`  risk:    -   safeAfterDays: -`);
+        context.output.info(`  rule:    Rules config not loaded`);
+      }
+
       if (t.metrics?.skipped && t.metrics.error) {
         const cleanError = t.metrics.error.replace(/\r?\n/g, " ");
         context.output.warn(`  error:   ${truncate(cleanError, 140)}`);
@@ -79,5 +94,20 @@ export class ScanCommand extends BaseCommand {
     }
 
     context.output.info(`Saved log: ${logPath}`);
+  }
+
+  private async tryCreateRulesEngine(context: CommandContext): Promise<RulesEngine | null> {
+    const rulesPath = path.resolve(process.cwd(), "config", "rules.json");
+
+    try {
+      const rulesConfig = await new RulesConfigLoader().loadFromFile(rulesPath);
+      return new RulesEngine(rulesConfig);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      context.output.warn(
+        `rules: config not loaded (${truncate(message.replace(/\r?\n/g, " "), 140)})`
+      );
+      return null;
+    }
   }
 }
