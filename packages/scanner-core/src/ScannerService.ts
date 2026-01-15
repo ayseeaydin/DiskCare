@@ -7,7 +7,7 @@ import type { ScanTarget } from "./types/ScanTarget.js";
 export class ScannerService {
   private readonly analyzer = new FileSystemAnalyzer();
 
-  constructor(private readonly scanners: BaseScanner[]) { }
+  constructor(private readonly scanners: BaseScanner[]) {}
 
   async scanAll(): Promise<ScanTarget[]> {
     const targets: ScanTarget[] = [];

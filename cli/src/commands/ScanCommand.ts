@@ -1,7 +1,11 @@
 import type { Command } from "commander";
+import { ScannerService, OsTempScanner, NpmCacheScanner } from "@diskcare/scanner-core";
+
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
-import { ScannerService, OsTempScanner, NpmCacheScanner } from "@diskcare/scanner-core";
+import { formatBytes } from "../formatters/formatBytes.js";
+import { formatDate } from "../formatters/formatDate.js";
+import { truncate } from "../formatters/truncate.js";
 
 type ScanOptions = {
   json?: boolean;
@@ -23,7 +27,6 @@ export class ScanCommand extends BaseCommand {
     const dryRun = options.dryRun ?? true; // SAFE-BY-DEFAULT
     const asJson = options.json ?? false;
 
-    // DI: scanners are composed here (later moved to a composition root)
     const scannerService = new ScannerService([new OsTempScanner(), new NpmCacheScanner()]);
     const targets = await scannerService.scanAll();
 
@@ -32,9 +35,31 @@ export class ScanCommand extends BaseCommand {
       return;
     }
 
-    context.output.info(`scan (dryRun=${dryRun})`);
+    context.output.info(`scan report (dryRun=${dryRun})`);
+    context.output.info("");
+
     for (const t of targets) {
-      context.output.info(`- ${t.id} | ${t.displayName} | ${t.path}`);
+      const exists = t.exists === true ? "yes" : "no";
+      const skipped = t.metrics?.skipped === true ? "yes" : "no";
+
+      const size = formatBytes(t.metrics?.totalBytes ?? 0);
+      const files = String(t.metrics?.fileCount ?? 0).padStart(6, " ");
+      const modified = formatDate(t.metrics?.lastModifiedAt);
+      const accessed = formatDate(t.metrics?.lastAccessedAt);
+
+      context.output.info(`${t.displayName}`);
+      context.output.info(`  id:      ${t.id}`);
+      context.output.info(`  path:    ${t.path}`);
+      context.output.info(`  exists:  ${exists}   skipped: ${skipped}`);
+      context.output.info(`  size:    ${size}   files: ${files}`);
+      context.output.info(`  mtime:   ${modified}`);
+      context.output.info(`  atime:   ${accessed}`);
+
+      if (t.metrics?.skipped && t.metrics.error) {
+        context.output.warn(`  error:   ${truncate(t.metrics.error, 140)}`);
+      }
+
+      context.output.info("");
     }
   }
 }
