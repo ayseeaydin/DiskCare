@@ -61,7 +61,7 @@ export type ReportSummary = {
 };
 
 export class ReportService {
-  constructor(private readonly logsDir: string) { }
+  constructor(private readonly logsDir: string) {}
 
   async summarize(): Promise<ReportSummary> {
     const files = await this.listJsonFilesSafe(this.logsDir);
@@ -151,9 +151,7 @@ export class ReportService {
   private async listJsonFilesSafe(dir: string): Promise<string[]> {
     try {
       const entries = await fs.readdir(dir);
-      return entries
-        .filter((f) => f.endsWith(".json"))
-        .map((f) => path.join(dir, f));
+      return entries.filter((f) => f.endsWith(".json")).map((f) => path.join(dir, f));
     } catch {
       return [];
     }
