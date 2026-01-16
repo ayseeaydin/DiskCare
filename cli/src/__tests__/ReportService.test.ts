@@ -50,8 +50,9 @@ test("ReportService.summarize - aggregates latest scan snapshot and apply aggreg
   };
 
   // minimal apply log (clean --apply)
-  // NOTE: field names here must match what ReportService reads.
-  // If your ReportService uses different names, tell me and I'll align the fixture.
+  // Contract:
+  // - applyResults is an array
+  // - applySummary is a stable object
   const applyLog = {
     version: "0.0.1",
     timestamp: new Date("2026-01-16T11:00:00.000Z").toISOString(),
