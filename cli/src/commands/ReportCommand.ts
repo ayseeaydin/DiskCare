@@ -27,9 +27,9 @@ export class ReportCommand extends BaseCommand {
 
     context.output.info("scan (latest)");
     context.output.info(`  latest scan:          ${summary.latestScanAt ?? "-"}`);
-    context.output.info(`  total bytes:          ${formatBytes(summary.latestScanTotalBytes)}`);
-    context.output.info(`  missing targets:      ${summary.latestScanMissingTargets}`);
-    context.output.info(`  skipped targets:      ${summary.latestScanSkippedTargets}`);
+    context.output.info(`  total bytes:          ${formatBytes(summary.scanTotalBytes)}`);
+    context.output.info(`  missing targets:      ${summary.scanMissingTargets}`);
+    context.output.info(`  skipped targets:      ${summary.scanSkippedTargets}`);
     context.output.info("");
 
     context.output.info("apply (clean --apply)");

@@ -1,19 +1,58 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { RunLog } from "../types/RunLog.js";
+type JsonObject = Record<string, unknown>;
 
-type ReportSummary = {
+function isObject(v: unknown): v is JsonObject {
+  return typeof v === "object" && v !== null;
+}
+
+function asString(v: unknown): string | null {
+  return typeof v === "string" ? v : null;
+}
+
+function asBoolean(v: unknown): boolean | null {
+  return typeof v === "boolean" ? v : null;
+}
+
+function asNumber(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+function asArray<T = unknown>(v: unknown): T[] | null {
+  return Array.isArray(v) ? (v as T[]) : null;
+}
+
+/**
+ * Minimal shape we need from scan targets in logs.
+ */
+type LoggedTarget = {
+  id?: unknown;
+  exists?: unknown;
+  metrics?: unknown;
+};
+
+type LoggedMetrics = {
+  totalBytes?: unknown;
+  skipped?: unknown;
+};
+
+export type ReportSummary = {
   runCount: number;
   latestRunAt: string | null;
 
-  // Latest scan snapshot
+  // latest scan snapshot
   latestScanAt: string | null;
-  latestScanTotalBytes: number;
-  latestScanMissingTargets: number;
-  latestScanSkippedTargets: number;
+  scanTotalBytes: number;
+  scanMissingTargets: number;
+  scanSkippedTargets: number;
 
-  // Apply aggregates
+  // Backward-compatible aliases (keeps older code/tests working)
+  totalBytes: number;
+  missingTargets: number;
+  skippedTargets: number;
+
+  // apply aggregates (clean --apply, dryRun=false)
   applyRuns: number;
   trashedCount: number;
   failedCount: number;
@@ -22,54 +61,69 @@ type ReportSummary = {
 };
 
 export class ReportService {
-  constructor(private readonly logsDir: string) {}
+  constructor(private readonly logsDir: string) { }
 
   async summarize(): Promise<ReportSummary> {
-    const logs = await this.readRunLogs();
+    const files = await this.listJsonFilesSafe(this.logsDir);
+    const logs = await this.readLogsSafe(files);
 
     const runCount = logs.length;
-    const latestRunAt = this.findLatestTimestamp(logs);
+    const latestRunAt = this.maxTimestamp(logs);
 
-    // ---- Latest scan snapshot (single run) ----
-    const latestScan = this.findLatestByCommand(logs, "scan");
+    // --- latest scan snapshot ---
+    const scanLogs = logs.filter((l) => l.command === "scan");
+    const latestScan = this.pickLatestByTimestamp(scanLogs);
 
-    let latestScanAt: string | null = latestScan?.timestamp ?? null;
-    let latestScanTotalBytes = 0;
-    let latestScanMissingTargets = 0;
-    let latestScanSkippedTargets = 0;
+    const latestScanAt = latestScan?.timestamp ?? null;
+    const scanTargets = latestScan ? this.extractScanTargets(latestScan) : [];
 
-    if (latestScan) {
-      for (const t of latestScan.targets ?? []) {
-        if (t.exists === false) latestScanMissingTargets += 1;
-        if (t.metrics?.skipped === true) latestScanSkippedTargets += 1;
-        latestScanTotalBytes += t.metrics?.totalBytes ?? 0;
-      }
-    }
+    const scanMissingTargets = scanTargets.filter((t) => t.exists === false).length;
+    const scanSkippedTargets = scanTargets.filter((t) => t.metrics?.skipped === true).length;
 
-    // ---- CLEAN apply aggregates (across runs) ----
-    let applyRuns = 0;
+    // sum bytes for targets that are not skipped (otherwise it’s 0 and misleading)
+    const scanTotalBytes = scanTargets.reduce((acc, t) => {
+      if (t.metrics?.skipped) return acc;
+      return acc + (t.metrics?.totalBytes ?? 0);
+    }, 0);
+
+    // --- apply aggregates ---
+    // “apply run” = command clean + apply=true (dryRun can be true/false; we track both but
+    //              trashed/failed should only come from actual apply executions if present)
+    const cleanLogs = logs.filter((l) => l.command === "clean" && l.apply === true);
+
+    const applyRuns = cleanLogs.length;
+
+    const latestApply = this.pickLatestByTimestamp(
+      cleanLogs.filter((l) => l.dryRun === false), // “real apply” only
+    );
+    const latestApplyAt = latestApply?.timestamp ?? null;
+
     let trashedCount = 0;
     let failedCount = 0;
-    let latestApplyAt: string | null = null;
     let trashedEstimatedBytes = 0;
 
-    for (const log of logs) {
-      if (log.command !== "clean") continue;
-      if (log.apply !== true) continue;
-
-      applyRuns += 1;
-
-      const ts = log.timestamp ?? null;
-      if (ts && (!latestApplyAt || new Date(ts).getTime() > new Date(latestApplyAt).getTime())) {
-        latestApplyAt = ts;
+    for (const l of cleanLogs) {
+      // Prefer explicit applyResults if present (most reliable)
+      if (isObject(l.applyResults)) {
+        trashedCount += asNumber(l.applyResults.trashed) ?? 0;
+        failedCount += asNumber(l.applyResults.failed) ?? 0;
+        trashedEstimatedBytes += asNumber(l.applyResults.trashedEstimatedBytes) ?? 0;
+        continue;
       }
 
-      for (const r of log.applyResults ?? []) {
-        if (r.status === "trashed") trashedCount += 1;
-        if (r.status === "failed") failedCount += 1;
+      // Fallback: infer from plan if it exists (less reliable)
+      if (isObject(l.plan)) {
+        const items = asArray<JsonObject>((l.plan as JsonObject).items) ?? [];
+        // If it was a dry-run, do not count as trashed.
+        if (l.dryRun === false) {
+          const eligible = items.filter((it) => (it.status as unknown) === "eligible").length;
+          trashedCount += eligible;
+        }
+        trashedEstimatedBytes += items.reduce((acc, it) => {
+          const est = asNumber(it.estimatedBytes) ?? 0;
+          return acc + est;
+        }, 0);
       }
-
-      trashedEstimatedBytes += log.plan?.summary?.estimatedBytesTotal ?? 0;
     }
 
     return {
@@ -77,9 +131,14 @@ export class ReportService {
       latestRunAt,
 
       latestScanAt,
-      latestScanTotalBytes,
-      latestScanMissingTargets,
-      latestScanSkippedTargets,
+      scanTotalBytes,
+      scanMissingTargets,
+      scanSkippedTargets,
+
+      // aliases
+      totalBytes: scanTotalBytes,
+      missingTargets: scanMissingTargets,
+      skippedTargets: scanSkippedTargets,
 
       applyRuns,
       trashedCount,
@@ -89,64 +148,95 @@ export class ReportService {
     };
   }
 
-  private async readRunLogs(): Promise<RunLog[]> {
-    let entries: string[] = [];
+  private async listJsonFilesSafe(dir: string): Promise<string[]> {
     try {
-      entries = await fs.readdir(this.logsDir);
+      const entries = await fs.readdir(dir);
+      return entries
+        .filter((f) => f.endsWith(".json"))
+        .map((f) => path.join(dir, f));
     } catch {
       return [];
     }
+  }
 
-    const runFiles = entries.filter((f) => f.startsWith("run-") && f.endsWith(".json")).sort();
+  private async readLogsSafe(files: string[]): Promise<Array<Record<string, any>>> {
+    const out: Array<Record<string, any>> = [];
 
-    const logs: RunLog[] = [];
-
-    for (const file of runFiles) {
-      const fullPath = path.join(this.logsDir, file);
-
+    for (const file of files) {
       try {
-        const raw = await fs.readFile(fullPath, "utf-8");
-        const parsed = JSON.parse(raw) as RunLog;
+        const raw = await fs.readFile(file, "utf8");
+        const parsed = JSON.parse(raw) as unknown;
+        if (!isObject(parsed)) continue;
 
-        if (!parsed || typeof parsed !== "object") continue;
-        if (typeof parsed.timestamp !== "string") continue;
-        if (typeof parsed.command !== "string") continue;
+        const command = asString(parsed.command);
+        const timestamp = asString(parsed.timestamp);
 
-        logs.push(parsed);
+        if (!command || !timestamp) continue;
+
+        // Keep only fields we use; everything else is passthrough-safe.
+        out.push({
+          command,
+          timestamp,
+          dryRun: asBoolean(parsed.dryRun) ?? true,
+          apply: asBoolean(parsed.apply) ?? false,
+          targets: parsed.targets,
+          plan: parsed.plan,
+          applyResults: (parsed as JsonObject).applyResults,
+        });
       } catch {
-        continue;
+        // ignore unreadable / invalid JSON
       }
     }
 
-    return logs;
+    return out;
   }
 
-  private findLatestTimestamp(logs: RunLog[]): string | null {
-    let latest: string | null = null;
+  private maxTimestamp(logs: Array<Record<string, any>>): string | null {
+    const latest = this.pickLatestByTimestamp(logs);
+    return latest?.timestamp ?? null;
+  }
 
-    for (const log of logs) {
-      const ts = log.timestamp;
+  private pickLatestByTimestamp<T extends { timestamp?: string }>(items: T[]): T | null {
+    if (items.length === 0) return null;
+
+    let best: T | null = null;
+    let bestMs = -Infinity;
+
+    for (const it of items) {
+      const ts = it.timestamp;
       if (!ts) continue;
-
-      if (!latest || new Date(ts).getTime() > new Date(latest).getTime()) {
-        latest = ts;
+      const ms = Date.parse(ts);
+      if (!Number.isFinite(ms)) continue;
+      if (ms > bestMs) {
+        bestMs = ms;
+        best = it;
       }
     }
 
-    return latest;
+    return best;
   }
 
-  private findLatestByCommand(logs: RunLog[], command: RunLog["command"]): RunLog | null {
-    let latest: RunLog | null = null;
+  private extractScanTargets(
+    log: Record<string, any>,
+  ): Array<{ exists: boolean; metrics?: { totalBytes?: number; skipped?: boolean } }> {
+    const rawTargets = asArray<LoggedTarget>(log.targets) ?? [];
 
-    for (const log of logs) {
-      if (log.command !== command) continue;
+    const targets = rawTargets.map((t) => {
+      const exists = asBoolean(t.exists) ?? false;
 
-      if (!latest || new Date(log.timestamp).getTime() > new Date(latest.timestamp).getTime()) {
-        latest = log;
+      let metrics: { totalBytes?: number; skipped?: boolean } | undefined;
+
+      if (isObject(t.metrics)) {
+        const m = t.metrics as LoggedMetrics;
+        metrics = {
+          totalBytes: asNumber(m.totalBytes) ?? 0,
+          skipped: asBoolean(m.skipped) ?? false,
+        };
       }
-    }
 
-    return latest;
+      return { exists, metrics };
+    });
+
+    return targets;
   }
 }
