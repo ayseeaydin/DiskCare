@@ -15,6 +15,7 @@ import { formatBytes } from "../formatters/formatBytes.js";
 import { formatDate } from "../formatters/formatDate.js";
 import { truncate } from "../formatters/truncate.js";
 import { LogWriter } from "../logging/LogWriter.js";
+import { RulesProvider } from "../rules/RulesProvider.js";
 
 type ScanOptions = {
   json?: boolean;
@@ -45,7 +46,7 @@ export class ScanCommand extends BaseCommand {
     const targets = await scannerService.scanAll();
 
     // Load rules config (do not crash CLI if missing; stay explainable)
-    const rulesEngine = await this.tryCreateRulesEngine(context);
+    const rulesEngine = await RulesProvider.fromCwd().tryLoad(context);
 
     const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
 

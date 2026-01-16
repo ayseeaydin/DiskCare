@@ -16,6 +16,7 @@ import type { CommandContext } from "../types/CommandContext.js";
 import { formatBytes } from "../formatters/formatBytes.js";
 import { truncate } from "../formatters/truncate.js";
 import { LogWriter } from "../logging/LogWriter.js";
+import { RulesProvider } from "../rules/RulesProvider.js";
 
 type CleanOptions = {
   json?: boolean;
@@ -85,7 +86,7 @@ export class CleanCommand extends BaseCommand {
     ]);
     const targets = await scannerService.scanAll();
 
-    const rulesEngine = await this.tryCreateRulesEngine(context);
+    const rulesEngine = await RulesProvider.fromCwd().tryLoad(context);
 
     const items: CleanPlanItem[] = targets.map((t) => {
       const decision = rulesEngine?.decide(t.id) ?? {
