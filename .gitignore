@@ -43,3 +43,6 @@ Thumbs.db
 
 # local rule overrides
 config/*.local.json
+
+# Diskcare sandbox (local test)
+.sandbox-cache/

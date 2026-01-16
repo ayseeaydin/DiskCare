@@ -1,6 +1,6 @@
 import type { ScanMetrics } from "./ScanMetrics.js";
 
-export type ScanTargetKind = "os-temp" | "npm-cache";
+export type ScanTargetKind = "os-temp" | "npm-cache" | "sandbox-cache";
 
 export type ScanTarget = {
   /**

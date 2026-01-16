@@ -1,5 +1,10 @@
 import type { Command } from "commander";
-import { ScannerService, OsTempScanner, NpmCacheScanner } from "@diskcare/scanner-core";
+import {
+  ScannerService,
+  OsTempScanner,
+  NpmCacheScanner,
+  SandboxCacheScanner,
+} from "@diskcare/scanner-core";
 import { RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
 import path from "node:path";
 
@@ -30,7 +35,12 @@ export class ScanCommand extends BaseCommand {
     const dryRun = options.dryRun ?? true; // SAFE-BY-DEFAULT
     const asJson = options.json ?? false;
 
-    const scannerService = new ScannerService([new OsTempScanner(), new NpmCacheScanner()]);
+    const scannerService = new ScannerService([
+      new OsTempScanner(),
+      new NpmCacheScanner(),
+      new SandboxCacheScanner(),
+    ]);
+
     const targets = await scannerService.scanAll();
 
     // Load rules config (do not crash CLI if missing; stay explainable)

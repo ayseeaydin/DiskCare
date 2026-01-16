@@ -1,8 +1,14 @@
 import type { Command } from "commander";
 import path from "node:path";
 
-import { ScannerService, OsTempScanner, NpmCacheScanner } from "@diskcare/scanner-core";
+import {
+  ScannerService,
+  OsTempScanner,
+  NpmCacheScanner,
+  SandboxCacheScanner,
+} from "@diskcare/scanner-core";
 import { RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
+import trash from "trash";
 
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
@@ -12,7 +18,7 @@ import { LogWriter } from "../logging/LogWriter.js";
 
 type CleanOptions = {
   json?: boolean;
-  dryRun?: boolean;
+  dryRun?: boolean; // commander sets this; default should be true (safe)
   apply?: boolean;
 };
 
@@ -43,14 +49,25 @@ type CleanPlan = {
   items: CleanPlanItem[];
 };
 
+type ApplyResult = {
+  id: string;
+  path: string;
+  status: "trashed" | "skipped" | "failed";
+  message?: string;
+};
+
 export class CleanCommand extends BaseCommand {
   readonly name = "clean";
   readonly description = "Clean targets that match safe rules (dry-run by default)";
 
   protected configure(cmd: Command): void {
     cmd.option("--json", "Output JSON plan");
-    cmd.option("--dry-run", "Plan only (no changes). Default behavior is non-destructive.");
-    cmd.option("--apply", "Apply changes (not implemented yet; currently outputs plan only)");
+    cmd.option("--apply", "Apply changes: move eligible targets to Trash/Recycle Bin");
+
+    // IMPORTANT:
+    // We define the NEGATABLE option so commander understands `--no-dry-run`.
+    // Default is dryRun=true (safe-by-default). Passing `--no-dry-run` flips to false.
+    cmd.option("--no-dry-run", "Disable dry-run (required to actually trash files)");
   }
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
@@ -58,11 +75,13 @@ export class CleanCommand extends BaseCommand {
 
     const dryRun = options.dryRun ?? true; // SAFE-BY-DEFAULT
     const asJson = options.json ?? false;
-
-    // For this step, apply is accepted but not executed.
     const apply = options.apply ?? false;
 
-    const scannerService = new ScannerService([new OsTempScanner(), new NpmCacheScanner()]);
+    const scannerService = new ScannerService([
+      new OsTempScanner(),
+      new NpmCacheScanner(),
+      new SandboxCacheScanner(),
+    ]);
     const targets = await scannerService.scanAll();
 
     const rulesEngine = await this.tryCreateRulesEngine(context);
@@ -86,7 +105,7 @@ export class CleanCommand extends BaseCommand {
         reasons.push("Target path does not exist.");
       }
 
-      // Only report analyzer errors when the path exists; otherwise it is redundant (ENOENT).
+      // Only report analyzer errors when the path exists; otherwise redundant (ENOENT).
       if (exists && skipped) {
         status = "blocked";
         const err = t.metrics?.error ? t.metrics.error.replace(/\r?\n/g, " ") : "Unknown error";
@@ -103,7 +122,7 @@ export class CleanCommand extends BaseCommand {
         status = decision.risk === "safe" ? "eligible" : "caution";
       }
 
-      // For MVP, estimated bytes is target totalBytes (not file-level eligible bytes yet)
+      // MVP: estimated bytes = target totalBytes (file-level filtering later)
       const estimatedBytes = status === "eligible" ? (t.metrics?.totalBytes ?? 0) : 0;
 
       // Always include rule explanation as context
@@ -140,7 +159,38 @@ export class CleanCommand extends BaseCommand {
       items,
     };
 
-    // Log plan
+    const applyResults: ApplyResult[] = [];
+
+    if (apply) {
+      const eligible = items.filter((i) => i.status === "eligible");
+
+      for (const item of eligible) {
+        if (dryRun) {
+          applyResults.push({
+            id: item.id,
+            path: item.path,
+            status: "skipped",
+            message: "dry-run is enabled; no changes were made.",
+          });
+          continue;
+        }
+
+        try {
+          await trash([item.path]);
+          applyResults.push({ id: item.id, path: item.path, status: "trashed" });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          applyResults.push({
+            id: item.id,
+            path: item.path,
+            status: "failed",
+            message: truncate(message.replace(/\r?\n/g, " "), 180),
+          });
+        }
+      }
+    }
+
+    // Log
     const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
     const payload = {
       version: "0.0.1",
@@ -149,11 +199,13 @@ export class CleanCommand extends BaseCommand {
       dryRun,
       apply,
       plan,
+      applyResults: apply ? applyResults : undefined,
     };
+
     const logPath = await logWriter.writeRunLog(payload);
 
     if (asJson) {
-      context.output.info(JSON.stringify(plan, null, 2));
+      context.output.info(JSON.stringify(apply ? { ...plan, applyResults } : plan, null, 2));
       return;
     }
 
@@ -174,7 +226,6 @@ export class CleanCommand extends BaseCommand {
       context.output.info(`  risk:    ${item.risk}   safeAfterDays: ${item.safeAfterDays}`);
       context.output.info(`  est:     ${formatBytes(item.estimatedBytes)}`);
 
-      // show first 2 reasons max to keep output tight
       const shown = item.reasons.slice(0, 2);
       for (const r of shown) {
         context.output.info(`  why:     ${truncate(r, 160)}`);
@@ -183,11 +234,26 @@ export class CleanCommand extends BaseCommand {
       context.output.info("");
     }
 
-    context.output.info(`Saved log: ${logPath}`);
-
     if (apply) {
-      context.output.warn("apply: not implemented yet. No changes were made.");
+      if (dryRun) {
+        context.output.warn("apply requested, but dry-run is enabled; nothing was moved to Trash.");
+        context.output.warn("To actually apply, run: diskcare clean --apply --no-dry-run");
+        context.output.info("");
+      } else {
+        const trashedCount = applyResults.filter((r) => r.status === "trashed").length;
+        const failedCount = applyResults.filter((r) => r.status === "failed").length;
+
+        context.output.info(`apply results: trashed=${trashedCount} failed=${failedCount}`);
+        for (const r of applyResults) {
+          if (r.status === "failed") {
+            context.output.warn(`  failed: ${r.id} (${r.path}) - ${r.message ?? "unknown error"}`);
+          }
+        }
+        context.output.info("");
+      }
     }
+
+    context.output.info(`Saved log: ${logPath}`);
   }
 
   private async tryCreateRulesEngine(context: CommandContext): Promise<RulesEngine | null> {

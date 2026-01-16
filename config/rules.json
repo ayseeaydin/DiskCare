@@ -11,6 +11,12 @@
       "risk": "safe",
       "safeAfterDays": 14,
       "description": "npm cache is reproducible; safe to clean when old."
+    },
+    {
+      "id": "sandbox-cache",
+      "risk": "safe",
+      "safeAfterDays": 0,
+      "description": "Local sandbox cache for testing clean --apply safely."
     }
   ],
   "defaults": {
