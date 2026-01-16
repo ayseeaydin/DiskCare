@@ -20,12 +20,21 @@ export class ScannerService {
     // Deterministic output order for CLI/logs
     targets.sort((a, b) => a.id.localeCompare(b.id));
 
-    for (const target of targets) {
-      target.exists = await pathExists(target.path);
-      target.metrics = await this.analyzer.analyze(target.path);
+    // Enrich without mutating original objects
+    const enriched: ScanTarget[] = [];
+
+    for (const t of targets) {
+      const exists = await pathExists(t.path);
+      const metrics = await this.analyzer.analyze(t.path);
+
+      enriched.push({
+        ...t,
+        exists,
+        metrics,
+      });
     }
 
-    return targets;
+    return enriched;
   }
 }
 
