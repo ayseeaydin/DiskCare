@@ -86,7 +86,8 @@ export class CleanCommand extends BaseCommand {
         reasons.push("Target path does not exist.");
       }
 
-      if (skipped) {
+      // Only report analyzer errors when the path exists; otherwise it is redundant (ENOENT).
+      if (exists && skipped) {
         status = "blocked";
         const err = t.metrics?.error ? t.metrics.error.replace(/\r?\n/g, " ") : "Unknown error";
         reasons.push(`Target analysis skipped: ${truncate(err, 160)}`);
