@@ -77,7 +77,7 @@ export class ScanCommand extends BaseCommand {
       if (rulesEngine) {
         const decision = rulesEngine.decide(t.id);
         context.output.info(
-          `  risk:    ${decision.risk}   safeAfterDays: ${decision.safeAfterDays}`
+          `  risk:    ${decision.risk}   safeAfterDays: ${decision.safeAfterDays}`,
         );
         context.output.info(`  rule:    ${decision.reasons[0] ?? "-"}`);
       } else {
@@ -105,7 +105,7 @@ export class ScanCommand extends BaseCommand {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       context.output.warn(
-        `rules: config not loaded (${truncate(message.replace(/\r?\n/g, " "), 140)})`
+        `rules: config not loaded (${truncate(message.replace(/\r?\n/g, " "), 140)})`,
       );
       return null;
     }

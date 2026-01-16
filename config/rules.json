@@ -1,20 +1,20 @@
 {
-    "rules": [
-        {
-            "id": "os-temp",
-            "risk": "caution",
-            "safeAfterDays": 7,
-            "description": "OS temp can contain installers or in-use files; only clean old items."
-        },
-        {
-            "id": "npm-cache",
-            "risk": "safe",
-            "safeAfterDays": 14,
-            "description": "npm cache is reproducible; safe to clean when old."
-        }
-    ],
-    "defaults": {
-        "risk": "caution",
-        "safeAfterDays": 30
+  "rules": [
+    {
+      "id": "os-temp",
+      "risk": "caution",
+      "safeAfterDays": 7,
+      "description": "OS temp can contain installers or in-use files; only clean old items."
+    },
+    {
+      "id": "npm-cache",
+      "risk": "safe",
+      "safeAfterDays": 14,
+      "description": "npm cache is reproducible; safe to clean when old."
     }
+  ],
+  "defaults": {
+    "risk": "caution",
+    "safeAfterDays": 30
+  }
 }
