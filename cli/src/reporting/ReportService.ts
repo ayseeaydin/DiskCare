@@ -27,7 +27,6 @@ function asArray<T = unknown>(v: unknown): T[] | null {
  * Minimal shape we need from scan targets in logs.
  */
 type LoggedTarget = {
-  id?: unknown;
   exists?: unknown;
   metrics?: unknown;
 };
@@ -35,6 +34,16 @@ type LoggedTarget = {
 type LoggedMetrics = {
   totalBytes?: unknown;
   skipped?: unknown;
+};
+
+type LoggedApplySummary = {
+  trashed?: unknown;
+  failed?: unknown;
+  trashedEstimatedBytes?: unknown;
+};
+
+type LoggedApplyResult = {
+  status?: unknown;
 };
 
 export type ReportSummary = {
@@ -47,12 +56,12 @@ export type ReportSummary = {
   scanMissingTargets: number;
   scanSkippedTargets: number;
 
-  // Backward-compatible aliases (keeps older code/tests working)
+  // Backward-compatible aliases
   totalBytes: number;
   missingTargets: number;
   skippedTargets: number;
 
-  // apply aggregates (clean --apply, dryRun=false)
+  // apply aggregates (clean --apply)
   applyRuns: number;
   trashedCount: number;
   failedCount: number;
@@ -80,21 +89,18 @@ export class ReportService {
     const scanMissingTargets = scanTargets.filter((t) => t.exists === false).length;
     const scanSkippedTargets = scanTargets.filter((t) => t.metrics?.skipped === true).length;
 
-    // sum bytes for targets that are not skipped (otherwise it’s 0 and misleading)
+    // sum bytes only for non-skipped targets
     const scanTotalBytes = scanTargets.reduce((acc, t) => {
       if (t.metrics?.skipped) return acc;
       return acc + (t.metrics?.totalBytes ?? 0);
     }, 0);
 
-    // --- apply aggregates ---
-    // “apply run” = command clean + apply=true (dryRun can be true/false; we track both but
-    //              trashed/failed should only come from actual apply executions if present)
-    const cleanLogs = logs.filter((l) => l.command === "clean" && l.apply === true);
-
-    const applyRuns = cleanLogs.length;
+    // --- apply aggregates (clean --apply) ---
+    const cleanApplyLogs = logs.filter((l) => l.command === "clean" && l.apply === true);
+    const applyRuns = cleanApplyLogs.length;
 
     const latestApply = this.pickLatestByTimestamp(
-      cleanLogs.filter((l) => l.dryRun === false), // “real apply” only
+      cleanApplyLogs.filter((l) => l.dryRun === false),
     );
     const latestApplyAt = latestApply?.timestamp ?? null;
 
@@ -102,19 +108,35 @@ export class ReportService {
     let failedCount = 0;
     let trashedEstimatedBytes = 0;
 
-    for (const l of cleanLogs) {
-      // Prefer explicit applyResults if present (most reliable)
-      if (isObject(l.applyResults)) {
-        trashedCount += asNumber(l.applyResults.trashed) ?? 0;
-        failedCount += asNumber(l.applyResults.failed) ?? 0;
-        trashedEstimatedBytes += asNumber(l.applyResults.trashedEstimatedBytes) ?? 0;
+    for (const l of cleanApplyLogs) {
+      // 1) Preferred: applySummary (stable contract)
+      if (isObject(l.applySummary)) {
+        const s = l.applySummary as LoggedApplySummary;
+        trashedCount += asNumber(s.trashed) ?? 0;
+        failedCount += asNumber(s.failed) ?? 0;
+        trashedEstimatedBytes += asNumber(s.trashedEstimatedBytes) ?? 0;
         continue;
       }
 
-      // Fallback: infer from plan if it exists (less reliable)
+      // 2) Fallback: applyResults array (derive counts)
+      const results = asArray<LoggedApplyResult>(l.applyResults);
+      if (results) {
+        trashedCount += results.filter((r) => r.status === "trashed").length;
+        failedCount += results.filter((r) => r.status === "failed").length;
+
+        // Best-effort bytes:
+        // If we don't have per-item bytes, fall back to plan.summary.estimatedBytesTotal
+        // ONLY when it was a real apply (dryRun=false).
+        if (l.dryRun === false && isObject(l.plan) && isObject((l.plan as JsonObject).summary)) {
+          const sum = (l.plan as JsonObject).summary as JsonObject;
+          trashedEstimatedBytes += asNumber(sum.estimatedBytesTotal) ?? 0;
+        }
+        continue;
+      }
+
+      // 3) Legacy fallback: infer from plan.items (less reliable)
       if (isObject(l.plan)) {
         const items = asArray<JsonObject>((l.plan as JsonObject).items) ?? [];
-        // If it was a dry-run, do not count as trashed.
         if (l.dryRun === false) {
           const eligible = items.filter((it) => (it.status as unknown) === "eligible").length;
           trashedCount += eligible;
@@ -171,18 +193,18 @@ export class ReportService {
 
         if (!command || !timestamp) continue;
 
-        // Keep only fields we use; everything else is passthrough-safe.
         out.push({
           command,
           timestamp,
           dryRun: asBoolean(parsed.dryRun) ?? true,
           apply: asBoolean(parsed.apply) ?? false,
-          targets: parsed.targets,
-          plan: parsed.plan,
+          targets: (parsed as JsonObject).targets,
+          plan: (parsed as JsonObject).plan,
           applyResults: (parsed as JsonObject).applyResults,
+          applySummary: (parsed as JsonObject).applySummary,
         });
       } catch {
-        // ignore unreadable / invalid JSON
+        // ignore
       }
     }
 
@@ -203,8 +225,10 @@ export class ReportService {
     for (const it of items) {
       const ts = it.timestamp;
       if (!ts) continue;
+
       const ms = Date.parse(ts);
       if (!Number.isFinite(ms)) continue;
+
       if (ms > bestMs) {
         bestMs = ms;
         best = it;
@@ -219,11 +243,10 @@ export class ReportService {
   ): Array<{ exists: boolean; metrics?: { totalBytes?: number; skipped?: boolean } }> {
     const rawTargets = asArray<LoggedTarget>(log.targets) ?? [];
 
-    const targets = rawTargets.map((t) => {
+    return rawTargets.map((t) => {
       const exists = asBoolean(t.exists) ?? false;
 
       let metrics: { totalBytes?: number; skipped?: boolean } | undefined;
-
       if (isObject(t.metrics)) {
         const m = t.metrics as LoggedMetrics;
         metrics = {
@@ -234,7 +257,5 @@ export class ReportService {
 
       return { exists, metrics };
     });
-
-    return targets;
   }
 }

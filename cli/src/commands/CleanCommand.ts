@@ -11,6 +11,7 @@ import { RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
 import trash from "trash";
 
 import { BaseCommand } from "./BaseCommand.js";
+import type { RunLog } from "../types/RunLog.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { formatBytes } from "../formatters/formatBytes.js";
 import { truncate } from "../formatters/truncate.js";
@@ -190,6 +191,23 @@ export class CleanCommand extends BaseCommand {
       }
     }
 
+    const applySummary =
+      apply && !dryRun
+        ? {
+            trashed: applyResults.filter((r) => r.status === "trashed").length,
+            failed: applyResults.filter((r) => r.status === "failed").length,
+            trashedEstimatedBytes: items
+              .filter((i) => i.status === "eligible")
+              .reduce((acc, i) => acc + i.estimatedBytes, 0),
+          }
+        : apply
+          ? {
+              trashed: 0,
+              failed: 0,
+              trashedEstimatedBytes: 0,
+            }
+          : undefined;
+
     // Log
     const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
     const payload = {
@@ -200,7 +218,8 @@ export class CleanCommand extends BaseCommand {
       apply,
       plan,
       applyResults: apply ? applyResults : undefined,
-    };
+      applySummary,
+    } satisfies RunLog;
 
     const logPath = await logWriter.writeRunLog(payload);
 

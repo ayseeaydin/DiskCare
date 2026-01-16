@@ -82,7 +82,14 @@ test("ReportService.summarize - aggregates latest scan snapshot and apply aggreg
         },
       ],
     },
-    applyResults: {
+    applyResults: [
+      {
+        id: "sandbox-cache",
+        path: "D:\\diskcare\\.sandbox-cache",
+        status: "trashed",
+      },
+    ],
+    applySummary: {
       trashed: 1,
       failed: 0,
       trashedEstimatedBytes: 50,

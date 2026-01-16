@@ -10,6 +10,7 @@ import path from "node:path";
 
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
+import type { RunLog } from "../types/RunLog.js";
 import { formatBytes } from "../formatters/formatBytes.js";
 import { formatDate } from "../formatters/formatDate.js";
 import { truncate } from "../formatters/truncate.js";
@@ -54,7 +55,7 @@ export class ScanCommand extends BaseCommand {
       command: "scan",
       dryRun,
       targets,
-    };
+    } satisfies RunLog;
 
     const logPath = await logWriter.writeRunLog(payload);
 
