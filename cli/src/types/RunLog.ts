@@ -2,6 +2,11 @@ export type ApplyResult = {
   id: string;
   path: string;
   status: "trashed" | "skipped" | "failed";
+  /**
+   * Best-effort bytes for this item (usually the planned estimate).
+   * Used to compute trashedEstimatedBytes accurately from apply results.
+   */
+  estimatedBytes?: number;
   message?: string;
 };
 
@@ -27,7 +32,7 @@ export type RunLog = {
     path?: string;
     displayName?: string;
 
-    // FIX: ScanTarget.exists is optional, so log contract must allow it to be optional.
+    // ScanTarget.exists is optional → log contract allows optional
     exists?: boolean;
 
     metrics?: {
@@ -37,6 +42,10 @@ export type RunLog = {
       lastAccessedAt?: number | null;
       skipped?: boolean;
       error?: string;
+
+      // partial scan info (scanner-core now supports this)
+      partial?: boolean;
+      skippedEntries?: number;
     };
   }>;
 

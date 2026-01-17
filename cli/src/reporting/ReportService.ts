@@ -44,6 +44,7 @@ type LoggedApplySummary = {
 
 type LoggedApplyResult = {
   status?: unknown;
+  estimatedBytes?: unknown;
 };
 
 export type ReportSummary = {
@@ -124,8 +125,18 @@ export class ReportService {
         trashedCount += results.filter((r) => r.status === "trashed").length;
         failedCount += results.filter((r) => r.status === "failed").length;
 
-        // Best-effort bytes:
-        // If we don't have per-item bytes, fall back to plan.summary.estimatedBytesTotal
+        // Prefer per-item estimatedBytes from apply results
+        const bytesFromResults = results.reduce((acc, r) => {
+          if (r.status !== "trashed") return acc;
+          return acc + (asNumber(r.estimatedBytes) ?? 0);
+        }, 0);
+
+        if (bytesFromResults > 0) {
+          trashedEstimatedBytes += bytesFromResults;
+          continue;
+        }
+
+        // Fallback: if no per-item bytes exist, fall back to plan.summary.estimatedBytesTotal
         // ONLY when it was a real apply (dryRun=false).
         if (l.dryRun === false && isObject(l.plan) && isObject((l.plan as JsonObject).summary)) {
           const sum = (l.plan as JsonObject).summary as JsonObject;

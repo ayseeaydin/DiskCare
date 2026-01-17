@@ -10,7 +10,7 @@ import {
 import trash from "trash";
 
 import { BaseCommand } from "./BaseCommand.js";
-import type { RunLog } from "../types/RunLog.js";
+import type { RunLog, ApplyResult } from "../types/RunLog.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { formatBytes } from "../formatters/formatBytes.js";
 import { truncate } from "../formatters/truncate.js";
@@ -48,13 +48,6 @@ type CleanPlan = {
     estimatedBytesTotal: number;
   };
   items: CleanPlanItem[];
-};
-
-type ApplyResult = {
-  id: string;
-  path: string;
-  status: "trashed" | "skipped" | "failed";
-  message?: string;
 };
 
 export class CleanCommand extends BaseCommand {
@@ -199,6 +192,7 @@ export class CleanCommand extends BaseCommand {
             id: item.id,
             path: item.path,
             status: "skipped",
+            estimatedBytes: item.estimatedBytes,
             message: "dry-run is enabled; no changes were made.",
           });
           continue;
@@ -206,13 +200,19 @@ export class CleanCommand extends BaseCommand {
 
         try {
           await trash([item.path]);
-          applyResults.push({ id: item.id, path: item.path, status: "trashed" });
+          applyResults.push({
+            id: item.id,
+            path: item.path,
+            status: "trashed",
+            estimatedBytes: item.estimatedBytes,
+          });
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           applyResults.push({
             id: item.id,
             path: item.path,
             status: "failed",
+            estimatedBytes: item.estimatedBytes,
             message: truncate(message.replace(/\r?\n/g, " "), 180),
           });
         }
@@ -224,9 +224,10 @@ export class CleanCommand extends BaseCommand {
         ? {
             trashed: applyResults.filter((r) => r.status === "trashed").length,
             failed: applyResults.filter((r) => r.status === "failed").length,
-            trashedEstimatedBytes: items
-              .filter((i) => i.status === "eligible")
-              .reduce((acc, i) => acc + i.estimatedBytes, 0),
+            trashedEstimatedBytes: applyResults.reduce((acc, r) => {
+              if (r.status !== "trashed") return acc;
+              return acc + (r.estimatedBytes ?? 0);
+            }, 0),
           }
         : apply
           ? {
