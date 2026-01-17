@@ -73,6 +73,9 @@ export class ScanCommand extends BaseCommand {
       const exists = t.exists === true ? "yes" : "no";
       const skipped = t.metrics?.skipped === true ? "yes" : "no";
 
+      const partial = t.metrics?.partial === true ? "yes" : "no";
+      const skippedEntries = t.metrics?.skippedEntries ?? 0;
+
       const size = formatBytes(t.metrics?.totalBytes ?? 0);
       const files = String(t.metrics?.fileCount ?? 0).padStart(6, " ");
       const modified = formatDate(t.metrics?.lastModifiedAt);
@@ -81,7 +84,9 @@ export class ScanCommand extends BaseCommand {
       context.output.info(`${t.displayName}`);
       context.output.info(`  id:      ${t.id}`);
       context.output.info(`  path:    ${t.path}`);
-      context.output.info(`  exists:  ${exists}   skipped: ${skipped}`);
+      context.output.info(
+        `  exists:  ${exists}   skipped: ${skipped}   partial: ${partial} (skippedEntries=${skippedEntries})`,
+      );
       context.output.info(`  size:    ${size}   files: ${files}`);
       context.output.info(`  mtime:   ${modified}`);
       context.output.info(`  atime:   ${accessed}`);
