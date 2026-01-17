@@ -97,6 +97,8 @@ export class CleanCommand extends BaseCommand {
 
       const exists = t.exists === true;
       const skipped = t.metrics?.skipped === true;
+      const partial = t.metrics?.partial === true;
+      const skippedEntries = t.metrics?.skippedEntries ?? 0;
 
       const reasons: string[] = [];
       let status: PlanStatus = "caution";
@@ -119,9 +121,16 @@ export class CleanCommand extends BaseCommand {
         reasons.push("Rule risk is do-not-touch.");
       }
 
-      // If not blocked, classify by risk
+      // If not blocked, classify by risk (but never eligible if analysis is partial)
       if (status !== "blocked") {
         status = decision.risk === "safe" ? "eligible" : "caution";
+
+        if (partial) {
+          status = "caution";
+          reasons.push(
+            `Partial analysis: ${skippedEntries} subpath(s) could not be read; not eligible for apply.`,
+          );
+        }
       }
 
       // MVP: estimated bytes = target totalBytes (file-level filtering later)
