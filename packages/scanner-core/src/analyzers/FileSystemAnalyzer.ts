@@ -1,12 +1,24 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { Dirent } from "node:fs";
+
 import type { ScanMetrics } from "../types/ScanMetrics.js";
+import type { FsLike } from "./FsLike.js";
+
+function defaultFs(): FsLike {
+  return {
+    stat: (p: string) => fs.stat(p),
+    readdir: (p: string, opts: { withFileTypes: true }) => fs.readdir(p, opts) as Promise<Dirent[]>,
+  };
+}
 
 export class FileSystemAnalyzer {
+  constructor(private readonly fsLike: FsLike = defaultFs()) {}
+
   async analyze(rootPath: string): Promise<ScanMetrics> {
     // Verify root is accessible early (explainable behavior)
     try {
-      const rootStat = await fs.stat(rootPath);
+      const rootStat = await this.fsLike.stat(rootPath);
       if (!rootStat.isDirectory()) {
         return emptyMetrics(`Path is not a directory: ${rootPath}`);
       }
@@ -19,15 +31,13 @@ export class FileSystemAnalyzer {
     let lastModifiedAt: number | null = null;
     let lastAccessedAt: number | null = null;
 
-    // NEW: best-effort partial analysis tracking
     let skippedEntries = 0;
 
     const walk = async (currentPath: string): Promise<void> => {
-      let entries: Array<import("node:fs").Dirent>;
+      let entries: Dirent[];
       try {
-        entries = await fs.readdir(currentPath, { withFileTypes: true });
+        entries = await this.fsLike.readdir(currentPath, { withFileTypes: true });
       } catch {
-        // Permission denied or IO error → skip this subtree, record partial
         skippedEntries += 1;
         return;
       }
@@ -37,7 +47,7 @@ export class FileSystemAnalyzer {
 
         let stat;
         try {
-          stat = await fs.stat(fullPath);
+          stat = await this.fsLike.stat(fullPath);
         } catch {
           skippedEntries += 1;
           continue;
