@@ -49,19 +49,8 @@ export function buildCleanPlan(input: PlanInput): CleanPlan {
     const exists = t.exists === true;
 
     const skipped = t.metrics?.skipped === true;
-
-    // NOTE: scanner-core metrics were extended; until types are updated everywhere,
-    // we read these fields safely.
-    const partial =
-      typeof (t.metrics as unknown as { partial?: unknown } | undefined)?.partial === "boolean"
-        ? (t.metrics as unknown as { partial: boolean }).partial
-        : false;
-
-    const skippedEntries =
-      typeof (t.metrics as unknown as { skippedEntries?: unknown } | undefined)?.skippedEntries ===
-      "number"
-        ? (t.metrics as unknown as { skippedEntries: number }).skippedEntries
-        : 0;
+    const partial = t.metrics?.partial === true;
+    const skippedEntries = t.metrics?.skippedEntries ?? 0;
 
     const lastModifiedAt = t.metrics?.lastModifiedAt ?? null;
     const ageDays = lastModifiedAt === null ? null : daysBetween(nowMs, lastModifiedAt);
