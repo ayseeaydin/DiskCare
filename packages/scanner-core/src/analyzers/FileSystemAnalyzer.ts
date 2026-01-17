@@ -19,12 +19,16 @@ export class FileSystemAnalyzer {
     let lastModifiedAt: number | null = null;
     let lastAccessedAt: number | null = null;
 
+    // NEW: best-effort partial analysis tracking
+    let skippedEntries = 0;
+
     const walk = async (currentPath: string): Promise<void> => {
       let entries: Array<import("node:fs").Dirent>;
       try {
         entries = await fs.readdir(currentPath, { withFileTypes: true });
       } catch {
-        // Permission denied or IO error → skip this subtree
+        // Permission denied or IO error → skip this subtree, record partial
+        skippedEntries += 1;
         return;
       }
 
@@ -35,6 +39,7 @@ export class FileSystemAnalyzer {
         try {
           stat = await fs.stat(fullPath);
         } catch {
+          skippedEntries += 1;
           continue;
         }
 
@@ -58,6 +63,8 @@ export class FileSystemAnalyzer {
       lastModifiedAt,
       lastAccessedAt,
       skipped: false,
+      partial: skippedEntries > 0,
+      skippedEntries,
     };
   }
 }
@@ -75,6 +82,8 @@ function emptyMetrics(error: string): ScanMetrics {
     lastAccessedAt: null,
     skipped: true,
     error,
+    partial: false,
+    skippedEntries: 0,
   };
 }
 

@@ -29,4 +29,15 @@ export type ScanMetrics = {
    * Optional error message when skipped=true.
    */
   error?: string;
+
+  /**
+   * True if some subpaths could not be read (e.g. permission denied),
+   * but analysis still returned best-effort metrics.
+   */
+  partial?: boolean;
+
+  /**
+   * Number of subpaths skipped due to read/stat errors.
+   */
+  skippedEntries?: number;
 };
