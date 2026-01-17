@@ -16,38 +16,12 @@ import { formatBytes } from "../formatters/formatBytes.js";
 import { truncate } from "../formatters/truncate.js";
 import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
+import { buildCleanPlan } from "../cleaning/CleanPlanner.js";
 
 type CleanOptions = {
   json?: boolean;
   dryRun?: boolean; // commander sets this; default should be true (safe)
   apply?: boolean;
-};
-
-type PlanStatus = "eligible" | "caution" | "blocked";
-
-type CleanPlanItem = {
-  id: string;
-  displayName: string;
-  path: string;
-  exists: boolean;
-  risk: "safe" | "caution" | "do-not-touch";
-  safeAfterDays: number;
-  status: PlanStatus;
-  estimatedBytes: number;
-  reasons: string[];
-};
-
-type CleanPlan = {
-  command: "clean";
-  dryRun: boolean;
-  apply: boolean;
-  summary: {
-    eligibleCount: number;
-    cautionCount: number;
-    blockedCount: number;
-    estimatedBytesTotal: number;
-  };
-  items: CleanPlanItem[];
 };
 
 export class CleanCommand extends BaseCommand {
@@ -80,106 +54,11 @@ export class CleanCommand extends BaseCommand {
 
     const rulesEngine = await RulesProvider.fromCwd().tryLoad(context);
 
-    // Used for safeAfterDays age gate
     const nowMs = Date.now();
+    const plan = buildCleanPlan({ targets, rulesEngine, nowMs, dryRun, apply });
 
-    const items: CleanPlanItem[] = targets.map((t) => {
-      const decision = rulesEngine?.decide(t.id) ?? {
-        risk: "caution" as const,
-        safeAfterDays: 30,
-        reasons: ["Rules config not loaded; using defaults."],
-      };
-
-      const exists = t.exists === true;
-      const skipped = t.metrics?.skipped === true;
-      const partial = t.metrics?.partial === true;
-      const skippedEntries = t.metrics?.skippedEntries ?? 0;
-
-      const lastModifiedAt = t.metrics?.lastModifiedAt ?? null;
-      const ageDays = lastModifiedAt === null ? null : daysBetween(nowMs, lastModifiedAt);
-
-      const reasons: string[] = [];
-      let status: PlanStatus = "caution";
-
-      // Hard blocks
-      if (!exists) {
-        status = "blocked";
-        reasons.push("Target path does not exist.");
-      }
-
-      // Only report analyzer errors when the path exists; otherwise redundant (ENOENT).
-      if (exists && skipped) {
-        status = "blocked";
-        const err = t.metrics?.error ? t.metrics.error.replace(/\r?\n/g, " ") : "Unknown error";
-        reasons.push(`Target analysis skipped: ${truncate(err, 160)}`);
-      }
-
-      if (decision.risk === "do-not-touch") {
-        status = "blocked";
-        reasons.push("Rule risk is do-not-touch.");
-      }
-
-      // If not blocked, classify by risk (but never eligible if analysis is partial)
-      if (status !== "blocked") {
-        status = decision.risk === "safe" ? "eligible" : "caution";
-
-        if (partial) {
-          status = "caution";
-          reasons.push(
-            `Partial analysis: ${skippedEntries} subpath(s) could not be read; not eligible for apply.`,
-          );
-        }
-
-        // Age gate: even "safe" targets must be older than safeAfterDays
-        if (status === "eligible") {
-          if (ageDays === null) {
-            status = "caution";
-            reasons.push("Cannot determine lastModifiedAt; not eligible for apply.");
-          } else if (ageDays < decision.safeAfterDays) {
-            status = "caution";
-            reasons.push(
-              `Too recent: last modified ${ageDays} day(s) ago (< safeAfterDays=${decision.safeAfterDays}).`,
-            );
-          }
-        }
-      }
-
-      // MVP: estimated bytes = target totalBytes (file-level filtering later)
-      const estimatedBytes = status === "eligible" ? (t.metrics?.totalBytes ?? 0) : 0;
-
-      // Always include rule explanation as context
-      reasons.push(decision.reasons[0] ?? "No rule description.");
-
-      return {
-        id: t.id,
-        displayName: t.displayName,
-        path: t.path,
-        exists,
-        risk: decision.risk,
-        safeAfterDays: decision.safeAfterDays,
-        status,
-        estimatedBytes,
-        reasons,
-      };
-    });
-
-    // Deterministic order
-    items.sort((a, b) => a.id.localeCompare(b.id));
-
-    const summary = {
-      eligibleCount: items.filter((i) => i.status === "eligible").length,
-      cautionCount: items.filter((i) => i.status === "caution").length,
-      blockedCount: items.filter((i) => i.status === "blocked").length,
-      estimatedBytesTotal: items.reduce((acc, i) => acc + i.estimatedBytes, 0),
-    };
-
-    const plan: CleanPlan = {
-      command: "clean",
-      dryRun,
-      apply,
-      summary,
-      items,
-    };
+    const items = plan.items;
+    const summary = plan.summary;
 
     const applyResults: ApplyResult[] = [];
 
@@ -303,10 +182,4 @@ export class CleanCommand extends BaseCommand {
 
     context.output.info(`Saved log: ${logPath}`);
   }
-}
-
-function daysBetween(nowMs: number, pastMs: number): number {
-  const diffMs = nowMs - pastMs;
-  if (!Number.isFinite(diffMs) || diffMs <= 0) return 0;
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
