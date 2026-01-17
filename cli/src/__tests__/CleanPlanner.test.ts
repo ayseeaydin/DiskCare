@@ -145,3 +145,27 @@ test("do-not-touch is always blocked", () => {
 
   assert.equal(plan.items[0]?.status, "blocked");
 });
+
+test("caution when lastModifiedAt is null (cannot determine age)", () => {
+  const nowMs = Date.now();
+
+  const plan = buildCleanPlan({
+    targets: [
+      baseTarget({
+        metrics: {
+          totalBytes: 100,
+          fileCount: 1,
+          lastModifiedAt: null,
+          lastAccessedAt: null,
+          skipped: false,
+        },
+      }),
+    ],
+    rulesEngine: makeRulesEngine({ risk: "safe", safeAfterDays: 0 }),
+    nowMs,
+    dryRun: true,
+    apply: false,
+  });
+
+  assert.equal(plan.items[0]?.status, "caution");
+});
