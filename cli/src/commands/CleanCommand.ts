@@ -7,7 +7,6 @@ import {
   NpmCacheScanner,
   SandboxCacheScanner,
 } from "@diskcare/scanner-core";
-import { RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
 import trash from "trash";
 
 import { BaseCommand } from "./BaseCommand.js";
@@ -88,6 +87,9 @@ export class CleanCommand extends BaseCommand {
 
     const rulesEngine = await RulesProvider.fromCwd().tryLoad(context);
 
+    // Used for safeAfterDays age gate
+    const nowMs = Date.now();
+
     const items: CleanPlanItem[] = targets.map((t) => {
       const decision = rulesEngine?.decide(t.id) ?? {
         risk: "caution" as const,
@@ -99,6 +101,9 @@ export class CleanCommand extends BaseCommand {
       const skipped = t.metrics?.skipped === true;
       const partial = t.metrics?.partial === true;
       const skippedEntries = t.metrics?.skippedEntries ?? 0;
+
+      const lastModifiedAt = t.metrics?.lastModifiedAt ?? null;
+      const ageDays = lastModifiedAt === null ? null : daysBetween(nowMs, lastModifiedAt);
 
       const reasons: string[] = [];
       let status: PlanStatus = "caution";
@@ -130,6 +135,19 @@ export class CleanCommand extends BaseCommand {
           reasons.push(
             `Partial analysis: ${skippedEntries} subpath(s) could not be read; not eligible for apply.`,
           );
+        }
+
+        // Age gate: even "safe" targets must be older than safeAfterDays
+        if (status === "eligible") {
+          if (ageDays === null) {
+            status = "caution";
+            reasons.push("Cannot determine lastModifiedAt; not eligible for apply.");
+          } else if (ageDays < decision.safeAfterDays) {
+            status = "caution";
+            reasons.push(
+              `Too recent: last modified ${ageDays} day(s) ago (< safeAfterDays=${decision.safeAfterDays}).`,
+            );
+          }
         }
       }
 
@@ -284,19 +302,10 @@ export class CleanCommand extends BaseCommand {
 
     context.output.info(`Saved log: ${logPath}`);
   }
+}
 
-  private async tryCreateRulesEngine(context: CommandContext): Promise<RulesEngine | null> {
-    const rulesPath = path.resolve(process.cwd(), "config", "rules.json");
-
-    try {
-      const rulesConfig = await new RulesConfigLoader().loadFromFile(rulesPath);
-      return new RulesEngine(rulesConfig);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      context.output.warn(
-        `rules: config not loaded (${truncate(message.replace(/\r?\n/g, " "), 140)})`,
-      );
-      return null;
-    }
-  }
+function daysBetween(nowMs: number, pastMs: number): number {
+  const diffMs = nowMs - pastMs;
+  if (!Number.isFinite(diffMs) || diffMs <= 0) return 0;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
