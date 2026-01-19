@@ -22,6 +22,7 @@ type CleanOptions = {
   json?: boolean;
   dryRun?: boolean; // commander sets this; default should be true (safe)
   apply?: boolean;
+  yes?: boolean;
 };
 
 export class CleanCommand extends BaseCommand {
@@ -36,6 +37,9 @@ export class CleanCommand extends BaseCommand {
     // We define the NEGATABLE option so commander understands `--no-dry-run`.
     // Default is dryRun=true (safe-by-default). Passing `--no-dry-run` flips to false.
     cmd.option("--no-dry-run", "Disable dry-run (required to actually trash files)");
+
+    // Extra confirmation gate for real applies.
+    cmd.option("--yes", "Confirm destructive apply (required with --apply and --no-dry-run)");
   }
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
@@ -44,6 +48,7 @@ export class CleanCommand extends BaseCommand {
     const dryRun = options.dryRun ?? true; // SAFE-BY-DEFAULT
     const asJson = options.json ?? false;
     const apply = options.apply ?? false;
+    const yes = options.yes ?? false;
 
     const scannerService = new ScannerService([
       new OsTempScanner(),
@@ -62,17 +67,24 @@ export class CleanCommand extends BaseCommand {
 
     const applyResults: ApplyResult[] = [];
 
+    // Single source of truth:
+    // Real apply requires --apply + --no-dry-run + --yes
+    const canApply = apply && dryRun === false && yes === true;
+
     if (apply) {
       const eligible = items.filter((i) => i.status === "eligible");
 
       for (const item of eligible) {
-        if (dryRun) {
+        // Guard: never trash unless canApply=true
+        if (!canApply) {
           applyResults.push({
             id: item.id,
             path: item.path,
             status: "skipped",
             estimatedBytes: item.estimatedBytes,
-            message: "dry-run is enabled; no changes were made.",
+            message: dryRun
+              ? "dry-run is enabled; no changes were made."
+              : "confirmation required: pass --yes to apply",
           });
           continue;
         }
@@ -99,7 +111,7 @@ export class CleanCommand extends BaseCommand {
     }
 
     const applySummary =
-      apply && !dryRun
+      apply && canApply
         ? {
             trashed: applyResults.filter((r) => r.status === "trashed").length,
             failed: applyResults.filter((r) => r.status === "failed").length,
@@ -164,7 +176,13 @@ export class CleanCommand extends BaseCommand {
     if (apply) {
       if (dryRun) {
         context.output.warn("apply requested, but dry-run is enabled; nothing was moved to Trash.");
-        context.output.warn("To actually apply, run: diskcare clean --apply --no-dry-run");
+        context.output.warn("To actually apply, run: diskcare clean --apply --no-dry-run --yes");
+        context.output.info("");
+      } else if (!yes) {
+        context.output.warn(
+          "apply requested, but confirmation is missing; nothing was moved to Trash.",
+        );
+        context.output.warn("To actually apply, run: diskcare clean --apply --no-dry-run --yes");
         context.output.info("");
       } else {
         const trashedCount = applyResults.filter((r) => r.status === "trashed").length;

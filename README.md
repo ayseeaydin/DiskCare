@@ -15,6 +15,7 @@ DiskCare scans common developer cache directories (npm cache, OS temp, etc.), ca
 DiskCare yaygın geliştirici önbellek dizinlerini (npm cache, OS temp, vb.) tarar, alan kullanımını hesaplar ve yapılandırılabilir kurallara göre güvenli temizleme işlemleri planlar. Her karar açıklanabilir ve loglanır.
 
 **Key Features | Temel Özellikler:**
+
 - 🛡️ Safe by default (dry-run mode) | Varsayılan olarak güvenli (dry-run modu)
 - 🧠 Rule-based decisions with risk levels | Risk seviyeleriyle kural tabanlı kararlar
 - 📊 Detailed file system metrics | Detaylı dosya sistemi metrikleri
@@ -37,12 +38,13 @@ packages/
   scanner-core/             # File system scanning & analysis
     scanners/               # NpmCache, OsTemp, SandboxCache
     analyzers/              # FileSystemAnalyzer
-  
+
   rules-engine/             # Decision engine for cleanup safety
                             # Risk assessment: safe/caution
 ```
 
 **Tech Stack:**
+
 - TypeScript 5.5+, Node.js 18+
 - Commander.js for CLI
 - npm workspaces
@@ -100,6 +102,7 @@ Edit `config/rules.json` to customize cleanup behavior:
 ## Current Status | Mevcut Durum
 
 **✅ Implemented | Tamamlandı:**
+
 - Core scanning engine with multiple scanners
 - Rule-based decision engine
 - CLI commands: scan, clean, report
@@ -108,6 +111,7 @@ Edit `config/rules.json` to customize cleanup behavior:
 - Comprehensive test coverage
 
 **🚧 In Progress | Devam Eden:**
+
 - Additional scanner types (pip, cargo, Docker)
 - Enhanced reporting
 - Schedule command
