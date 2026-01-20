@@ -2,6 +2,7 @@ import type { ScanTarget } from "@diskcare/scanner-core";
 import type { RulesEngine } from "@diskcare/rules-engine";
 import { truncate } from "../formatters/truncate.js";
 import { MS_PER_DAY } from "../utils/constants.js";
+import { toErrorMessage, toOneLine } from "../utils/errors.js";
 
 export type PlanStatus = "eligible" | "caution" | "blocked";
 
@@ -128,8 +129,9 @@ function computeStatusAndReasons(input: {
   // Only report analyzer errors when the path exists; otherwise redundant (ENOENT).
   if (exists && target.metrics.skipped === true) {
     status = "blocked";
-    const raw = target.metrics.error ? String(target.metrics.error) : "Unknown error";
-    reasons.push(`Target analysis skipped: ${truncate(raw.replace(/\r?\n/g, " "), 160)}`);
+    const raw = target.metrics.error ? target.metrics.error : "Unknown error";
+    const msg = toOneLine(toErrorMessage(raw));
+    reasons.push(`Target analysis skipped: ${truncate(msg, 160)}`);
   }
 
   if (decision.risk === "do-not-touch") {

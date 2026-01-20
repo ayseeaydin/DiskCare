@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import { APP_VERSION } from "../utils/constants.js";
+import { toErrorMessage, toOneLine } from "../utils/errors.js";
 
 export class LogWriter {
   constructor(private readonly logsDir: string) {}
@@ -44,7 +45,7 @@ function safeStringify(payload: unknown): string {
   try {
     return JSON.stringify(payload, jsonReplacer, 2);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = toOneLine(toErrorMessage(err));
     // last-resort fallback: keep log file valid JSON
     return JSON.stringify(
       {
