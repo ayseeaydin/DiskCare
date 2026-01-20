@@ -11,4 +11,4 @@ const app = new CliApp([
   new ScheduleCommand(),
 ]);
 
-app.run(process.argv);
+await app.run(process.argv);
