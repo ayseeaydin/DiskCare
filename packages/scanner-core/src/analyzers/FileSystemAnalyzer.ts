@@ -4,6 +4,7 @@ import type { Dirent } from "node:fs";
 
 import type { ScanMetrics } from "../types/ScanMetrics.js";
 import type { FsLike } from "./FsLike.js";
+import { toErrorMessage } from "../utils/errorMessage.js";
 
 function defaultFs(): FsLike {
   return {
@@ -95,13 +96,4 @@ function emptyMetrics(error: string): ScanMetrics {
     partial: false,
     skippedEntries: 0,
   };
-}
-
-function toErrorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return String(err);
-  }
 }

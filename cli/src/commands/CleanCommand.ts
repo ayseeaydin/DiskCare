@@ -1,12 +1,14 @@
 import type { Command } from "commander";
 import path from "node:path";
 
+import type { ScanTarget } from "@diskcare/scanner-core";
 import {
   ScannerService,
   OsTempScanner,
   NpmCacheScanner,
   SandboxCacheScanner,
 } from "@diskcare/scanner-core";
+import type { RulesEngine } from "@diskcare/rules-engine";
 import trash from "trash";
 
 import { BaseCommand } from "./BaseCommand.js";
@@ -17,6 +19,7 @@ import { truncate } from "../formatters/truncate.js";
 import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
 import { buildCleanPlan } from "../cleaning/CleanPlanner.js";
+import { APP_VERSION } from "../utils/constants.js";
 
 type CleanOptions = {
   json?: boolean;
@@ -25,9 +28,24 @@ type CleanOptions = {
   yes?: boolean;
 };
 
+/**
+ * Dependencies for CleanCommand (enables testing).
+ */
+export type CleanCommandDeps = {
+  nowMs: () => number;
+  scanAll: () => Promise<ScanTarget[]>;
+  loadRules: (context: CommandContext) => Promise<RulesEngine | null>;
+  trashFn: (paths: string[]) => Promise<void>;
+  writeLog: (payload: unknown) => Promise<string>;
+};
+
 export class CleanCommand extends BaseCommand {
   readonly name = "clean";
   readonly description = "Clean targets that match safe rules (dry-run by default)";
+
+  constructor(private readonly deps?: CleanCommandDeps) {
+    super();
+  }
 
   protected configure(cmd: Command): void {
     cmd.option("--json", "Output JSON plan");
@@ -50,17 +68,17 @@ export class CleanCommand extends BaseCommand {
     const apply = options.apply ?? false;
     const yes = options.yes ?? false;
 
-    const scannerService = new ScannerService([
-      new OsTempScanner(),
-      new NpmCacheScanner(),
-      new SandboxCacheScanner(),
-    ]);
-    const targets = await scannerService.scanAll();
+    // Use injected dependencies or real implementations
+    const nowMs = this.deps?.nowMs ?? (() => Date.now());
+    const scanAll = this.deps?.scanAll ?? this.defaultScanAll.bind(this);
+    const loadRules = this.deps?.loadRules ?? this.defaultLoadRules.bind(this);
+    const trashFn = this.deps?.trashFn ?? trash;
+    const writeLog = this.deps?.writeLog ?? this.defaultWriteLog.bind(this);
 
-    const rulesEngine = await RulesProvider.fromCwd().tryLoad(context);
+    const targets = await scanAll();
+    const rulesEngine = await loadRules(context);
 
-    const nowMs = Date.now();
-    const plan = buildCleanPlan({ targets, rulesEngine, nowMs, dryRun, apply });
+    const plan = buildCleanPlan({ targets, rulesEngine, nowMs: nowMs(), dryRun, apply });
 
     const items = plan.items;
     const summary = plan.summary;
@@ -90,7 +108,7 @@ export class CleanCommand extends BaseCommand {
         }
 
         try {
-          await trash([item.path]);
+          await trashFn([item.path]);
           applyResults.push({
             id: item.id,
             path: item.path,
@@ -129,11 +147,10 @@ export class CleanCommand extends BaseCommand {
           : undefined;
 
     // Log
-    const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
     const payload = {
-      version: "0.0.1",
+      version: APP_VERSION,
       timestamp: new Date().toISOString(),
-      command: "clean",
+      command: "clean" as const,
       dryRun,
       apply,
       plan,
@@ -141,7 +158,7 @@ export class CleanCommand extends BaseCommand {
       applySummary,
     } satisfies RunLog;
 
-    const logPath = await logWriter.writeRunLog(payload);
+    const logPath = await writeLog(payload);
 
     if (asJson) {
       context.output.info(JSON.stringify(apply ? { ...plan, applyResults } : plan, null, 2));
@@ -199,5 +216,26 @@ export class CleanCommand extends BaseCommand {
     }
 
     context.output.info(`Saved log: ${logPath}`);
+  }
+
+  /**
+   * Default implementations (used when no deps injected).
+   */
+  private async defaultScanAll(): Promise<ScanTarget[]> {
+    const scannerService = new ScannerService([
+      new OsTempScanner(),
+      new NpmCacheScanner(),
+      new SandboxCacheScanner(),
+    ]);
+    return scannerService.scanAll();
+  }
+
+  private async defaultLoadRules(context: CommandContext): Promise<RulesEngine | null> {
+    return RulesProvider.fromCwd().tryLoad(context);
+  }
+
+  private async defaultWriteLog(payload: unknown): Promise<string> {
+    const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
+    return logWriter.writeRunLog(payload);
   }
 }

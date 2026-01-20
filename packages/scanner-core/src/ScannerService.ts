@@ -1,8 +1,7 @@
-import fs from "node:fs/promises";
-
 import { FileSystemAnalyzer } from "./analyzers/FileSystemAnalyzer.js";
 import type { BaseScanner } from "./scanners/BaseScanner.js";
 import type { ScanTarget } from "./types/ScanTarget.js";
+import { pathExists } from "./utils/pathExists.js";
 
 export class ScannerService {
   private readonly analyzer = new FileSystemAnalyzer();
@@ -35,14 +34,5 @@ export class ScannerService {
     }
 
     return enriched;
-  }
-}
-
-async function pathExists(p: string): Promise<boolean> {
-  try {
-    await fs.access(p);
-    return true;
-  } catch {
-    return false;
   }
 }

@@ -16,6 +16,7 @@ import { formatDate } from "../formatters/formatDate.js";
 import { truncate } from "../formatters/truncate.js";
 import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
+import { APP_VERSION } from "../utils/constants.js";
 
 type ScanOptions = {
   json?: boolean;
@@ -51,9 +52,9 @@ export class ScanCommand extends BaseCommand {
     const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
 
     const payload = {
-      version: "0.0.1",
+      version: APP_VERSION,
       timestamp: new Date().toISOString(),
-      command: "scan",
+      command: "scan" as const,
       dryRun,
       targets,
     } satisfies RunLog;

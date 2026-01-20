@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
+import { APP_VERSION } from "../utils/constants.js";
 
 export class LogWriter {
   constructor(private readonly logsDir: string) {}
@@ -47,7 +48,7 @@ function safeStringify(payload: unknown): string {
     // last-resort fallback: keep log file valid JSON
     return JSON.stringify(
       {
-        version: "0.0.1",
+        version: APP_VERSION,
         timestamp: new Date().toISOString(),
         command: "unknown",
         error: `LogWriter JSON.stringify failed: ${message}`,

@@ -16,25 +16,26 @@ export type ApplySummary = {
   trashedEstimatedBytes: number;
 };
 
-export type RunLog = {
+/**
+ * Common fields for all run logs.
+ */
+type BaseRunLog = {
   version: string;
   timestamp: string; // ISO
-  command: "scan" | "clean" | "report" | "schedule";
+};
+
+/**
+ * Scan command log.
+ */
+export type ScanLog = BaseRunLog & {
+  command: "scan";
   dryRun?: boolean;
-  apply?: boolean;
-
-  // Scan payload
-  targets?: Array<{
+  targets: Array<{
     id: string;
-
-    // Optional but currently logged by ScanCommand
     kind?: string;
     path?: string;
     displayName?: string;
-
-    // ScanTarget.exists is optional → log contract allows optional
     exists?: boolean;
-
     metrics?: {
       totalBytes?: number;
       fileCount?: number;
@@ -42,14 +43,19 @@ export type RunLog = {
       lastAccessedAt?: number | null;
       skipped?: boolean;
       error?: string;
-
-      // partial scan info (scanner-core now supports this)
       partial?: boolean;
       skippedEntries?: number;
     };
   }>;
+};
 
-  // Clean payload (minimal but expandable)
+/**
+ * Clean command log.
+ */
+export type CleanLog = BaseRunLog & {
+  command: "clean";
+  dryRun?: boolean;
+  apply?: boolean;
   plan?: {
     summary?: {
       estimatedBytesTotal?: number;
@@ -63,8 +69,27 @@ export type RunLog = {
       estimatedBytes: number;
     }>;
   };
-
-  // Apply payload
   applyResults?: ApplyResult[];
   applySummary?: ApplySummary;
 };
+
+/**
+ * Report command log.
+ */
+export type ReportLog = BaseRunLog & {
+  command: "report";
+};
+
+/**
+ * Schedule command log.
+ */
+export type ScheduleLog = BaseRunLog & {
+  command: "schedule";
+  frequency?: string;
+  apply?: boolean;
+};
+
+/**
+ * Discriminated union of all run logs.
+ */
+export type RunLog = ScanLog | CleanLog | ReportLog | ScheduleLog;

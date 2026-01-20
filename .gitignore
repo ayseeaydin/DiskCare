@@ -12,6 +12,8 @@ build
 *.log
 logs/*
 !logs/.gitkeep
+cli/logs/*
+!cli/logs/.gitkeep
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*

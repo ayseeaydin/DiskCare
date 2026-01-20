@@ -1,4 +1,4 @@
-export { RulesConfigLoader } from "./RulesConfigLoader.js";
+export { RulesConfigLoader, RulesConfigError } from "./RulesConfigLoader.js";
 export { RulesEngine } from "./RulesEngine.js";
 
 export type { RuleConfig, Rule, RuleDefaults } from "./types/RuleConfig.js";

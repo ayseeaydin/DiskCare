@@ -1,14 +1,14 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { ScanTarget } from "../types/ScanTarget.js";
 import { BaseScanner } from "./BaseScanner.js";
+import { pathExists } from "../utils/pathExists.js";
 
 export class SandboxCacheScanner extends BaseScanner {
   async scan(): Promise<ScanTarget[]> {
     const sandboxPath = path.resolve(process.cwd(), ".sandbox-cache");
 
-    const exists = await this.pathExists(sandboxPath);
+    const exists = await pathExists(sandboxPath);
 
     return [
       {
@@ -19,14 +19,5 @@ export class SandboxCacheScanner extends BaseScanner {
         exists,
       },
     ];
-  }
-
-  private async pathExists(p: string): Promise<boolean> {
-    try {
-      await fs.stat(p);
-      return true;
-    } catch {
-      return false;
-    }
   }
 }

@@ -1,5 +1,7 @@
 import type { ScanTarget } from "@diskcare/scanner-core";
 import type { RulesEngine } from "@diskcare/rules-engine";
+import { truncate } from "../formatters/truncate.js";
+import { MS_PER_DAY } from "../utils/constants.js";
 
 export type PlanStatus = "eligible" | "caution" | "blocked";
 
@@ -141,13 +143,8 @@ export function buildCleanPlan(input: PlanInput): CleanPlan {
   };
 }
 
-function truncate(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text;
-  return `${text.slice(0, maxLen - 1)}…`;
-}
-
 function daysBetween(nowMs: number, pastMs: number): number {
   const diffMs = nowMs - pastMs;
   if (!Number.isFinite(diffMs) || diffMs <= 0) return 0;
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return Math.floor(diffMs / MS_PER_DAY);
 }

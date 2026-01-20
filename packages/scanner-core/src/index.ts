@@ -7,3 +7,6 @@ export { SandboxCacheScanner } from "./scanners/SandboxCacheScanner.js";
 
 export type { ScanTarget, ScanTargetKind } from "./types/ScanTarget.js";
 export type { ScanMetrics } from "./types/ScanMetrics.js";
+
+export { pathExists } from "./utils/pathExists.js";
+export { toErrorMessage } from "./utils/errorMessage.js";
