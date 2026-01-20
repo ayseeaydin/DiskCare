@@ -3,12 +3,17 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { APP_VERSION } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
+import { LogWriteError } from "../errors/DiskcareError.js";
 
 export class LogWriter {
   constructor(private readonly logsDir: string) {}
 
   async writeRunLog(payload: unknown): Promise<string> {
-    await fs.mkdir(this.logsDir, { recursive: true });
+    try {
+      await fs.mkdir(this.logsDir, { recursive: true });
+    } catch (err) {
+      throw new LogWriteError("Failed to create logs directory", { logsDir: this.logsDir }, err);
+    }
 
     const fileBase = `run-${timestampForFileName(new Date())}-${process.pid}-${randomSuffix()}`;
     const finalPath = path.join(this.logsDir, `${fileBase}.json`);
@@ -17,8 +22,25 @@ export class LogWriter {
     const content = safeStringify(payload);
 
     // Atomic write: write temp then rename
-    await fs.writeFile(tmpPath, content, { encoding: "utf8", flag: "wx" });
-    await fs.rename(tmpPath, finalPath);
+    try {
+      await fs.writeFile(tmpPath, content, { encoding: "utf8", flag: "wx" });
+    } catch (err) {
+      throw new LogWriteError(
+        "Failed to write log temp file",
+        { tmpPath, finalPath, logsDir: this.logsDir },
+        err,
+      );
+    }
+
+    try {
+      await fs.rename(tmpPath, finalPath);
+    } catch (err) {
+      throw new LogWriteError(
+        "Failed to finalize log file",
+        { tmpPath, finalPath, logsDir: this.logsDir },
+        err,
+      );
+    }
 
     return finalPath;
   }

@@ -52,3 +52,12 @@ export class ValidationError extends DiskcareError {
     super(message, "VALIDATION_ERROR", context);
   }
 }
+
+/**
+ * Log writing / IO errors.
+ */
+export class LogWriteError extends DiskcareError {
+  constructor(message: string, context?: Record<string, unknown>, cause?: unknown) {
+    super(message, "LOG_WRITE_ERROR", context, cause);
+  }
+}
