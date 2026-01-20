@@ -12,7 +12,7 @@ import type { RulesEngine } from "@diskcare/rules-engine";
 import trash from "trash";
 
 import { BaseCommand } from "./BaseCommand.js";
-import type { RunLog, ApplyResult } from "../types/RunLog.js";
+import type { ApplyResult, ApplySummary, CleanLog } from "../types/RunLog.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { formatBytes } from "../formatters/formatBytes.js";
 import { truncate } from "../formatters/truncate.js";
@@ -61,111 +61,165 @@ export class CleanCommand extends BaseCommand {
   }
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
-    const options = (args[0] ?? {}) as CleanOptions;
+    const options = this.parseOptions(args);
+    const deps = this.resolveDeps();
 
-    const dryRun = options.dryRun ?? true; // SAFE-BY-DEFAULT
-    const asJson = options.json ?? false;
-    const apply = options.apply ?? false;
-    const yes = options.yes ?? false;
+    const { targets, rulesEngine } = await this.collectInputs(context, deps);
+    const plan = buildCleanPlan({
+      targets,
+      rulesEngine,
+      nowMs: deps.nowMs(),
+      dryRun: options.dryRun,
+      apply: options.apply,
+    });
 
-    // Use injected dependencies or real implementations
-    const nowMs = this.deps?.nowMs ?? (() => Date.now());
-    const scanAll = this.deps?.scanAll ?? this.defaultScanAll.bind(this);
-    const loadRules = this.deps?.loadRules ?? this.defaultLoadRules.bind(this);
-    const trashFn = this.deps?.trashFn ?? trash;
-    const writeLog = this.deps?.writeLog ?? this.defaultWriteLog.bind(this);
+    const canApply = this.canApply(options);
+    const applyResults = await this.maybeApplyPlan(plan, options, deps, canApply);
+    const applySummary = this.computeApplySummary(options.apply, canApply, applyResults);
 
-    const targets = await scanAll();
-    const rulesEngine = await loadRules(context);
+    const logPath = await deps.writeLog(
+      this.buildRunLogPayload({ options, plan, applyResults, applySummary }),
+    );
 
-    const plan = buildCleanPlan({ targets, rulesEngine, nowMs: nowMs(), dryRun, apply });
-
-    const items = plan.items;
-    const summary = plan.summary;
-
-    const applyResults: ApplyResult[] = [];
-
-    // Single source of truth:
-    // Real apply requires --apply + --no-dry-run + --yes
-    const canApply = apply && dryRun === false && yes === true;
-
-    if (apply) {
-      const eligible = items.filter((i) => i.status === "eligible");
-
-      for (const item of eligible) {
-        // Guard: never trash unless canApply=true
-        if (!canApply) {
-          applyResults.push({
-            id: item.id,
-            path: item.path,
-            status: "skipped",
-            estimatedBytes: item.estimatedBytes,
-            message: dryRun
-              ? "dry-run is enabled; no changes were made."
-              : "confirmation required: pass --yes to apply",
-          });
-          continue;
-        }
-
-        try {
-          await trashFn([item.path]);
-          applyResults.push({
-            id: item.id,
-            path: item.path,
-            status: "trashed",
-            estimatedBytes: item.estimatedBytes,
-          });
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          applyResults.push({
-            id: item.id,
-            path: item.path,
-            status: "failed",
-            estimatedBytes: item.estimatedBytes,
-            message: truncate(message.replace(/\r?\n/g, " "), 180),
-          });
-        }
-      }
-    }
-
-    const applySummary =
-      apply && canApply
-        ? {
-            trashed: applyResults.filter((r) => r.status === "trashed").length,
-            failed: applyResults.filter((r) => r.status === "failed").length,
-            trashedEstimatedBytes: applyResults.reduce((acc, r) => {
-              if (r.status !== "trashed") return acc;
-              return acc + (r.estimatedBytes ?? 0);
-            }, 0),
-          }
-        : apply
-          ? {
-              trashed: 0,
-              failed: 0,
-              trashedEstimatedBytes: 0,
-            }
-          : undefined;
-
-    // Log
-    const payload = {
-      version: APP_VERSION,
-      timestamp: new Date().toISOString(),
-      command: "clean" as const,
-      dryRun,
-      apply,
-      plan,
-      applyResults: apply ? applyResults : undefined,
-      applySummary,
-    } satisfies RunLog;
-
-    const logPath = await writeLog(payload);
-
-    if (asJson) {
-      context.output.info(JSON.stringify(apply ? { ...plan, applyResults } : plan, null, 2));
+    if (options.asJson) {
+      context.output.info(
+        JSON.stringify(options.apply ? { ...plan, applyResults } : plan, null, 2),
+      );
       return;
     }
 
-    context.output.info(`clean plan (dryRun=${dryRun}, apply=${apply})`);
+    this.printPlan(context, plan, options);
+    this.printApplySection(context, options, canApply, applyResults);
+    context.output.info(`Saved log: ${logPath}`);
+  }
+
+  private parseOptions(args: unknown[]): { dryRun: boolean; asJson: boolean; apply: boolean; yes: boolean } {
+    const options = (args[0] ?? {}) as CleanOptions;
+    return {
+      dryRun: options.dryRun ?? true,
+      asJson: options.json ?? false,
+      apply: options.apply ?? false,
+      yes: options.yes ?? false,
+    };
+  }
+
+  private resolveDeps(): CleanCommandDeps {
+    return {
+      nowMs: this.deps?.nowMs ?? (() => Date.now()),
+      scanAll: this.deps?.scanAll ?? this.defaultScanAll.bind(this),
+      loadRules: this.deps?.loadRules ?? this.defaultLoadRules.bind(this),
+      trashFn: this.deps?.trashFn ?? trash,
+      writeLog: this.deps?.writeLog ?? this.defaultWriteLog.bind(this),
+    };
+  }
+
+  private async collectInputs(
+    context: CommandContext,
+    deps: CleanCommandDeps,
+  ): Promise<{ targets: ScanTarget[]; rulesEngine: RulesEngine | null }> {
+    const targets = await deps.scanAll();
+    const rulesEngine = await deps.loadRules(context);
+    return { targets, rulesEngine };
+  }
+
+  private canApply(options: { dryRun: boolean; apply: boolean; yes: boolean }): boolean {
+    return options.apply && options.dryRun === false && options.yes === true;
+  }
+
+  private async maybeApplyPlan(
+    plan: ReturnType<typeof buildCleanPlan>,
+    options: { dryRun: boolean; apply: boolean; yes: boolean },
+    deps: Pick<CleanCommandDeps, "trashFn">,
+    canApply: boolean,
+  ): Promise<ApplyResult[]> {
+    if (!options.apply) return [];
+
+    const eligible = plan.items.filter((i) => i.status === "eligible");
+    const results: ApplyResult[] = [];
+
+    for (const item of eligible) {
+      if (!canApply) {
+        results.push({
+          id: item.id,
+          path: item.path,
+          status: "skipped",
+          estimatedBytes: item.estimatedBytes,
+          message: options.dryRun
+            ? "dry-run is enabled; no changes were made."
+            : "confirmation required: pass --yes to apply",
+        });
+        continue;
+      }
+
+      results.push(await this.trashItem(deps, item.id, item.path, item.estimatedBytes));
+    }
+
+    return results;
+  }
+
+  private async trashItem(
+    deps: Pick<CleanCommandDeps, "trashFn">,
+    id: string,
+    itemPath: string,
+    estimatedBytes: number,
+  ): Promise<ApplyResult> {
+    try {
+      await deps.trashFn([itemPath]);
+      return { id, path: itemPath, status: "trashed", estimatedBytes };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        id,
+        path: itemPath,
+        status: "failed",
+        estimatedBytes,
+        message: truncate(message.replace(/\r?\n/g, " "), 180),
+      };
+    }
+  }
+
+  private computeApplySummary(
+    apply: boolean,
+    canApply: boolean,
+    applyResults: ApplyResult[],
+  ): ApplySummary | undefined {
+    if (!apply) return undefined;
+    if (!canApply) return { trashed: 0, failed: 0, trashedEstimatedBytes: 0 };
+
+    const trashed = applyResults.filter((r) => r.status === "trashed").length;
+    const failed = applyResults.filter((r) => r.status === "failed").length;
+    const trashedEstimatedBytes = applyResults.reduce((acc, r) => {
+      if (r.status !== "trashed") return acc;
+      return acc + (r.estimatedBytes ?? 0);
+    }, 0);
+
+    return { trashed, failed, trashedEstimatedBytes };
+  }
+
+  private buildRunLogPayload(input: {
+    options: { dryRun: boolean; apply: boolean };
+    plan: ReturnType<typeof buildCleanPlan>;
+    applyResults: ApplyResult[];
+    applySummary: ApplySummary | undefined;
+  }): CleanLog {
+    const { options, plan, applyResults, applySummary } = input;
+
+    return {
+      version: APP_VERSION,
+      timestamp: new Date().toISOString(),
+      command: "clean",
+      dryRun: options.dryRun,
+      apply: options.apply,
+      plan,
+      applyResults: options.apply ? applyResults : undefined,
+      applySummary,
+    };
+  }
+
+  private printPlan(context: CommandContext, plan: ReturnType<typeof buildCleanPlan>, options: { dryRun: boolean; apply: boolean }): void {
+    const { items, summary } = plan;
+
+    context.output.info(`clean plan (dryRun=${options.dryRun}, apply=${options.apply})`);
     context.output.info("");
     context.output.info(
       `summary: eligible=${summary.eligibleCount} | caution=${summary.cautionCount} | blocked=${summary.blockedCount} | estimatedFree=${formatBytes(
@@ -189,33 +243,47 @@ export class CleanCommand extends BaseCommand {
 
       context.output.info("");
     }
+  }
 
-    if (apply) {
-      if (dryRun) {
-        context.output.warn("apply requested, but dry-run is enabled; nothing was moved to Trash.");
-        context.output.warn("To actually apply, run: diskcare clean --apply --no-dry-run --yes");
-        context.output.info("");
-      } else if (!yes) {
-        context.output.warn(
-          "apply requested, but confirmation is missing; nothing was moved to Trash.",
-        );
-        context.output.warn("To actually apply, run: diskcare clean --apply --no-dry-run --yes");
-        context.output.info("");
-      } else {
-        const trashedCount = applyResults.filter((r) => r.status === "trashed").length;
-        const failedCount = applyResults.filter((r) => r.status === "failed").length;
+  private printApplySection(
+    context: CommandContext,
+    options: { dryRun: boolean; apply: boolean; yes: boolean },
+    canApply: boolean,
+    applyResults: ApplyResult[],
+  ): void {
+    if (!options.apply) return;
 
-        context.output.info(`apply results: trashed=${trashedCount} failed=${failedCount}`);
-        for (const r of applyResults) {
-          if (r.status === "failed") {
-            context.output.warn(`  failed: ${r.id} (${r.path}) - ${r.message ?? "unknown error"}`);
-          }
-        }
-        context.output.info("");
-      }
+    if (!canApply) {
+      this.printApplyBlocked(context, options);
+      return;
     }
 
-    context.output.info(`Saved log: ${logPath}`);
+    const trashedCount = applyResults.filter((r) => r.status === "trashed").length;
+    const failedCount = applyResults.filter((r) => r.status === "failed").length;
+
+    context.output.info(`apply results: trashed=${trashedCount} failed=${failedCount}`);
+    for (const r of applyResults) {
+      if (r.status === "failed") {
+        context.output.warn(`  failed: ${r.id} (${r.path}) - ${r.message ?? "unknown error"}`);
+      }
+    }
+    context.output.info("");
+  }
+
+  private printApplyBlocked(
+    context: CommandContext,
+    options: { dryRun: boolean; yes: boolean },
+  ): void {
+    if (options.dryRun) {
+      context.output.warn("apply requested, but dry-run is enabled; nothing was moved to Trash.");
+    } else if (!options.yes) {
+      context.output.warn("apply requested, but confirmation is missing; nothing was moved to Trash.");
+    } else {
+      context.output.warn("apply requested, but apply gates were not satisfied; nothing was moved to Trash.");
+    }
+
+    context.output.warn("To actually apply, run: diskcare clean --apply --no-dry-run --yes");
+    context.output.info("");
   }
 
   /**

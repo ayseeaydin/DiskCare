@@ -5,7 +5,8 @@ import {
   NpmCacheScanner,
   SandboxCacheScanner,
 } from "@diskcare/scanner-core";
-import { RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
+import type { ScanTarget } from "@diskcare/scanner-core";
+import type { RulesEngine } from "@diskcare/rules-engine";
 import path from "node:path";
 
 import { BaseCommand } from "./BaseCommand.js";
@@ -33,105 +34,130 @@ export class ScanCommand extends BaseCommand {
   }
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
+    const options = this.parseOptions(args);
+    const targets = await this.scanTargets();
+
+    // Load rules config (do not crash CLI if missing; stay explainable)
+    const rulesEngine = await RulesProvider.fromCwd().tryLoad(context);
+
+    const logPath = await this.writeScanLog({ dryRun: options.dryRun, targets });
+
+    if (options.asJson) {
+      // JSON output intentionally stays stable; we don't add logPath yet.
+      context.output.info(
+        JSON.stringify({ command: "scan", dryRun: options.dryRun, targets }, null, 2),
+      );
+      return;
+    }
+
+    this.printReport(context, { dryRun: options.dryRun, targets, rulesEngine, logPath });
+  }
+
+  private parseOptions(args: unknown[]): { dryRun: boolean; asJson: boolean } {
     const options = (args[0] ?? {}) as ScanOptions;
+    return {
+      dryRun: options.dryRun ?? true,
+      asJson: options.json ?? false,
+    };
+  }
 
-    const dryRun = options.dryRun ?? true; // SAFE-BY-DEFAULT
-    const asJson = options.json ?? false;
-
+  private async scanTargets() {
     const scannerService = new ScannerService([
       new OsTempScanner(),
       new NpmCacheScanner(),
       new SandboxCacheScanner(),
     ]);
 
-    const targets = await scannerService.scanAll();
+    return scannerService.scanAll();
+  }
 
-    // Load rules config (do not crash CLI if missing; stay explainable)
-    const rulesEngine = await RulesProvider.fromCwd().tryLoad(context);
-
+  private async writeScanLog(input: { dryRun: boolean; targets: ScanTarget[] }): Promise<string> {
     const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
-
     const payload = {
       version: APP_VERSION,
       timestamp: new Date().toISOString(),
       command: "scan" as const,
-      dryRun,
-      targets,
+      dryRun: input.dryRun,
+      targets: input.targets,
     } satisfies RunLog;
 
-    const logPath = await logWriter.writeRunLog(payload);
+    return logWriter.writeRunLog(payload);
+  }
 
-    if (asJson) {
-      // JSON output intentionally stays stable; we don't add logPath yet.
-      context.output.info(JSON.stringify({ command: "scan", dryRun, targets }, null, 2));
-      return;
-    }
-
-    context.output.info(`scan report (dryRun=${dryRun})`);
+  private printReport(
+    context: CommandContext,
+    input: {
+      dryRun: boolean;
+      targets: ScanTarget[];
+      rulesEngine: RulesEngine | null;
+      logPath: string;
+    },
+  ): void {
+    context.output.info(`scan report (dryRun=${input.dryRun})`);
     context.output.info("");
 
-    for (const t of targets) {
-      const exists = t.exists === true ? "yes" : "no";
-      const skipped = t.metrics?.skipped === true ? "yes" : "no";
-
-      const partial = t.metrics?.partial === true ? "yes" : "no";
-      const skippedEntries = t.metrics?.skippedEntries ?? 0;
-
-      const size = formatBytes(t.metrics?.totalBytes ?? 0);
-      const files = String(t.metrics?.fileCount ?? 0).padStart(6, " ");
-      const modified = formatDate(t.metrics?.lastModifiedAt);
-      const accessed = formatDate(t.metrics?.lastAccessedAt);
-
-      context.output.info(`${t.displayName}`);
-      context.output.info(`  id:      ${t.id}`);
-      context.output.info(`  path:    ${t.path}`);
-      context.output.info(
-        `  exists:  ${exists}   skipped: ${skipped}   partial: ${partial} (skippedEntries=${skippedEntries})`,
-      );
-      context.output.info(`  size:    ${size}   files: ${files}`);
-      context.output.info(`  mtime:   ${modified}`);
-      context.output.info(`  atime:   ${accessed}`);
-
-      if (t.diagnostics && t.diagnostics.length > 0) {
-        for (const d of t.diagnostics.slice(0, 3)) {
-          context.output.warn(`  note:    ${truncate(d, 160)}`);
-        }
-      }
-
-      if (rulesEngine) {
-        const decision = rulesEngine.decide(t.id);
-        context.output.info(
-          `  risk:    ${decision.risk}   safeAfterDays: ${decision.safeAfterDays}`,
-        );
-        context.output.info(`  rule:    ${decision.reasons[0] ?? "-"}`);
-      } else {
-        context.output.info(`  risk:    -   safeAfterDays: -`);
-        context.output.info(`  rule:    Rules config not loaded`);
-      }
-
-      if (t.metrics?.skipped && t.metrics.error) {
-        const cleanError = t.metrics.error.replace(/\r?\n/g, " ");
-        context.output.warn(`  error:   ${truncate(cleanError, 140)}`);
-      }
-
+    for (const t of input.targets) {
+      this.printTarget(context, t, input.rulesEngine);
       context.output.info("");
     }
 
-    context.output.info(`Saved log: ${logPath}`);
+    context.output.info(`Saved log: ${input.logPath}`);
   }
 
-  private async tryCreateRulesEngine(context: CommandContext): Promise<RulesEngine | null> {
-    const rulesPath = path.resolve(process.cwd(), "config", "rules.json");
+  private printTarget(context: CommandContext, t: ScanTarget, rulesEngine: RulesEngine | null): void {
+    const exists = t.exists === true ? "yes" : "no";
+    const skipped = t.metrics?.skipped === true ? "yes" : "no";
 
-    try {
-      const rulesConfig = await new RulesConfigLoader().loadFromFile(rulesPath);
-      return new RulesEngine(rulesConfig);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      context.output.warn(
-        `rules: config not loaded (${truncate(message.replace(/\r?\n/g, " "), 140)})`,
-      );
-      return null;
+    const partial = t.metrics?.partial === true ? "yes" : "no";
+    const skippedEntries = t.metrics?.skippedEntries ?? 0;
+
+    const size = formatBytes(t.metrics?.totalBytes ?? 0);
+    const files = String(t.metrics?.fileCount ?? 0).padStart(6, " ");
+    const modified = formatDate(t.metrics?.lastModifiedAt);
+    const accessed = formatDate(t.metrics?.lastAccessedAt);
+
+    context.output.info(`${t.displayName}`);
+    context.output.info(`  id:      ${t.id}`);
+    context.output.info(`  path:    ${t.path}`);
+    context.output.info(
+      `  exists:  ${exists}   skipped: ${skipped}   partial: ${partial} (skippedEntries=${skippedEntries})`,
+    );
+    context.output.info(`  size:    ${size}   files: ${files}`);
+    context.output.info(`  mtime:   ${modified}`);
+    context.output.info(`  atime:   ${accessed}`);
+
+    this.printDiagnostics(context, t);
+    this.printRuleDecision(context, t, rulesEngine);
+    this.printAnalyzerError(context, t);
+  }
+
+  private printDiagnostics(context: CommandContext, t: ScanTarget): void {
+    if (!t.diagnostics || t.diagnostics.length === 0) return;
+    for (const d of t.diagnostics.slice(0, 3)) {
+      context.output.warn(`  note:    ${truncate(d, 160)}`);
+    }
+  }
+
+  private printRuleDecision(
+    context: CommandContext,
+    t: ScanTarget,
+    rulesEngine: RulesEngine | null,
+  ): void {
+    if (rulesEngine) {
+      const decision = rulesEngine.decide(t.id);
+      context.output.info(`  risk:    ${decision.risk}   safeAfterDays: ${decision.safeAfterDays}`);
+      context.output.info(`  rule:    ${decision.reasons[0] ?? "-"}`);
+      return;
+    }
+
+    context.output.info(`  risk:    -   safeAfterDays: -`);
+    context.output.info(`  rule:    Rules config not loaded`);
+  }
+
+  private printAnalyzerError(context: CommandContext, t: ScanTarget): void {
+    if (t.metrics?.skipped && t.metrics.error) {
+      const cleanError = t.metrics.error.replace(/\r?\n/g, " ");
+      context.output.warn(`  error:   ${truncate(cleanError, 140)}`);
     }
   }
 }

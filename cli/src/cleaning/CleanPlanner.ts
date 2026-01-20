@@ -38,92 +38,18 @@ export type PlanInput = {
   apply: boolean;
 };
 
+type Decision = {
+  risk: "safe" | "caution" | "do-not-touch";
+  safeAfterDays: number;
+  reasons: string[];
+};
+
 export function buildCleanPlan(input: PlanInput): CleanPlan {
   const { targets, rulesEngine, nowMs, dryRun, apply } = input;
 
-  const items: CleanPlanItem[] = targets.map((t) => {
-    const decision = rulesEngine?.decide(t.id) ?? {
-      risk: "caution" as const,
-      safeAfterDays: 30,
-      reasons: ["Rules config not loaded; using defaults."],
-    };
-
-    const exists = t.exists === true;
-
-    const skipped = t.metrics?.skipped === true;
-    const partial = t.metrics?.partial === true;
-    const skippedEntries = t.metrics?.skippedEntries ?? 0;
-
-    const lastModifiedAt = t.metrics?.lastModifiedAt ?? null;
-    const ageDays = lastModifiedAt === null ? null : daysBetween(nowMs, lastModifiedAt);
-
-    const reasons: string[] = [];
-    let status: PlanStatus = "caution";
-
-    // Hard blocks
-    if (!exists) {
-      status = "blocked";
-      reasons.push("Target path does not exist.");
-    }
-
-    // Only report analyzer errors when the path exists; otherwise redundant (ENOENT).
-    if (exists && skipped) {
-      status = "blocked";
-      const err = t.metrics?.error
-        ? String(t.metrics.error).replace(/\r?\n/g, " ")
-        : "Unknown error";
-      reasons.push(`Target analysis skipped: ${truncate(err, 160)}`);
-    }
-
-    if (decision.risk === "do-not-touch") {
-      status = "blocked";
-      reasons.push("Rule risk is do-not-touch.");
-    }
-
-    // If not blocked, classify by risk (but never eligible if analysis is partial)
-    if (status !== "blocked") {
-      status = decision.risk === "safe" ? "eligible" : "caution";
-
-      if (partial) {
-        status = "caution";
-        reasons.push(
-          `Partial analysis: ${skippedEntries} subpath(s) could not be read; not eligible for apply.`,
-        );
-        reasons.push("Estimated size may be inaccurate due to partial analysis.");
-      }
-
-      // Age gate: even "safe" targets must be older than safeAfterDays
-      if (status === "eligible") {
-        if (ageDays === null) {
-          status = "caution";
-          reasons.push("Cannot determine lastModifiedAt; not eligible for apply.");
-        } else if (ageDays < decision.safeAfterDays) {
-          status = "caution";
-          reasons.push(
-            `Too recent: last modified ${ageDays} day(s) ago (< safeAfterDays=${decision.safeAfterDays}).`,
-          );
-        }
-      }
-    }
-
-    // MVP: estimated bytes = target totalBytes (file-level filtering later)
-    const estimatedBytes = status === "eligible" ? (t.metrics?.totalBytes ?? 0) : 0;
-
-    // Always include rule explanation as context
-    reasons.push(decision.reasons[0] ?? "No rule description.");
-
-    return {
-      id: t.id,
-      displayName: t.displayName,
-      path: t.path,
-      exists,
-      risk: decision.risk,
-      safeAfterDays: decision.safeAfterDays,
-      status,
-      estimatedBytes,
-      reasons,
-    };
-  });
+  const items: CleanPlanItem[] = targets.map((t) =>
+    buildPlanItem({ target: t, rulesEngine, nowMs }),
+  );
 
   // Deterministic order
   items.sort((a, b) => a.id.localeCompare(b.id));
@@ -142,6 +68,105 @@ export function buildCleanPlan(input: PlanInput): CleanPlan {
     summary,
     items,
   };
+}
+
+function buildPlanItem(input: {
+  target: ScanTarget;
+  rulesEngine: RulesEngine | null;
+  nowMs: number;
+}): CleanPlanItem {
+  const { target, rulesEngine, nowMs } = input;
+
+  const decision = getDecision(target.id, rulesEngine);
+  const exists = target.exists === true;
+
+  const statusInfo = computeStatusAndReasons({ target, decision, nowMs, exists });
+  const estimatedBytes = statusInfo.status === "eligible" ? target.metrics.totalBytes : 0;
+
+  // Always include rule explanation as context
+  const reasons = [...statusInfo.reasons, decision.reasons[0] ?? "No rule description."];
+
+  return {
+    id: target.id,
+    displayName: target.displayName,
+    path: target.path,
+    exists,
+    risk: decision.risk,
+    safeAfterDays: decision.safeAfterDays,
+    status: statusInfo.status,
+    estimatedBytes,
+    reasons,
+  };
+}
+
+function getDecision(id: string, rulesEngine: RulesEngine | null): Decision {
+  return (
+    rulesEngine?.decide(id) ?? {
+      risk: "caution" as const,
+      safeAfterDays: 30,
+      reasons: ["Rules config not loaded; using defaults."],
+    }
+  );
+}
+
+function computeStatusAndReasons(input: {
+  target: ScanTarget;
+  exists: boolean;
+  decision: Decision;
+  nowMs: number;
+}): { status: PlanStatus; reasons: string[] } {
+  const { target, decision, nowMs, exists } = input;
+
+  const reasons: string[] = [];
+  let status: PlanStatus = "caution";
+
+  if (!exists) {
+    status = "blocked";
+    reasons.push("Target path does not exist.");
+  }
+
+  // Only report analyzer errors when the path exists; otherwise redundant (ENOENT).
+  if (exists && target.metrics.skipped === true) {
+    status = "blocked";
+    const raw = target.metrics.error ? String(target.metrics.error) : "Unknown error";
+    reasons.push(`Target analysis skipped: ${truncate(raw.replace(/\r?\n/g, " "), 160)}`);
+  }
+
+  if (decision.risk === "do-not-touch") {
+    status = "blocked";
+    reasons.push("Rule risk is do-not-touch.");
+  }
+
+  if (status === "blocked") return { status, reasons };
+
+  status = decision.risk === "safe" ? "eligible" : "caution";
+
+  if (target.metrics.partial === true) {
+    status = "caution";
+    const skippedEntries = target.metrics.skippedEntries ?? 0;
+    reasons.push(
+      `Partial analysis: ${skippedEntries} subpath(s) could not be read; not eligible for apply.`,
+    );
+    reasons.push("Estimated size may be inaccurate due to partial analysis.");
+  }
+
+  if (status !== "eligible") return { status, reasons };
+
+  const lastModifiedAt = target.metrics.lastModifiedAt;
+  const ageDays = lastModifiedAt === null ? null : daysBetween(nowMs, lastModifiedAt);
+  if (ageDays === null) {
+    reasons.push("Cannot determine lastModifiedAt; not eligible for apply.");
+    return { status: "caution", reasons };
+  }
+
+  if (ageDays < decision.safeAfterDays) {
+    reasons.push(
+      `Too recent: last modified ${ageDays} day(s) ago (< safeAfterDays=${decision.safeAfterDays}).`,
+    );
+    return { status: "caution", reasons };
+  }
+
+  return { status, reasons };
 }
 
 function daysBetween(nowMs: number, pastMs: number): number {
