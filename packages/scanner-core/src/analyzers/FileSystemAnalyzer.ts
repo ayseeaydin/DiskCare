@@ -4,7 +4,7 @@ import type { Dirent } from "node:fs";
 
 import type { ScanMetrics } from "../types/ScanMetrics.js";
 import type { FsLike } from "./FsLike.js";
-import { toErrorMessage } from "../utils/errorMessage.js";
+import { toErrorMessageOneLine } from "../utils/errorMessage.js";
 
 function defaultFs(): FsLike {
   return {
@@ -24,7 +24,7 @@ export class FileSystemAnalyzer {
         return emptyMetrics(`Path is not a directory: ${rootPath}`);
       }
     } catch (err) {
-      return emptyMetrics(`Cannot access path: ${rootPath} (${toErrorMessage(err)})`);
+      return emptyMetrics(`Cannot access path: ${rootPath} (${toErrorMessageOneLine(err)})`);
     }
 
     let totalBytes = 0;

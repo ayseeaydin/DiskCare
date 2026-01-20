@@ -4,7 +4,7 @@ import path from "node:path";
 import type { CommandRunner } from "../utils/CommandRunner.js";
 import { NodeCommandRunner } from "../utils/CommandRunner.js";
 import type { DiscoveredTarget } from "../types/ScanTarget.js";
-import { toErrorMessage } from "../utils/errorMessage.js";
+import { toErrorMessageOneLine } from "../utils/errorMessage.js";
 import { isNonEmptyString } from "../utils/typeGuards.js";
 import { err, ok, type Result } from "../utils/result.js";
 import { BaseScanner } from "./BaseScanner.js";
@@ -34,7 +34,9 @@ export class NpmCacheScanner extends BaseScanner {
     // 1) Source of truth: npm config get cache
     const fromNpm = await this.tryGetNpmConfigCache();
     if (fromNpm.ok) return { path: fromNpm.value, diagnostics };
-    diagnostics.push(`npm config lookup failed (${toErrorMessage(fromNpm.error)}); falling back.`);
+    diagnostics.push(
+      `npm config lookup failed (${toErrorMessageOneLine(fromNpm.error)}); falling back.`,
+    );
 
     // 2) Windows common defaults
     if (process.platform === "win32") {

@@ -9,3 +9,11 @@ export function toErrorMessage(err: unknown): string {
     return String(err);
   }
 }
+
+export function toOneLine(value: string): string {
+  return value.replace(/\r?\n/g, " ").trim();
+}
+
+export function toErrorMessageOneLine(err: unknown): string {
+  return toOneLine(toErrorMessage(err));
+}
