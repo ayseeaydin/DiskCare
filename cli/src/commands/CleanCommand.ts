@@ -20,6 +20,7 @@ import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
 import { buildCleanPlan } from "../cleaning/CleanPlanner.js";
 import { APP_VERSION, MAX_DISPLAYED_REASONS } from "../utils/constants.js";
+import { toErrorMessage, toOneLine } from "../utils/errors.js";
 
 type CleanOptions = {
   json?: boolean;
@@ -167,13 +168,13 @@ export class CleanCommand extends BaseCommand {
       await deps.trashFn([itemPath]);
       return { id, path: itemPath, status: "trashed", estimatedBytes };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = toOneLine(toErrorMessage(err));
       return {
         id,
         path: itemPath,
         status: "failed",
         estimatedBytes,
-        message: truncate(message.replace(/\r?\n/g, " "), 180),
+        message: truncate(message, 180),
       };
     }
   }

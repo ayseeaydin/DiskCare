@@ -6,8 +6,12 @@ export class DiskcareError extends Error {
     message: string,
     public readonly code: string,
     public readonly context?: Record<string, unknown>,
+    public readonly cause?: unknown,
   ) {
+    // Keep compatibility with older JS runtimes while still exposing `cause`.
+    // (TS lib types may not always allow ErrorOptions here depending on tsconfig.)
     super(message);
+    (this as any).cause = cause;
     this.name = this.constructor.name;
     Error.captureStackTrace?.(this, this.constructor);
   }

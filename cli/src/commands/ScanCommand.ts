@@ -18,6 +18,7 @@ import { truncate } from "../formatters/truncate.js";
 import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
 import { APP_VERSION } from "../utils/constants.js";
+import { toOneLine } from "../utils/errors.js";
 
 type ScanOptions = {
   json?: boolean;
@@ -156,8 +157,7 @@ export class ScanCommand extends BaseCommand {
 
   private printAnalyzerError(context: CommandContext, t: ScanTarget): void {
     if (t.metrics?.skipped && t.metrics.error) {
-      const cleanError = t.metrics.error.replace(/\r?\n/g, " ");
-      context.output.warn(`  error:   ${truncate(cleanError, 140)}`);
+      context.output.warn(`  error:   ${truncate(toOneLine(t.metrics.error), 140)}`);
     }
   }
 }

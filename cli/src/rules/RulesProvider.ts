@@ -1,9 +1,11 @@
 import path from "node:path";
 
-import { RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
+import { RulesConfigError, RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
 
 import type { CommandContext } from "../types/CommandContext.js";
 import { truncate } from "../formatters/truncate.js";
+import { ConfigLoadError } from "../errors/DiskcareError.js";
+import { toErrorMessage, toOneLine } from "../utils/errors.js";
 
 export class RulesProvider {
   constructor(private readonly rulesPath: string) {}
@@ -18,10 +20,16 @@ export class RulesProvider {
       const rulesConfig = await new RulesConfigLoader().loadFromFile(this.rulesPath);
       return new RulesEngine(rulesConfig);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      context.output.warn(
-        `rules: config not loaded (${truncate(message.replace(/\r?\n/g, " "), 140)})`,
-      );
+      const contextInfo: Record<string, unknown> = { rulesPath: this.rulesPath };
+      if (err instanceof RulesConfigError) {
+        contextInfo.filePath = err.filePath;
+      }
+
+      const wrapped = new ConfigLoadError("rules: config not loaded", contextInfo);
+      (wrapped as any).cause = err;
+
+      const msg = toOneLine(toErrorMessage(err));
+      context.output.warn(`rules: config not loaded (${truncate(msg, 140)})`);
       return null;
     }
   }
