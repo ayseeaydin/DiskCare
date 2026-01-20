@@ -28,6 +28,21 @@ function formatDiskcareMeta(err: DiskcareError): string[] {
   return lines;
 }
 
+function suggestionForCode(code: string): string | null {
+  switch (code) {
+    case "CONFIG_LOAD_ERROR":
+      return "Check config/rules.json exists and is valid JSON.";
+    case "SCAN_ERROR":
+      return "Re-run with --verbose; check permissions and paths.";
+    case "APPLY_ERROR":
+      return "Re-run in dry-run first; apply requires --apply --no-dry-run --yes.";
+    case "VALIDATION_ERROR":
+      return "Check CLI arguments and configuration values.";
+    default:
+      return null;
+  }
+}
+
 function formatCauseChain(err: unknown, maxDepth: number): string[] {
   const lines: string[] = [];
   const seen = new Set<unknown>();
@@ -60,6 +75,11 @@ export function handleCommandError(context: CommandContext, err: unknown): void 
   if (err instanceof DiskcareError) {
     for (const line of formatDiskcareMeta(err)) {
       context.output.error(line);
+    }
+
+    const suggestion = suggestionForCode(err.code);
+    if (suggestion) {
+      context.output.warn(`hint: ${suggestion}`);
     }
   }
 

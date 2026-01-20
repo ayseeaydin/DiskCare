@@ -1,6 +1,6 @@
-import type { ConsoleOutput } from "../output/ConsoleOutput.js";
+import type { Output } from "../output/Output.js";
 
 export type CommandContext = {
-  output: ConsoleOutput;
+  output: Output;
   verbose?: boolean;
 };

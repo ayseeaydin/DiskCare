@@ -1,4 +1,6 @@
-export class ConsoleOutput {
+import type { Output } from "./Output.js";
+
+export class ConsoleOutput implements Output {
   info(message: string): void {
     // Centralize output so we can later add JSON, verbosity, colors, etc.
     console.log(message);
