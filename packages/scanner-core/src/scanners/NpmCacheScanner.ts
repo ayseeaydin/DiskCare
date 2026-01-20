@@ -1,12 +1,13 @@
 import os from "node:os";
 import path from "node:path";
 
-import { CommandRunner } from "../utils/CommandRunner.js";
+import type { CommandRunner } from "../utils/CommandRunner.js";
+import { NodeCommandRunner } from "../utils/CommandRunner.js";
 import type { ScanTarget } from "../types/ScanTarget.js";
 import { BaseScanner } from "./BaseScanner.js";
 
 export class NpmCacheScanner extends BaseScanner {
-  constructor(private readonly runner: CommandRunner = new CommandRunner()) {
+  constructor(private readonly runner: CommandRunner = new NodeCommandRunner()) {
     super();
   }
 

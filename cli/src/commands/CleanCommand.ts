@@ -19,7 +19,7 @@ import { truncate } from "../formatters/truncate.js";
 import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
 import { buildCleanPlan } from "../cleaning/CleanPlanner.js";
-import { APP_VERSION } from "../utils/constants.js";
+import { APP_VERSION, MAX_DISPLAYED_REASONS } from "../utils/constants.js";
 
 type CleanOptions = {
   json?: boolean;
@@ -182,7 +182,7 @@ export class CleanCommand extends BaseCommand {
       context.output.info(`  risk:    ${item.risk}   safeAfterDays: ${item.safeAfterDays}`);
       context.output.info(`  est:     ${formatBytes(item.estimatedBytes)}`);
 
-      const shown = item.reasons.slice(0, 2);
+      const shown = item.reasons.slice(0, MAX_DISPLAYED_REASONS);
       for (const r of shown) {
         context.output.info(`  why:     ${truncate(r, 160)}`);
       }
