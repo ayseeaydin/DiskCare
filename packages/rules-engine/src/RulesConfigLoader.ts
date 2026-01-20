@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import type { RuleConfig } from "./types/RuleConfig.js";
+import { isFiniteNumber, isNonEmptyString, isRecord } from "./utils/typeGuards.js";
 
 /**
  * Error thrown when rules config cannot be loaded or is invalid.
@@ -53,27 +54,27 @@ export class RulesConfigLoader {
 }
 
 function isValidRuleConfig(value: unknown): value is RuleConfig {
-  if (typeof value !== "object" || value === null) return false;
-  
+  if (!isRecord(value)) return false;
+
   const obj = value as Record<string, unknown>;
-  
+
   // Must have rules array and defaults object
   if (!Array.isArray(obj.rules)) return false;
-  if (typeof obj.defaults !== "object" || obj.defaults === null) return false;
-  
+  if (!isRecord(obj.defaults)) return false;
+
   const defaults = obj.defaults as Record<string, unknown>;
-  if (typeof defaults.risk !== "string") return false;
-  if (typeof defaults.safeAfterDays !== "number") return false;
-  
+  if (!isNonEmptyString(defaults.risk)) return false;
+  if (!isFiniteNumber(defaults.safeAfterDays)) return false;
+
   // Validate each rule
   for (const rule of obj.rules) {
-    if (typeof rule !== "object" || rule === null) return false;
+    if (!isRecord(rule)) return false;
     const r = rule as Record<string, unknown>;
-    if (typeof r.id !== "string") return false;
-    if (typeof r.risk !== "string") return false;
-    if (typeof r.safeAfterDays !== "number") return false;
-    if (typeof r.description !== "string") return false;
+    if (!isNonEmptyString(r.id)) return false;
+    if (!isNonEmptyString(r.risk)) return false;
+    if (!isFiniteNumber(r.safeAfterDays)) return false;
+    if (!isNonEmptyString(r.description)) return false;
   }
-  
+
   return true;
 }
