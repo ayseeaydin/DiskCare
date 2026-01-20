@@ -17,10 +17,12 @@ DiskCare yaygın geliştirici önbellek dizinlerini (npm cache, OS temp, vb.) ta
 **Key Features | Temel Özellikler:**
 
 - 🛡️ Safe by default (dry-run mode) | Varsayılan olarak güvenli (dry-run modu)
+- ✅ Explicit apply gate: `--apply --no-dry-run --yes` required | Açık onay kapısı: `--apply --no-dry-run --yes` zorunlu
 - 🧠 Rule-based decisions with risk levels | Risk seviyeleriyle kural tabanlı kararlar
 - 📊 Detailed file system metrics | Detaylı dosya sistemi metrikleri
 - 📝 JSON audit logs | JSON denetim kayıtları
 - 🗑️ Safe deletion via OS trash | İşletim sistemi çöp kutusu ile güvenli silme
+- 🧯 Consistent errors with codes + `--verbose` for stack/cause | Kodlu tutarlı hatalar + detay için `--verbose`
 
 ---
 
@@ -30,17 +32,20 @@ DiskCare yaygın geliştirici önbellek dizinlerini (npm cache, OS temp, vb.) ta
 
 ```
 cli/                        # Main CLI application | Ana CLI uygulaması
-  commands/                 # scan, clean, report, schedule
-  cleaning/                 # CleanPlanner
-  reporting/                # ReportService
+  src/
+    commands/               # scan, clean, report, schedule
+    cleaning/               # CleanPlanner
+    reporting/              # ReportService
+    logging/                # JSON run logs
 
 packages/
   scanner-core/             # File system scanning & analysis
-    scanners/               # NpmCache, OsTemp, SandboxCache
-    analyzers/              # FileSystemAnalyzer
+    src/
+      scanners/             # NpmCache, OsTemp, SandboxCache
+      analyzers/            # FileSystemAnalyzer
 
   rules-engine/             # Decision engine for cleanup safety
-                            # Risk assessment: safe/caution
+    src/                    # config loader + rules evaluation
 ```
 
 **Tech Stack:**
@@ -61,18 +66,41 @@ npm install
 # Build all packages | Tüm paketleri derle
 npm run build
 
+# Run the CLI (built) | CLI'yi çalıştır (build sonrası)
+node cli/dist/index.js --help
+
 # Scan disk targets | Disk hedeflerini tara
 node cli/dist/index.js scan
 
 # Plan cleanup (dry-run) | Temizleme planla (dry-run)
 node cli/dist/index.js clean
 
-# Execute cleanup | Temizlemeyi uygula
-node cli/dist/index.js clean --apply
+# Execute cleanup (requires explicit confirmation flags)
+# Temizlemeyi uygula (açık onay flag'leri zorunlu)
+node cli/dist/index.js clean --apply --no-dry-run --yes
 
 # Generate report | Rapor oluştur
 node cli/dist/index.js report
 ```
+
+### Safety Model | Güvenlik Modeli
+
+- Default is dry-run: no deletion happens unless you explicitly opt in.
+- Varsayılan davranış dry-run: açıkça izin vermeden silme yapılmaz.
+- To actually delete, you must pass **all**: `--apply --no-dry-run --yes`.
+- Gerçek silme için **hepsi** gerekir: `--apply --no-dry-run --yes`.
+
+### Logs | Loglar
+
+- Runs write JSON logs under `./logs` (relative to your current working directory).
+- Çalıştırmalar `./logs` altına JSON log yazar (çalıştığın dizine göre).
+
+### Errors & Debugging | Hatalar ve Debug
+
+- Errors are reported consistently with a code and a short hint.
+- Hatalar kod + kısa ipucu ile tutarlı şekilde raporlanır.
+- Use `--verbose` to include stack trace and cause chain.
+- Stack trace ve cause zinciri için `--verbose` kullan.
 
 ---
 
@@ -109,12 +137,26 @@ Edit `config/rules.json` to customize cleanup behavior:
 - File system analysis (size, count, age)
 - JSON audit logging
 - Comprehensive test coverage
+- CLI lint with complexity / size budgets
+- Centralized CLI error handling (`--verbose`, error codes + hints)
 
 **🚧 In Progress | Devam Eden:**
 
 - Additional scanner types (pip, cargo, Docker)
 - Enhanced reporting
 - Schedule command
+
+---
+
+## Development | Geliştirme
+
+```bash
+# Run all tests (all workspaces) | Tüm testler
+npm test
+
+# Lint CLI | CLI lint
+npm run lint
+```
 
 ---
 
