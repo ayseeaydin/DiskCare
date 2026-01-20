@@ -92,6 +92,12 @@ export class ScanCommand extends BaseCommand {
       context.output.info(`  mtime:   ${modified}`);
       context.output.info(`  atime:   ${accessed}`);
 
+      if (t.diagnostics && t.diagnostics.length > 0) {
+        for (const d of t.diagnostics.slice(0, 3)) {
+          context.output.warn(`  note:    ${truncate(d, 160)}`);
+        }
+      }
+
       if (rulesEngine) {
         const decision = rulesEngine.decide(t.id);
         context.output.info(

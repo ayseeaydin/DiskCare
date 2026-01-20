@@ -1,49 +1,81 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
 import path from "node:path";
-import os from "node:os";
 
 import { FileSystemAnalyzer } from "../analyzers/FileSystemAnalyzer.js";
+import type { FsLike } from "../analyzers/FsLike.js";
 
-async function makeTempDir(prefix = "diskcare-analyzer-"): Promise<string> {
-  return fs.mkdtemp(path.join(os.tmpdir(), prefix));
+function dirent(name: string, kind: "file" | "dir") {
+  return {
+    name,
+    isFile: () => kind === "file",
+    isDirectory: () => kind === "dir",
+  };
 }
 
 test("FileSystemAnalyzer.analyze - returns metrics for nested files (bytes + count) and skipped=false", async () => {
-  const dir = await makeTempDir();
-  const nested = path.join(dir, "a", "b");
-  await fs.mkdir(nested, { recursive: true });
+  const root = path.join("/", "root");
+  const aDir = path.join(root, "a");
+  const bDir = path.join(aDir, "b");
+  const f1 = path.join(root, "root.txt");
+  const f2 = path.join(bDir, "nested.txt");
 
-  const f1 = path.join(dir, "root.txt");
-  const f2 = path.join(nested, "nested.txt");
+  const t1 = new Date("2026-01-01T00:00:00.000Z").getTime();
+  const t2 = new Date("2026-01-02T00:00:00.000Z").getTime();
 
-  await fs.writeFile(f1, "hello"); // 5 bytes
-  await fs.writeFile(f2, "world!"); // 6 bytes
+  const fsLike: FsLike = {
+    async stat(p: string) {
+      if (p === root || p === aDir || p === bDir) {
+        return { isDirectory: () => true, size: 0, mtimeMs: 1, atimeMs: 1 };
+      }
+      if (p === f1) {
+        return { isDirectory: () => false, size: 5, mtimeMs: t1, atimeMs: t1 };
+      }
+      if (p === f2) {
+        return { isDirectory: () => false, size: 6, mtimeMs: t2, atimeMs: t2 };
+      }
+      throw new Error("ENOENT");
+    },
 
-  // Set predictable mtimes (atime can be unreliable on some systems, so we don't assert exact atime)
-  const t1 = new Date("2026-01-01T00:00:00.000Z");
-  const t2 = new Date("2026-01-02T00:00:00.000Z");
-  await fs.utimes(f1, t1, t1);
-  await fs.utimes(f2, t2, t2);
+    async readdir(p: string) {
+      if (p === root) {
+        return [dirent("root.txt", "file") as any, dirent("a", "dir") as any];
+      }
+      if (p === aDir) {
+        return [dirent("b", "dir") as any];
+      }
+      if (p === bDir) {
+        return [dirent("nested.txt", "file") as any];
+      }
+      return [];
+    },
+  };
 
-  const analyzer = new FileSystemAnalyzer();
-  const metrics = await analyzer.analyze(dir);
+  const analyzer = new FileSystemAnalyzer(fsLike);
+  const metrics = await analyzer.analyze(root);
 
   assert.equal(metrics.skipped, false);
   assert.equal(metrics.fileCount, 2);
   assert.equal(metrics.totalBytes, 11);
   assert.ok(metrics.lastModifiedAt !== null, "lastModifiedAt should be set");
-  assert.ok(metrics.lastModifiedAt! >= t2.getTime(), "lastModifiedAt should be >= newest mtime");
+  assert.ok(metrics.lastModifiedAt! >= t2, "lastModifiedAt should be >= newest mtime");
 });
 
 test("FileSystemAnalyzer.analyze - when path is not a directory, returns skipped=true with explainable error", async () => {
-  const dir = await makeTempDir();
-  const file = path.join(dir, "not-a-dir.txt");
-  await fs.writeFile(file, "x");
+  const fsLike: FsLike = {
+    async stat(p: string) {
+      if (p === "/not-a-dir") {
+        return { isDirectory: () => false, size: 1, mtimeMs: 1, atimeMs: 1 };
+      }
+      throw new Error("ENOENT");
+    },
+    async readdir() {
+      return [];
+    },
+  };
 
-  const analyzer = new FileSystemAnalyzer();
-  const metrics = await analyzer.analyze(file);
+  const analyzer = new FileSystemAnalyzer(fsLike);
+  const metrics = await analyzer.analyze("/not-a-dir");
 
   assert.equal(metrics.skipped, true);
   assert.equal(metrics.totalBytes, 0);
@@ -57,9 +89,17 @@ test("FileSystemAnalyzer.analyze - when path is not a directory, returns skipped
 });
 
 test("FileSystemAnalyzer.analyze - when path is missing/inaccessible, returns skipped=true with explainable error", async () => {
-  const analyzer = new FileSystemAnalyzer();
-  const missing = path.join(os.tmpdir(), `diskcare-missing-${Date.now()}-${Math.random()}`);
+  const fsLike: FsLike = {
+    async stat() {
+      throw new Error("EACCES");
+    },
+    async readdir() {
+      return [];
+    },
+  };
 
+  const analyzer = new FileSystemAnalyzer(fsLike);
+  const missing = "/missing";
   const metrics = await analyzer.analyze(missing);
 
   assert.equal(metrics.skipped, true);

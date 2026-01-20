@@ -6,15 +6,15 @@ import os from "node:os";
 
 import { ScannerService } from "../ScannerService.js";
 import type { BaseScanner } from "../scanners/BaseScanner.js";
-import type { ScanTarget } from "../types/ScanTarget.js";
+import type { DiscoveredTarget } from "../types/ScanTarget.js";
 
 async function makeTempDir(prefix = "diskcare-service-"): Promise<string> {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
 class FakeScanner implements BaseScanner {
-  constructor(private readonly out: ScanTarget[]) {}
-  async scan(): Promise<ScanTarget[]> {
+  constructor(private readonly out: DiscoveredTarget[]) {}
+  async scan(): Promise<DiscoveredTarget[]> {
     return this.out;
   }
 }
@@ -33,7 +33,6 @@ test("ScannerService.scanAll - sorts targets deterministically by id and sets ex
       kind: "os-temp",
       path: dir,
       displayName: "Z",
-      exists: false,
     },
   ]);
 
@@ -43,7 +42,6 @@ test("ScannerService.scanAll - sorts targets deterministically by id and sets ex
       kind: "npm-cache",
       path: missing,
       displayName: "A",
-      exists: false,
     },
   ]);
 

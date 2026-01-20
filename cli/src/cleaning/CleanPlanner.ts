@@ -89,6 +89,7 @@ export function buildCleanPlan(input: PlanInput): CleanPlan {
         reasons.push(
           `Partial analysis: ${skippedEntries} subpath(s) could not be read; not eligible for apply.`,
         );
+        reasons.push("Estimated size may be inaccurate due to partial analysis.");
       }
 
       // Age gate: even "safe" targets must be older than safeAfterDays

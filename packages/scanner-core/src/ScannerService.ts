@@ -1,6 +1,6 @@
 import { FileSystemAnalyzer } from "./analyzers/FileSystemAnalyzer.js";
 import type { BaseScanner } from "./scanners/BaseScanner.js";
-import type { ScanTarget } from "./types/ScanTarget.js";
+import type { DiscoveredTarget, ScanTarget } from "./types/ScanTarget.js";
 import { pathExists } from "./utils/pathExists.js";
 
 export class ScannerService {
@@ -9,7 +9,7 @@ export class ScannerService {
   constructor(private readonly scanners: BaseScanner[]) {}
 
   async scanAll(): Promise<ScanTarget[]> {
-    const targets: ScanTarget[] = [];
+    const targets: DiscoveredTarget[] = [];
 
     for (const scanner of this.scanners) {
       const found = await scanner.scan();

@@ -2,7 +2,10 @@ import type { ScanMetrics } from "./ScanMetrics.js";
 
 export type ScanTargetKind = "os-temp" | "npm-cache" | "sandbox-cache";
 
-export type ScanTarget = {
+/**
+ * Target discovered by scanners (no filesystem info yet).
+ */
+export type DiscoveredTarget = {
   /**
    * Stable identifier used in logs/rules (e.g. "os-temp", "npm-cache").
    */
@@ -24,12 +27,23 @@ export type ScanTarget = {
   displayName: string;
 
   /**
+   * Optional diagnostics about how this target was discovered/resolved.
+   * (Example: npm config lookup failed, fell back to OS defaults.)
+   */
+  diagnostics?: string[];
+};
+
+/**
+ * Fully scanned/enriched target (filesystem info attached).
+ */
+export type ScanTarget = DiscoveredTarget & {
+  /**
    * Whether the target path exists at scan time.
    */
-  exists?: boolean;
+  exists: boolean;
 
   /**
    * Disk analysis metrics (computed later).
    */
-  metrics?: ScanMetrics;
+  metrics: ScanMetrics;
 };
