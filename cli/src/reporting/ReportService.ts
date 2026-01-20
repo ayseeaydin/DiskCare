@@ -70,17 +70,62 @@ export type ReportSummary = {
   trashedEstimatedBytes: number;
 };
 
+type ParsedLog = {
+  command: string;
+  timestamp: string;
+  dryRun: boolean;
+  apply: boolean;
+  targets: unknown;
+  plan: unknown;
+  applyResults: unknown;
+  applySummary: unknown;
+};
+
 export class ReportService {
   constructor(private readonly logsDir: string) {}
 
   async summarize(): Promise<ReportSummary> {
-    const files = await this.listJsonFilesSafe(this.logsDir);
-    const logs = await this.readLogsSafe(files);
+    const logs = await this.loadLogs();
 
     const runCount = logs.length;
     const latestRunAt = this.maxTimestamp(logs);
 
-    // --- latest scan snapshot ---
+    const scan = this.summarizeLatestScan(logs);
+    const apply = this.summarizeApplyRuns(logs);
+
+    return {
+      runCount,
+      latestRunAt,
+
+      latestScanAt: scan.latestScanAt,
+      scanTotalBytes: scan.scanTotalBytes,
+      scanMissingTargets: scan.scanMissingTargets,
+      scanSkippedTargets: scan.scanSkippedTargets,
+
+      // aliases
+      totalBytes: scan.scanTotalBytes,
+      missingTargets: scan.scanMissingTargets,
+      skippedTargets: scan.scanSkippedTargets,
+
+      applyRuns: apply.applyRuns,
+      trashedCount: apply.trashedCount,
+      failedCount: apply.failedCount,
+      latestApplyAt: apply.latestApplyAt,
+      trashedEstimatedBytes: apply.trashedEstimatedBytes,
+    };
+  }
+
+  private async loadLogs(): Promise<ParsedLog[]> {
+    const files = await this.listJsonFilesSafe(this.logsDir);
+    return this.readLogsSafe(files);
+  }
+
+  private summarizeLatestScan(logs: ParsedLog[]): {
+    latestScanAt: string | null;
+    scanTotalBytes: number;
+    scanMissingTargets: number;
+    scanSkippedTargets: number;
+  } {
     const scanLogs = logs.filter((l) => l.command === "scan");
     const latestScan = this.pickLatestByTimestamp(scanLogs);
 
@@ -96,7 +141,21 @@ export class ReportService {
       return acc + (t.metrics?.totalBytes ?? 0);
     }, 0);
 
-    // --- apply aggregates (clean --apply) ---
+    return {
+      latestScanAt,
+      scanTotalBytes,
+      scanMissingTargets,
+      scanSkippedTargets,
+    };
+  }
+
+  private summarizeApplyRuns(logs: ParsedLog[]): {
+    applyRuns: number;
+    trashedCount: number;
+    failedCount: number;
+    latestApplyAt: string | null;
+    trashedEstimatedBytes: number;
+  } {
     const cleanApplyLogs = logs.filter((l) => l.command === "clean" && l.apply === true);
     const applyRuns = cleanApplyLogs.length;
 
@@ -110,75 +169,83 @@ export class ReportService {
     let trashedEstimatedBytes = 0;
 
     for (const l of cleanApplyLogs) {
-      // 1) Preferred: applySummary (stable contract)
-      if (isObject(l.applySummary)) {
-        const s = l.applySummary as LoggedApplySummary;
-        trashedCount += asNumber(s.trashed) ?? 0;
-        failedCount += asNumber(s.failed) ?? 0;
-        trashedEstimatedBytes += asNumber(s.trashedEstimatedBytes) ?? 0;
-        continue;
-      }
-
-      // 2) Fallback: applyResults array (derive counts)
-      const results = asArray<LoggedApplyResult>(l.applyResults);
-      if (results) {
-        trashedCount += results.filter((r) => r.status === "trashed").length;
-        failedCount += results.filter((r) => r.status === "failed").length;
-
-        // Prefer per-item estimatedBytes from apply results
-        const bytesFromResults = results.reduce((acc, r) => {
-          if (r.status !== "trashed") return acc;
-          return acc + (asNumber(r.estimatedBytes) ?? 0);
-        }, 0);
-
-        if (bytesFromResults > 0) {
-          trashedEstimatedBytes += bytesFromResults;
-          continue;
-        }
-
-        // Fallback: if no per-item bytes exist, fall back to plan.summary.estimatedBytesTotal
-        // ONLY when it was a real apply (dryRun=false).
-        if (l.dryRun === false && isObject(l.plan) && isObject((l.plan as JsonObject).summary)) {
-          const sum = (l.plan as JsonObject).summary as JsonObject;
-          trashedEstimatedBytes += asNumber(sum.estimatedBytesTotal) ?? 0;
-        }
-        continue;
-      }
-
-      // 3) Legacy fallback: infer from plan.items (less reliable)
-      if (isObject(l.plan)) {
-        const items = asArray<JsonObject>((l.plan as JsonObject).items) ?? [];
-        if (l.dryRun === false) {
-          const eligible = items.filter((it) => (it.status as unknown) === "eligible").length;
-          trashedCount += eligible;
-        }
-        trashedEstimatedBytes += items.reduce((acc, it) => {
-          const est = asNumber(it.estimatedBytes) ?? 0;
-          return acc + est;
-        }, 0);
-      }
+      const derived = this.deriveApplyStatsFromLog(l);
+      trashedCount += derived.trashedCount;
+      failedCount += derived.failedCount;
+      trashedEstimatedBytes += derived.trashedEstimatedBytes;
     }
 
     return {
-      runCount,
-      latestRunAt,
-
-      latestScanAt,
-      scanTotalBytes,
-      scanMissingTargets,
-      scanSkippedTargets,
-
-      // aliases
-      totalBytes: scanTotalBytes,
-      missingTargets: scanMissingTargets,
-      skippedTargets: scanSkippedTargets,
-
       applyRuns,
       trashedCount,
       failedCount,
       latestApplyAt,
       trashedEstimatedBytes,
     };
+  }
+
+  private deriveApplyStatsFromLog(log: ParsedLog): {
+    trashedCount: number;
+    failedCount: number;
+    trashedEstimatedBytes: number;
+  } {
+    // 1) Preferred: applySummary (stable contract)
+    if (isObject(log.applySummary)) {
+      const s = log.applySummary as LoggedApplySummary;
+      return {
+        trashedCount: asNumber(s.trashed) ?? 0,
+        failedCount: asNumber(s.failed) ?? 0,
+        trashedEstimatedBytes: asNumber(s.trashedEstimatedBytes) ?? 0,
+      };
+    }
+
+    // 2) Fallback: applyResults array (derive counts)
+    const results = asArray<LoggedApplyResult>(log.applyResults);
+    if (results) {
+      const trashedCount = results.filter((r) => r.status === "trashed").length;
+      const failedCount = results.filter((r) => r.status === "failed").length;
+
+      // Prefer per-item estimatedBytes from apply results
+      const bytesFromResults = results.reduce((acc, r) => {
+        if (r.status !== "trashed") return acc;
+        return acc + (asNumber(r.estimatedBytes) ?? 0);
+      }, 0);
+
+      if (bytesFromResults > 0) {
+        return { trashedCount, failedCount, trashedEstimatedBytes: bytesFromResults };
+      }
+
+      // Fallback: if no per-item bytes exist, fall back to plan.summary.estimatedBytesTotal
+      // ONLY when it was a real apply (dryRun=false).
+      let bytesFromPlan = 0;
+      if (
+        log.dryRun === false &&
+        isObject(log.plan) &&
+        isObject((log.plan as JsonObject).summary)
+      ) {
+        const sum = (log.plan as JsonObject).summary as JsonObject;
+        bytesFromPlan = asNumber(sum.estimatedBytesTotal) ?? 0;
+      }
+
+      return { trashedCount, failedCount, trashedEstimatedBytes: bytesFromPlan };
+    }
+
+    // 3) Legacy fallback: infer from plan.items (less reliable)
+    if (isObject(log.plan)) {
+      const items = asArray<JsonObject>((log.plan as JsonObject).items) ?? [];
+      const trashedCount =
+        log.dryRun === false
+          ? items.filter((it) => (it.status as unknown) === "eligible").length
+          : 0;
+      const trashedEstimatedBytes = items.reduce((acc, it) => {
+        const est = asNumber(it.estimatedBytes) ?? 0;
+        return acc + est;
+      }, 0);
+
+      return { trashedCount, failedCount: 0, trashedEstimatedBytes };
+    }
+
+    return { trashedCount: 0, failedCount: 0, trashedEstimatedBytes: 0 };
   }
 
   private async listJsonFilesSafe(dir: string): Promise<string[]> {
@@ -190,8 +257,8 @@ export class ReportService {
     }
   }
 
-  private async readLogsSafe(files: string[]): Promise<Array<Record<string, any>>> {
-    const out: Array<Record<string, any>> = [];
+  private async readLogsSafe(files: string[]): Promise<ParsedLog[]> {
+    const out: ParsedLog[] = [];
 
     for (const file of files) {
       try {
@@ -222,7 +289,7 @@ export class ReportService {
     return out;
   }
 
-  private maxTimestamp(logs: Array<Record<string, any>>): string | null {
+  private maxTimestamp(logs: ParsedLog[]): string | null {
     const latest = this.pickLatestByTimestamp(logs);
     return latest?.timestamp ?? null;
   }
@@ -250,7 +317,7 @@ export class ReportService {
   }
 
   private extractScanTargets(
-    log: Record<string, any>,
+    log: ParsedLog,
   ): Array<{ exists: boolean; metrics?: { totalBytes?: number; skipped?: boolean } }> {
     const rawTargets = asArray<LoggedTarget>(log.targets) ?? [];
 
