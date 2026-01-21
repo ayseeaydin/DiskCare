@@ -73,6 +73,10 @@ node cli/dist/index.js --help
 # Başlangıç rules config oluştur (varsayılan: ./config/rules.json)
 node cli/dist/index.js init
 
+# List available init policies
+# Mevcut init policy seçeneklerini listele
+node cli/dist/index.js init --list-policies
+
 # Use a custom config path (applies to all commands)
 # Özel config yolu kullan (tüm komutlara uygulanır)
 node cli/dist/index.js --config ./config/rules.dev.json init --policy aggressive
@@ -119,7 +123,9 @@ DiskCare reads rules from `./config/rules.json` by default.
 Varsayılan olarak kuralları `./config/rules.json` dosyasından okur.
 
 - Create a starter config: `diskcare init` (won't overwrite unless `--force`)
+- See available templates: `diskcare init --list-policies`
 - Başlangıç config oluştur: `diskcare init` (`--force` olmadan overwrite etmez)
+- Mevcut template'leri gör: `diskcare init --list-policies`
 - Override config path globally: `--config <path>`
 - Config yolunu global değiştir: `--config <path>`
 
