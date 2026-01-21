@@ -1,16 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-
-import os from "node:os";
 import path from "node:path";
-import fs from "node:fs/promises";
 
 import { RulesConfigLoader } from "../RulesConfigLoader.js";
 import type { RuleConfig } from "../types/RuleConfig.js";
 
 test("RulesConfigLoader.loadFromFile - loads valid JSON and returns RuleConfig", async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "diskcare-rules-"));
-  const rulesPath = path.join(tmpDir, "rules.json");
+  const rulesPath = path.join(path.sep, "virtual", "rules.json");
 
   const expected: RuleConfig = {
     rules: [
@@ -33,27 +29,38 @@ test("RulesConfigLoader.loadFromFile - loads valid JSON and returns RuleConfig",
     },
   };
 
-  await fs.writeFile(rulesPath, JSON.stringify(expected, null, 2), "utf8");
+  const filesByPath = new Map<string, string>([[rulesPath, JSON.stringify(expected, null, 2)]]);
 
-  const loader = new RulesConfigLoader();
+  const fakeFs = {
+    readFile: async (filePath: string, encoding: "utf8") => {
+      assert.equal(encoding, "utf8");
+      const content = filesByPath.get(filePath);
+      if (content === undefined) throw new Error(`ENOENT: no such file ${filePath}`);
+      return content;
+    },
+  };
+
+  const loader = new RulesConfigLoader(fakeFs);
   const config = await loader.loadFromFile(rulesPath);
 
   assert.deepEqual(config, expected);
 
-  // cleanup
-  await fs.rm(tmpDir, { recursive: true, force: true });
 });
 
 test("RulesConfigLoader.loadFromFile - throws on invalid JSON", async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "diskcare-rules-"));
-  const rulesPath = path.join(tmpDir, "rules.json");
+  const rulesPath = path.join(path.sep, "virtual", "rules.json");
+  const filesByPath = new Map<string, string>([[rulesPath, "{ invalid json"]]);
 
-  await fs.writeFile(rulesPath, "{ invalid json", "utf8");
+  const fakeFs = {
+    readFile: async (filePath: string, encoding: "utf8") => {
+      assert.equal(encoding, "utf8");
+      const content = filesByPath.get(filePath);
+      if (content === undefined) throw new Error(`ENOENT: no such file ${filePath}`);
+      return content;
+    },
+  };
 
-  const loader = new RulesConfigLoader();
+  const loader = new RulesConfigLoader(fakeFs);
 
   await assert.rejects(async () => loader.loadFromFile(rulesPath));
-
-  // cleanup
-  await fs.rm(tmpDir, { recursive: true, force: true });
 });

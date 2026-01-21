@@ -2,6 +2,10 @@ import fs from "node:fs/promises";
 import type { RuleConfig } from "./types/RuleConfig.js";
 import { isFiniteNumber, isNonEmptyString, isRecord } from "./utils/typeGuards.js";
 
+type RulesFs = {
+  readFile: (filePath: string, encoding: "utf8") => Promise<string>;
+};
+
 /**
  * Error thrown when rules config cannot be loaded or is invalid.
  */
@@ -18,10 +22,12 @@ export class RulesConfigError extends Error {
 }
 
 export class RulesConfigLoader {
+  constructor(private readonly rulesFs: RulesFs = fs) {}
+
   async loadFromFile(filePath: string): Promise<RuleConfig> {
     let raw: string;
     try {
-      raw = await fs.readFile(filePath, "utf8");
+      raw = await this.rulesFs.readFile(filePath, "utf8");
     } catch (err) {
       throw new RulesConfigError(
         `Cannot read rules config file: ${filePath}`,
