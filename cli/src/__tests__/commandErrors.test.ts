@@ -29,7 +29,7 @@ test("handleCommandError - prints code + hint and sets exitCode", () => {
   process.exitCode = 0;
 
   const output = new FakeOutput();
-  const context: CommandContext = { output, verbose: false };
+  const context: CommandContext = { output, verbose: false, configPath: "config/rules.json" };
 
   handleCommandError(
     context,

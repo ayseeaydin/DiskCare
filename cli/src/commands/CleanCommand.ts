@@ -300,7 +300,7 @@ export class CleanCommand extends BaseCommand {
   }
 
   private async defaultLoadRules(context: CommandContext): Promise<RulesEngine | null> {
-    return RulesProvider.fromCwd().tryLoad(context);
+    return new RulesProvider(context.configPath).tryLoad(context);
   }
 
   private async defaultWriteLog(payload: unknown): Promise<string> {

@@ -39,7 +39,7 @@ export class ScanCommand extends BaseCommand {
     const targets = await this.scanTargets();
 
     // Load rules config (do not crash CLI if missing; stay explainable)
-    const rulesEngine = await RulesProvider.fromCwd().tryLoad(context);
+    const rulesEngine = await new RulesProvider(context.configPath).tryLoad(context);
 
     const logPath = await this.writeScanLog({ dryRun: options.dryRun, targets });
 
