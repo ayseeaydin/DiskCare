@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import type { RuleConfig } from "./types/RuleConfig.js";
+import type { RiskLevel } from "./types/Decision.js";
 import { isFiniteNumber, isNonEmptyString, isRecord } from "./utils/typeGuards.js";
 
 type RulesFs = {
@@ -69,18 +70,36 @@ function isValidRuleConfig(value: unknown): value is RuleConfig {
   if (!isRecord(obj.defaults)) return false;
 
   const defaults = obj.defaults as Record<string, unknown>;
-  if (!isNonEmptyString(defaults.risk)) return false;
-  if (!isFiniteNumber(defaults.safeAfterDays)) return false;
+  if (!isRiskLevel(defaults.risk)) return false;
+  if (!isValidSafeAfterDays(defaults.safeAfterDays)) return false;
 
   // Validate each rule
   for (const rule of obj.rules) {
     if (!isRecord(rule)) return false;
     const r = rule as Record<string, unknown>;
-    if (!isNonEmptyString(r.id)) return false;
-    if (!isNonEmptyString(r.risk)) return false;
-    if (!isFiniteNumber(r.safeAfterDays)) return false;
+    if (!isValidRuleId(r.id)) return false;
+    if (!isRiskLevel(r.risk)) return false;
+    if (!isValidSafeAfterDays(r.safeAfterDays)) return false;
     if (!isNonEmptyString(r.description)) return false;
   }
 
   return true;
+}
+
+function isRiskLevel(value: unknown): value is RiskLevel {
+  return value === "safe" || value === "caution" || value === "do-not-touch";
+}
+
+function isValidSafeAfterDays(value: unknown): value is number {
+  if (!isFiniteNumber(value)) return false;
+  if (!Number.isInteger(value)) return false;
+  if (value < 0) return false;
+  if (value > 9999) return false;
+  return true;
+}
+
+function isValidRuleId(value: unknown): value is string {
+  if (!isNonEmptyString(value)) return false;
+  // lowercase alphanumeric plus dashes, no leading/trailing dash
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }
