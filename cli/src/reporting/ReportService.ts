@@ -1,5 +1,11 @@
-import fs from "node:fs/promises";
 import path from "node:path";
+
+import fs from "node:fs/promises";
+
+type ReportFs = {
+  readdir: (dir: string) => Promise<string[]>;
+  readFile: (file: string, encoding: "utf8") => Promise<string>;
+};
 
 type JsonObject = Record<string, unknown>;
 
@@ -82,7 +88,10 @@ type ParsedLog = {
 };
 
 export class ReportService {
-  constructor(private readonly logsDir: string) {}
+  constructor(
+    private readonly logsDir: string,
+    private readonly reportFs: ReportFs = fs,
+  ) {}
 
   async summarize(): Promise<ReportSummary> {
     const logs = await this.loadLogs();
@@ -250,7 +259,7 @@ export class ReportService {
 
   private async listJsonFilesSafe(dir: string): Promise<string[]> {
     try {
-      const entries = await fs.readdir(dir);
+      const entries = await this.reportFs.readdir(dir);
       return entries.filter((f) => f.endsWith(".json")).map((f) => path.join(dir, f));
     } catch {
       return [];
@@ -262,7 +271,7 @@ export class ReportService {
 
     for (const file of files) {
       try {
-        const raw = await fs.readFile(file, "utf8");
+        const raw = await this.reportFs.readFile(file, "utf8");
         const parsed = JSON.parse(raw) as unknown;
         if (!isObject(parsed)) continue;
 

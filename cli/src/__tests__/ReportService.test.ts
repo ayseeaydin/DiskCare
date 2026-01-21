@@ -1,14 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import os from "node:os";
 import path from "node:path";
-import fs from "node:fs/promises";
 
 import { ReportService } from "../reporting/ReportService.js";
 
 test("ReportService.summarize - aggregates latest scan snapshot and apply aggregates from logs", async () => {
-  const logsDir = await fs.mkdtemp(path.join(os.tmpdir(), "diskcare-logs-"));
+  const logsDir = path.join(path.sep, "virtual", "logs");
 
   // minimal scan log
   const scanLog = {
@@ -97,14 +95,28 @@ test("ReportService.summarize - aggregates latest scan snapshot and apply aggreg
     },
   };
 
-  await fs.writeFile(path.join(logsDir, "run-scan.json"), JSON.stringify(scanLog, null, 2), "utf8");
-  await fs.writeFile(
-    path.join(logsDir, "run-apply.json"),
-    JSON.stringify(applyLog, null, 2),
-    "utf8",
-  );
+  const scanPath = path.join(logsDir, "run-scan.json");
+  const applyPath = path.join(logsDir, "run-apply.json");
 
-  const service = new ReportService(logsDir);
+  const filesByPath = new Map<string, string>([
+    [scanPath, JSON.stringify(scanLog, null, 2)],
+    [applyPath, JSON.stringify(applyLog, null, 2)],
+  ]);
+
+  const fakeFs = {
+    readdir: async (dir: string) => {
+      if (dir !== logsDir) throw new Error(`ENOENT: no such directory ${dir}`);
+      return ["run-scan.json", "run-apply.json"];
+    },
+    readFile: async (file: string, encoding: "utf8") => {
+      assert.equal(encoding, "utf8");
+      const content = filesByPath.get(file);
+      if (content === undefined) throw new Error(`ENOENT: no such file ${file}`);
+      return content;
+    },
+  };
+
+  const service = new ReportService(logsDir, fakeFs);
   const summary = await service.summarize();
 
   // top-level
@@ -123,6 +135,4 @@ test("ReportService.summarize - aggregates latest scan snapshot and apply aggreg
   assert.equal(summary.failedCount, 0);
   assert.equal(summary.latestApplyAt, new Date("2026-01-16T11:00:00.000Z").toISOString());
   assert.equal(summary.trashedEstimatedBytes, 50);
-
-  await fs.rm(logsDir, { recursive: true, force: true });
 });
