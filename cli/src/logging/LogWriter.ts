@@ -56,7 +56,47 @@ export class LogWriter {
       );
     }
 
+    // Best-effort: persist a pointer to the latest run log.
+    // This is intentionally stored outside the top-level logs directory so ReportService
+    // (which lists *.json in logsDir) won't treat it as a run log.
+    try {
+      await this.writeLatestRunPointer(finalPath);
+    } catch {
+      // ignore
+    }
+
     return finalPath;
+  }
+
+  private async writeLatestRunPointer(finalPath: string): Promise<void> {
+    const metaDir = path.join(this.logsDir, "meta");
+    await fs.mkdir(metaDir, { recursive: true });
+
+    const metaPath = path.join(metaDir, "latest-run.json");
+    const tmpMetaPath = path.join(metaDir, `latest-run-${randomSuffix()}.tmp`);
+
+    const content = JSON.stringify(
+      {
+        updatedAt: this.nowFn().toISOString(),
+        logFile: path.basename(finalPath),
+      },
+      null,
+      2,
+    );
+
+    await fs.writeFile(tmpMetaPath, content, { encoding: "utf8" });
+
+    try {
+      await fs.rename(tmpMetaPath, metaPath);
+    } catch (err: any) {
+      // Windows can error when destination exists; replace in a safe-ish way.
+      if (err && (err.code === "EEXIST" || err.code === "EPERM")) {
+        await fs.rm(metaPath, { force: true });
+        await fs.rename(tmpMetaPath, metaPath);
+        return;
+      }
+      throw err;
+    }
   }
 }
 
