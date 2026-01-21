@@ -9,6 +9,7 @@ import { ConfigWriteError, ValidationError } from "../errors/DiskcareError.js";
 type InitOptions = {
   policy?: string;
   force?: boolean;
+  listPolicies?: boolean;
 };
 
 type InitFs = {
@@ -38,10 +39,19 @@ export class InitCommand extends BaseCommand {
       "conservative",
     );
     cmd.option("--force", "Overwrite existing config file (default: no)");
+    cmd.option("--list-policies", "List available policy templates and exit");
   }
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
     const options = this.parseOptions(args);
+
+    if (options.listPolicies) {
+      context.output.info("Available policies:");
+      context.output.info("- conservative (safe defaults)");
+      context.output.info("- aggressive (clean sooner; higher risk tolerance)");
+      context.output.info("- custom (empty rules; edit manually)");
+      return;
+    }
 
     const policy = this.parsePolicy(options.policy);
     const configPath = context.configPath;
@@ -73,11 +83,12 @@ export class InitCommand extends BaseCommand {
     context.output.info(`Policy: ${policy}`);
   }
 
-  private parseOptions(args: unknown[]): { policy: string; force: boolean } {
+  private parseOptions(args: unknown[]): { policy: string; force: boolean; listPolicies: boolean } {
     const options = (args[0] ?? {}) as InitOptions;
     return {
       policy: String(options.policy ?? "conservative"),
       force: options.force ?? false,
+      listPolicies: options.listPolicies ?? false,
     };
   }
 

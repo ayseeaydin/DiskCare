@@ -165,3 +165,35 @@ test("InitCommand - reports CONFIG_WRITE_ERROR when config path cannot be access
 
   process.exitCode = prevExitCode;
 });
+
+test("InitCommand - lists policies without writing a config file", async () => {
+  const output = new FakeOutput();
+  const configPath = "/virtual/config/rules.json";
+
+  const cmd = new InitCommand({
+    fs: {
+      mkdir: async () => {
+        throw new Error("should not mkdir");
+      },
+      writeFile: async () => {
+        throw new Error("should not write");
+      },
+      stat: async () => {
+        throw new Error("should not stat");
+      },
+    },
+  });
+
+  const program = new Command();
+  program.exitOverride();
+
+  const context: CommandContext = { output, verbose: false, configPath };
+  cmd.register(program, context);
+
+  await program.parseAsync(["node", "diskcare", "init", "--list-policies"]);
+
+  assert.ok(output.infos.some((l) => l.includes("Available policies")));
+  assert.ok(output.infos.some((l) => l.includes("conservative")));
+  assert.ok(output.infos.some((l) => l.includes("aggressive")));
+  assert.ok(output.infos.some((l) => l.includes("custom")));
+});
