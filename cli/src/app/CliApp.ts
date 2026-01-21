@@ -19,6 +19,9 @@ export class CliApp {
     this.context = {
       output: new ConsoleOutput(),
       verbose: false,
+      setExitCode: (code) => {
+        process.exitCode = code;
+      },
       configPath: getDefaultConfigPath({
         cwd: process.cwd(),
         platform: process.platform,

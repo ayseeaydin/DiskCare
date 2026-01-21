@@ -31,7 +31,7 @@ test("RulesProvider.tryLoad - warns and returns null when rules config fails", a
     },
   });
 
-  const engine = await provider.tryLoad({ output, configPath: rulesPath });
+  const engine = await provider.tryLoad({ output, configPath: rulesPath, setExitCode: () => {} });
 
   assert.equal(engine, null);
   assert.equal(output.warns.length, 1);

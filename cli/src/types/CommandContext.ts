@@ -5,9 +5,9 @@ export type CommandContext = {
   verbose?: boolean;
   /**
    * Optional hook for setting an exit code (primarily for tests).
-   * If not provided, error handling falls back to mutating process.exitCode.
+   * CliApp wires this to process.exitCode.
    */
-  setExitCode?: (code: number) => void;
+  setExitCode: (code: number) => void;
   /**
    * Absolute path to rules config file (usually <cwd>/config/rules.json).
    * Can be overridden via global --config.

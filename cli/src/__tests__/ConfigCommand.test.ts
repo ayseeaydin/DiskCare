@@ -39,7 +39,7 @@ test("ConfigCommand - prints resolved config path and existence", async () => {
   const program = new Command();
   program.exitOverride();
 
-  const context: CommandContext = { output, verbose: false, configPath };
+  const context: CommandContext = { output, verbose: false, configPath, setExitCode: () => {} };
   cmd.register(program, context);
 
   await program.parseAsync(["node", "diskcare", "config", "path"]);
@@ -61,7 +61,7 @@ test("ConfigCommand - supports JSON output", async () => {
   const program = new Command();
   program.exitOverride();
 
-  const context: CommandContext = { output, verbose: false, configPath };
+  const context: CommandContext = { output, verbose: false, configPath, setExitCode: () => {} };
   cmd.register(program, context);
 
   await program.parseAsync(["node", "diskcare", "config", "path", "--json"]);

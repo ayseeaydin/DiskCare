@@ -49,7 +49,7 @@ test("InitCommand - creates rules.json using policy template", async () => {
   const program = new Command();
   program.exitOverride();
 
-  const context: CommandContext = { output, verbose: false, configPath };
+  const context: CommandContext = { output, verbose: false, configPath, setExitCode: () => {} };
   cmd.register(program, context);
 
   await program.parseAsync(["node", "diskcare", "init", "--policy", "aggressive"]);
@@ -196,7 +196,7 @@ test("InitCommand - lists policies without writing a config file", async () => {
   const program = new Command();
   program.exitOverride();
 
-  const context: CommandContext = { output, verbose: false, configPath };
+  const context: CommandContext = { output, verbose: false, configPath, setExitCode: () => {} };
   cmd.register(program, context);
 
   await program.parseAsync(["node", "diskcare", "init", "--list-policies"]);
