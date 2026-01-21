@@ -66,7 +66,7 @@ export class NpmCacheScanner implements Scanner {
         return err(new Error("npm returned empty/undefined cache path"));
       }
 
-      const normalized = normalizePath(raw);
+      const normalized = normalizeNpmCachePath(raw);
       if (!normalized) {
         return err(new Error("npm returned an unparseable cache path"));
       }
@@ -84,15 +84,33 @@ export class NpmCacheScanner implements Scanner {
  * - expand "~" to home directory
  * - normalize path separators
  */
-function normalizePath(value: string): string | null {
+export function normalizeNpmCachePath(
+  value: string,
+  deps?: { platform?: NodeJS.Platform; homedir?: string },
+): string | null {
   const unquoted = value.replace(/^"(.*)"$/, "$1").trim();
   if (!unquoted) return null;
 
-  if (unquoted === "~") return os.homedir();
+  const homedir = deps?.homedir ?? os.homedir();
+  const platform = deps?.platform ?? process.platform;
+  const p = platform === "win32" ? path.win32 : path.posix;
+
+  if (unquoted === "~") return homedir;
   if (unquoted.startsWith("~/") || unquoted.startsWith("~\\")) {
-    return path.join(os.homedir(), unquoted.slice(2));
+    const rest = unquoted.slice(2);
+    return stripTrailingSeparators(p.normalize(p.join(homedir, rest)), p);
   }
 
-  // normalize separators and remove trailing separators
-  return path.normalize(unquoted);
+  return stripTrailingSeparators(p.normalize(unquoted), p);
+}
+
+function stripTrailingSeparators(normalized: string, p: typeof path.posix | typeof path.win32): string {
+  const root = p.parse(normalized).root;
+  let result = normalized;
+
+  while (result.length > root.length && (result.endsWith(p.sep) || result.endsWith("/") || result.endsWith("\\"))) {
+    result = result.slice(0, -1);
+  }
+
+  return result;
 }
