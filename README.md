@@ -69,6 +69,14 @@ npm run build
 # Run the CLI (built) | CLI'yi çalıştır (build sonrası)
 node cli/dist/index.js --help
 
+# Create a starter rules config (default: ./config/rules.json)
+# Başlangıç rules config oluştur (varsayılan: ./config/rules.json)
+node cli/dist/index.js init
+
+# Use a custom config path (applies to all commands)
+# Özel config yolu kullan (tüm komutlara uygulanır)
+node cli/dist/index.js --config ./config/rules.dev.json init --policy aggressive
+
 # Scan disk targets | Disk hedeflerini tara
 node cli/dist/index.js scan
 
@@ -105,6 +113,15 @@ node cli/dist/index.js report
 ---
 
 ## Configuration | Yapılandırma
+
+DiskCare reads rules from `./config/rules.json` by default.
+
+Varsayılan olarak kuralları `./config/rules.json` dosyasından okur.
+
+- Create a starter config: `diskcare init` (won't overwrite unless `--force`)
+- Başlangıç config oluştur: `diskcare init` (`--force` olmadan overwrite etmez)
+- Override config path globally: `--config <path>`
+- Config yolunu global değiştir: `--config <path>`
 
 Edit `config/rules.json` to customize cleanup behavior:
 
