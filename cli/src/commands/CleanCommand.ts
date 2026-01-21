@@ -65,11 +65,13 @@ export class CleanCommand extends BaseCommand {
     const options = this.parseOptions(args);
     const deps = this.resolveDeps();
 
+    const timestampMs = deps.nowMs();
+
     const { targets, rulesEngine } = await this.collectInputs(context, deps);
     const plan = buildCleanPlan({
       targets,
       rulesEngine,
-      nowMs: deps.nowMs(),
+      nowMs: timestampMs,
       dryRun: options.dryRun,
       apply: options.apply,
     });
@@ -80,7 +82,7 @@ export class CleanCommand extends BaseCommand {
 
     const logPath = await deps.writeLog(
       context,
-      this.buildRunLogPayload({ options, plan, applyResults, applySummary }),
+      this.buildRunLogPayload({ options, plan, applyResults, applySummary, timestampMs }),
     );
 
     if (options.asJson) {
@@ -203,12 +205,13 @@ export class CleanCommand extends BaseCommand {
     plan: ReturnType<typeof buildCleanPlan>;
     applyResults: ApplyResult[];
     applySummary: ApplySummary | undefined;
+    timestampMs: number;
   }): CleanLog {
-    const { options, plan, applyResults, applySummary } = input;
+    const { options, plan, applyResults, applySummary, timestampMs } = input;
 
     return {
       version: APP_VERSION,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(timestampMs).toISOString(),
       command: "clean",
       dryRun: options.dryRun,
       apply: options.apply,
