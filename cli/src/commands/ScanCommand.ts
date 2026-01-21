@@ -49,7 +49,7 @@ export class ScanCommand extends BaseCommand {
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
     const options = this.parseOptions(args);
-    const deps = this.resolveDeps();
+    const deps = this.resolveDeps(context);
     const targets = await deps.scanAll();
 
     // Load rules config (do not crash CLI if missing; stay explainable)
@@ -71,9 +71,9 @@ export class ScanCommand extends BaseCommand {
     this.printReport(context, { dryRun: options.dryRun, targets, rulesEngine, logPath });
   }
 
-  private resolveDeps(): ScanCommandDeps {
+  private resolveDeps(context: CommandContext): ScanCommandDeps {
     return {
-      nowFn: this.deps?.nowFn ?? (() => new Date()),
+      nowFn: this.deps?.nowFn ?? context.nowFn,
       scanAll: this.deps?.scanAll ?? this.defaultScanAll.bind(this),
       loadRules: this.deps?.loadRules ?? this.defaultLoadRules.bind(this),
       writeLog: this.deps?.writeLog ?? this.defaultWriteLog.bind(this),
@@ -124,7 +124,7 @@ export class ScanCommand extends BaseCommand {
         ? (payload as any).timestamp
         : undefined;
     const parsed = typeof extractedTimestamp === "string" ? new Date(extractedTimestamp) : null;
-    const now = parsed && Number.isFinite(parsed.getTime()) ? parsed : this.resolveDeps().nowFn();
+    const now = parsed && Number.isFinite(parsed.getTime()) ? parsed : context.nowFn();
 
     const logWriter = new LogWriter(path.resolve(context.cwd, "logs"), {
       pid: context.pid,

@@ -54,6 +54,7 @@ test("InitCommand - creates rules.json using policy template", async () => {
     verbose: false,
     cwd: "/virtual",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
     setExitCode: () => {},
   };
@@ -98,6 +99,7 @@ test("InitCommand - does not overwrite existing config without --force", async (
     verbose: false,
     cwd: "/virtual",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
     setExitCode: (code) => {
       exitCode = code;
@@ -135,6 +137,7 @@ test("InitCommand - refuses to overwrite when config path exists but is not a fi
     verbose: false,
     cwd: "/virtual",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
     setExitCode: (code) => {
       exitCode = code;
@@ -175,6 +178,7 @@ test("InitCommand - reports CONFIG_WRITE_ERROR when config path cannot be access
     verbose: false,
     cwd: "/virtual",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
     setExitCode: (code) => {
       exitCode = code;
@@ -214,6 +218,7 @@ test("InitCommand - lists policies without writing a config file", async () => {
     verbose: false,
     cwd: "/virtual",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
     setExitCode: () => {},
   };

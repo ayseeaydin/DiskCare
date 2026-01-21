@@ -44,6 +44,7 @@ test("ConfigCommand - prints resolved config path and existence", async () => {
     verbose: false,
     cwd: "/virtual",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
     setExitCode: () => {},
   };
@@ -73,6 +74,7 @@ test("ConfigCommand - supports JSON output", async () => {
     verbose: false,
     cwd: "/virtual",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
     setExitCode: () => {},
   };

@@ -35,6 +35,7 @@ test("RulesProvider.tryLoad - warns and returns null when rules config fails", a
     output,
     cwd: "/virtual",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath: rulesPath,
     setExitCode: () => {},
   });

@@ -7,6 +7,8 @@ export type CommandContext = {
   cwd: string;
   /** Process id for this CLI invocation. */
   pid: number;
+  /** Current time source for this CLI invocation. */
+  nowFn: () => Date;
   /**
    * Optional hook for setting an exit code (primarily for tests).
    * CliApp wires this to process.exitCode.

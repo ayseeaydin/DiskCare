@@ -63,7 +63,7 @@ export class CleanCommand extends BaseCommand {
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
     const options = this.parseOptions(args);
-    const deps = this.resolveDeps();
+    const deps = this.resolveDeps(context);
 
     const timestampMs = deps.nowMs();
 
@@ -107,9 +107,9 @@ export class CleanCommand extends BaseCommand {
     };
   }
 
-  private resolveDeps(): CleanCommandDeps {
+  private resolveDeps(context: CommandContext): CleanCommandDeps {
     return {
-      nowMs: this.deps?.nowMs ?? (() => Date.now()),
+      nowMs: this.deps?.nowMs ?? (() => context.nowFn().getTime()),
       scanAll: this.deps?.scanAll ?? this.defaultScanAll.bind(this),
       loadRules: this.deps?.loadRules ?? this.defaultLoadRules.bind(this),
       trashFn: this.deps?.trashFn ?? trash,

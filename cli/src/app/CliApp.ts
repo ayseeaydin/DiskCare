@@ -22,6 +22,7 @@ export class CliApp {
       verbose: false,
       cwd,
       pid: process.pid,
+      nowFn: () => new Date(),
       setExitCode: (code) => {
         process.exitCode = code;
       },

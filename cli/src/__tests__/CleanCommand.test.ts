@@ -79,6 +79,7 @@ test("CleanCommand - does not call trash when --apply --no-dry-run but missing -
     verbose: false,
     cwd: "D:\\diskcare",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath: "config/rules.json",
     setExitCode: () => {},
   });
@@ -115,6 +116,7 @@ test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
     verbose: false,
     cwd: "D:\\diskcare",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath: "config/rules.json",
     setExitCode: () => {},
   });

@@ -33,6 +33,7 @@ test("handleCommandError - prints code + hint and sets exitCode", () => {
     verbose: false,
     cwd: "/virtual",
     pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath: "config/rules.json",
     setExitCode: (code) => {
       exitCode = code;
