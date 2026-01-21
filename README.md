@@ -148,6 +148,12 @@ Edit `config/rules.json` to customize cleanup behavior:
 
 ---
 
+## Contributing Notes | Katkı Notları
+
+- Engineering standards, DI approach, and testing guidelines: `docs/quality.md`
+
+---
+
 ## Development | Geliştirme
 
 ```bash
