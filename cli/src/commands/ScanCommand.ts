@@ -25,9 +25,22 @@ type ScanOptions = {
   dryRun?: boolean;
 };
 
+type NowFn = () => Date;
+
+export type ScanCommandDeps = {
+  nowFn: NowFn;
+  scanAll: () => Promise<ScanTarget[]>;
+  loadRules: (context: CommandContext) => Promise<RulesEngine | null>;
+  writeLog: (context: CommandContext, payload: unknown) => Promise<string>;
+};
+
 export class ScanCommand extends BaseCommand {
   readonly name = "scan";
   readonly description = "Analyze known cache/temp locations and print a report";
+
+  constructor(private readonly deps?: Partial<ScanCommandDeps>) {
+    super();
+  }
 
   protected configure(cmd: Command): void {
     cmd.option("--json", "Output JSON");
@@ -36,12 +49,16 @@ export class ScanCommand extends BaseCommand {
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
     const options = this.parseOptions(args);
-    const targets = await this.scanTargets();
+    const deps = this.resolveDeps();
+    const targets = await deps.scanAll();
 
     // Load rules config (do not crash CLI if missing; stay explainable)
-    const rulesEngine = await new RulesProvider(context.configPath).tryLoad(context);
+    const rulesEngine = await deps.loadRules(context);
 
-    const logPath = await this.writeScanLog(context, { dryRun: options.dryRun, targets });
+    const logPath = await deps.writeLog(
+      context,
+      this.buildRunLogPayload({ dryRun: options.dryRun, targets, timestamp: deps.nowFn().toISOString() }),
+    );
 
     if (options.asJson) {
       // JSON output intentionally stays stable; we don't add logPath yet.
@@ -54,6 +71,15 @@ export class ScanCommand extends BaseCommand {
     this.printReport(context, { dryRun: options.dryRun, targets, rulesEngine, logPath });
   }
 
+  private resolveDeps(): ScanCommandDeps {
+    return {
+      nowFn: this.deps?.nowFn ?? (() => new Date()),
+      scanAll: this.deps?.scanAll ?? this.defaultScanAll.bind(this),
+      loadRules: this.deps?.loadRules ?? this.defaultLoadRules.bind(this),
+      writeLog: this.deps?.writeLog ?? this.defaultWriteLog.bind(this),
+    };
+  }
+
   private parseOptions(args: unknown[]): { dryRun: boolean; asJson: boolean } {
     const options = (args[0] ?? {}) as ScanOptions;
     return {
@@ -62,7 +88,7 @@ export class ScanCommand extends BaseCommand {
     };
   }
 
-  private async scanTargets() {
+  private async defaultScanAll(): Promise<ScanTarget[]> {
     const scannerService = new ScannerService([
       new OsTempScanner(),
       new NpmCacheScanner(),
@@ -72,19 +98,38 @@ export class ScanCommand extends BaseCommand {
     return scannerService.scanAll();
   }
 
-  private async writeScanLog(
-    context: CommandContext,
-    input: { dryRun: boolean; targets: ScanTarget[] },
-  ): Promise<string> {
-    const logWriter = new LogWriter(path.resolve(context.cwd, "logs"), { pid: context.pid });
-    const payload = {
+  private buildRunLogPayload(input: {
+    dryRun: boolean;
+    targets: ScanTarget[];
+    timestamp: string;
+  }): RunLog {
+    return {
       version: APP_VERSION,
-      timestamp: new Date().toISOString(),
+      timestamp: input.timestamp,
       command: "scan" as const,
       dryRun: input.dryRun,
       targets: input.targets,
     } satisfies RunLog;
+  }
 
+  private async defaultLoadRules(context: CommandContext): Promise<RulesEngine | null> {
+    return new RulesProvider(context.configPath).tryLoad(context);
+  }
+
+  private async defaultWriteLog(context: CommandContext, payload: unknown): Promise<string> {
+    // Freeze a single timestamp for filename + fallback stringify.
+    // Prefer payload.timestamp to keep filename time aligned with payload time.
+    const extractedTimestamp =
+      payload && typeof payload === "object" && "timestamp" in payload
+        ? (payload as any).timestamp
+        : undefined;
+    const parsed = typeof extractedTimestamp === "string" ? new Date(extractedTimestamp) : null;
+    const now = parsed && Number.isFinite(parsed.getTime()) ? parsed : this.resolveDeps().nowFn();
+
+    const logWriter = new LogWriter(path.resolve(context.cwd, "logs"), {
+      pid: context.pid,
+      nowFn: () => now,
+    });
     return logWriter.writeRunLog(payload);
   }
 
