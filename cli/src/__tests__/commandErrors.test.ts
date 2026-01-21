@@ -25,21 +25,25 @@ class FakeOutput implements Output {
 }
 
 test("handleCommandError - prints code + hint and sets exitCode", () => {
-  const prevExitCode = process.exitCode;
-  process.exitCode = 0;
+  let exitCode: number | undefined;
 
   const output = new FakeOutput();
-  const context: CommandContext = { output, verbose: false, configPath: "config/rules.json" };
+  const context: CommandContext = {
+    output,
+    verbose: false,
+    configPath: "config/rules.json",
+    setExitCode: (code) => {
+      exitCode = code;
+    },
+  };
 
   handleCommandError(
     context,
     new DiskcareError("rules: config not loaded", "CONFIG_LOAD_ERROR", { rulesPath: "x" }),
   );
 
-  assert.equal(process.exitCode, 1);
+  assert.equal(exitCode, 1);
   assert.ok(output.errors.some((l) => l.startsWith("error:")));
   assert.ok(output.errors.some((l) => l === "code: CONFIG_LOAD_ERROR"));
   assert.ok(output.warns.some((l) => l.includes("Check config/rules.json")));
-
-  process.exitCode = prevExitCode;
 });

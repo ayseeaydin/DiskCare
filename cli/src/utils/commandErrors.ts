@@ -101,5 +101,9 @@ export function handleCommandError(context: CommandContext, err: unknown): void 
     context.output.warn("hint: re-run with --verbose for more detail");
   }
 
-  process.exitCode = 1;
+  if (context.setExitCode) {
+    context.setExitCode(1);
+  } else {
+    process.exitCode = 1;
+  }
 }

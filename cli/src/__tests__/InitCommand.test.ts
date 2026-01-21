@@ -85,19 +85,22 @@ test("InitCommand - does not overwrite existing config without --force", async (
   const program = new Command();
   program.exitOverride();
 
-  const prevExitCode = process.exitCode;
-  process.exitCode = 0;
-
-  const context: CommandContext = { output, verbose: false, configPath };
+  let exitCode: number | undefined;
+  const context: CommandContext = {
+    output,
+    verbose: false,
+    configPath,
+    setExitCode: (code) => {
+      exitCode = code;
+    },
+  };
   cmd.register(program, context);
 
   await program.parseAsync(["node", "diskcare", "init"]);
 
-  assert.equal(process.exitCode, 1);
+  assert.equal(exitCode, 1);
   assert.ok(output.errors.some((l) => l.startsWith("error:")));
   assert.ok(output.errors.some((l) => l === "code: VALIDATION_ERROR"));
-
-  process.exitCode = prevExitCode;
 });
 
 test("InitCommand - refuses to overwrite when config path exists but is not a file", async () => {
@@ -117,18 +120,21 @@ test("InitCommand - refuses to overwrite when config path exists but is not a fi
   const program = new Command();
   program.exitOverride();
 
-  const prevExitCode = process.exitCode;
-  process.exitCode = 0;
-
-  const context: CommandContext = { output, verbose: false, configPath };
+  let exitCode: number | undefined;
+  const context: CommandContext = {
+    output,
+    verbose: false,
+    configPath,
+    setExitCode: (code) => {
+      exitCode = code;
+    },
+  };
   cmd.register(program, context);
 
   await program.parseAsync(["node", "diskcare", "init", "--force"]);
 
-  assert.equal(process.exitCode, 1);
+  assert.equal(exitCode, 1);
   assert.ok(output.errors.some((l) => l === "code: VALIDATION_ERROR"));
-
-  process.exitCode = prevExitCode;
 });
 
 test("InitCommand - reports CONFIG_WRITE_ERROR when config path cannot be accessed", async () => {
@@ -152,18 +158,21 @@ test("InitCommand - reports CONFIG_WRITE_ERROR when config path cannot be access
   const program = new Command();
   program.exitOverride();
 
-  const prevExitCode = process.exitCode;
-  process.exitCode = 0;
-
-  const context: CommandContext = { output, verbose: false, configPath };
+  let exitCode: number | undefined;
+  const context: CommandContext = {
+    output,
+    verbose: false,
+    configPath,
+    setExitCode: (code) => {
+      exitCode = code;
+    },
+  };
   cmd.register(program, context);
 
   await program.parseAsync(["node", "diskcare", "init"]);
 
-  assert.equal(process.exitCode, 1);
+  assert.equal(exitCode, 1);
   assert.ok(output.errors.some((l) => l === "code: CONFIG_WRITE_ERROR"));
-
-  process.exitCode = prevExitCode;
 });
 
 test("InitCommand - lists policies without writing a config file", async () => {
