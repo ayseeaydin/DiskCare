@@ -4,8 +4,11 @@ import type { DiscoveredTarget } from "../types/ScanTarget.js";
 import type { Scanner } from "./BaseScanner.js";
 
 export class SandboxCacheScanner implements Scanner {
+  constructor(private readonly deps?: { cwd?: string }) {}
+
   async scan(): Promise<DiscoveredTarget[]> {
-    const sandboxPath = path.resolve(process.cwd(), ".sandbox-cache");
+    const cwd = this.deps?.cwd ?? process.cwd();
+    const sandboxPath = path.resolve(cwd, ".sandbox-cache");
 
     return [
       {
