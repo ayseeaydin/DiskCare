@@ -1,10 +1,4 @@
 import type { Command } from "commander";
-import {
-  ScannerService,
-  OsTempScanner,
-  NpmCacheScanner,
-  SandboxCacheScanner,
-} from "@diskcare/scanner-core";
 import type { ScanTarget } from "@diskcare/scanner-core";
 import type { RulesEngine } from "@diskcare/rules-engine";
 import path from "node:path";
@@ -19,6 +13,7 @@ import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
 import { APP_VERSION } from "../utils/constants.js";
 import { toOneLine } from "../utils/errors.js";
+import { defaultScanAll } from "../scanning/defaultScanAll.js";
 
 type ScanOptions = {
   json?: boolean;
@@ -89,17 +84,7 @@ export class ScanCommand extends BaseCommand {
   }
 
   private async defaultScanAll(context: CommandContext): Promise<ScanTarget[]> {
-    const scannerService = new ScannerService([
-      new OsTempScanner(),
-      new NpmCacheScanner({
-        platform: context.platform,
-        env: context.env,
-        homedir: context.homedir,
-      }),
-      new SandboxCacheScanner({ cwd: context.cwd }),
-    ]);
-
-    return scannerService.scanAll();
+    return defaultScanAll(context);
   }
 
   private buildRunLogPayload(input: {

@@ -2,12 +2,6 @@ import type { Command } from "commander";
 import path from "node:path";
 
 import type { ScanTarget } from "@diskcare/scanner-core";
-import {
-  ScannerService,
-  OsTempScanner,
-  NpmCacheScanner,
-  SandboxCacheScanner,
-} from "@diskcare/scanner-core";
 import type { RulesEngine } from "@diskcare/rules-engine";
 import trash from "trash";
 
@@ -21,6 +15,7 @@ import { RulesProvider } from "../rules/RulesProvider.js";
 import { buildCleanPlan } from "../cleaning/CleanPlanner.js";
 import { APP_VERSION, MAX_DISPLAYED_REASONS } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
+import { defaultScanAll } from "../scanning/defaultScanAll.js";
 
 type CleanOptions = {
   json?: boolean;
@@ -295,16 +290,7 @@ export class CleanCommand extends BaseCommand {
    * Default implementations (used when no deps injected).
    */
   private async defaultScanAll(context: CommandContext): Promise<ScanTarget[]> {
-    const scannerService = new ScannerService([
-      new OsTempScanner(),
-      new NpmCacheScanner({
-        platform: context.platform,
-        env: context.env,
-        homedir: context.homedir,
-      }),
-      new SandboxCacheScanner({ cwd: context.cwd }),
-    ]);
-    return scannerService.scanAll();
+    return defaultScanAll(context);
   }
 
   private async defaultLoadRules(context: CommandContext): Promise<RulesEngine | null> {
