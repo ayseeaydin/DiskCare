@@ -1,16 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
-import path from "node:path";
-import os from "node:os";
 
 import { ScannerService } from "../ScannerService.js";
 import type { BaseScanner } from "../scanners/BaseScanner.js";
 import type { DiscoveredTarget } from "../types/ScanTarget.js";
 
-async function makeTempDir(prefix = "diskcare-service-"): Promise<string> {
-  return fs.mkdtemp(path.join(os.tmpdir(), prefix));
-}
+const VIRTUAL_EXISTING_DIR = "/virtual/existing";
+const VIRTUAL_MISSING_DIR = "/virtual/missing";
 
 class FakeScanner implements BaseScanner {
   constructor(private readonly out: DiscoveredTarget[]) {}
@@ -20,18 +16,40 @@ class FakeScanner implements BaseScanner {
 }
 
 test("ScannerService.scanAll - sorts targets deterministically by id and sets exists + metrics", async () => {
-  const dir = await makeTempDir();
-  const file = path.join(dir, "a.txt");
-  await fs.writeFile(file, "hello"); // 5 bytes
+  const fakePathExists = async (p: string) => p === VIRTUAL_EXISTING_DIR;
+  const fakeAnalyzer = {
+    analyze: async (p: string) => {
+      if (p === VIRTUAL_MISSING_DIR) {
+        return {
+          totalBytes: 0,
+          fileCount: 0,
+          lastModifiedAt: null,
+          lastAccessedAt: null,
+          skipped: true,
+          error: "ENOENT",
+          partial: false,
+          skippedEntries: 0,
+        };
+      }
 
-  const missing = path.join(dir, "missing-dir");
+      return {
+        totalBytes: 5,
+        fileCount: 1,
+        lastModifiedAt: 1,
+        lastAccessedAt: 1,
+        skipped: false,
+        partial: false,
+        skippedEntries: 0,
+      };
+    },
+  };
 
   // Note: provide in reverse order on purpose
   const scanner1 = new FakeScanner([
     {
       id: "z-last",
       kind: "os-temp",
-      path: dir,
+      path: VIRTUAL_EXISTING_DIR,
       displayName: "Z",
     },
   ]);
@@ -40,12 +58,15 @@ test("ScannerService.scanAll - sorts targets deterministically by id and sets ex
     {
       id: "a-first",
       kind: "npm-cache",
-      path: missing,
+      path: VIRTUAL_MISSING_DIR,
       displayName: "A",
     },
   ]);
 
-  const service = new ScannerService([scanner1, scanner2]);
+  const service = new ScannerService([scanner1, scanner2], {
+    analyzer: fakeAnalyzer,
+    pathExists: fakePathExists,
+  });
   const targets = await service.scanAll();
 
   // deterministic sort

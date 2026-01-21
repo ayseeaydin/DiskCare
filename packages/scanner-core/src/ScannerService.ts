@@ -1,12 +1,29 @@
 import { FileSystemAnalyzer } from "./analyzers/FileSystemAnalyzer.js";
 import type { BaseScanner } from "./scanners/BaseScanner.js";
 import type { DiscoveredTarget, ScanTarget } from "./types/ScanTarget.js";
+import type { ScanMetrics } from "./types/ScanMetrics.js";
 import { pathExists } from "./utils/pathExists.js";
 
-export class ScannerService {
-  private readonly analyzer = new FileSystemAnalyzer();
+type Analyzer = {
+  analyze: (rootPath: string) => Promise<ScanMetrics>;
+};
 
-  constructor(private readonly scanners: BaseScanner[]) {}
+type ScannerServiceDeps = {
+  analyzer?: Analyzer;
+  pathExists?: (p: string) => Promise<boolean>;
+};
+
+export class ScannerService {
+  private readonly analyzer: Analyzer;
+  private readonly pathExistsFn: (p: string) => Promise<boolean>;
+
+  constructor(
+    private readonly scanners: BaseScanner[],
+    deps: ScannerServiceDeps = {},
+  ) {
+    this.analyzer = deps.analyzer ?? new FileSystemAnalyzer();
+    this.pathExistsFn = deps.pathExists ?? pathExists;
+  }
 
   async scanAll(): Promise<ScanTarget[]> {
     const targets: DiscoveredTarget[] = [];
@@ -23,7 +40,7 @@ export class ScannerService {
     const enriched: ScanTarget[] = [];
 
     for (const t of targets) {
-      const exists = await pathExists(t.path);
+      const exists = await this.pathExistsFn(t.path);
       const metrics = await this.analyzer.analyze(t.path);
 
       enriched.push({
