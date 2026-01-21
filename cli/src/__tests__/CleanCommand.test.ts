@@ -1,0 +1,122 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import { Command } from "commander";
+import type { ScanTarget } from "@diskcare/scanner-core";
+import { RulesEngine } from "@diskcare/rules-engine";
+
+import { CleanCommand } from "../commands/CleanCommand.js";
+
+class FakeOutput {
+  readonly infos: string[] = [];
+  readonly warns: string[] = [];
+  readonly errors: string[] = [];
+
+  info(message: string): void {
+    this.infos.push(message);
+  }
+  warn(message: string): void {
+    this.warns.push(message);
+  }
+  error(message: string): void {
+    this.errors.push(message);
+  }
+}
+
+function makeEligibleTarget(nowMs: number): ScanTarget {
+  return {
+    id: "sandbox-cache",
+    kind: "sandbox-cache",
+    path: "D:\\diskcare\\.sandbox-cache",
+    displayName: "Sandbox Cache",
+    exists: true,
+    metrics: {
+      totalBytes: 123,
+      fileCount: 1,
+      lastModifiedAt: nowMs - 8 * 24 * 60 * 60 * 1000,
+      lastAccessedAt: nowMs - 8 * 24 * 60 * 60 * 1000,
+      skipped: false,
+      partial: false,
+      skippedEntries: 0,
+    },
+  };
+}
+
+function makeRulesEngine(): RulesEngine {
+  return new RulesEngine({
+    rules: [
+      {
+        id: "sandbox-cache",
+        risk: "safe",
+        safeAfterDays: 7,
+        description: "sandbox cache is safe",
+      },
+    ],
+    defaults: { risk: "caution", safeAfterDays: 30 },
+  });
+}
+
+test("CleanCommand - does not call trash when --apply --no-dry-run but missing --yes", async () => {
+  const output = new FakeOutput();
+  const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
+
+  const trashedPaths: string[] = [];
+
+  const cmd = new CleanCommand({
+    nowMs: () => nowMs,
+    scanAll: async () => [makeEligibleTarget(nowMs)],
+    loadRules: async () => makeRulesEngine(),
+    trashFn: async (paths: string[]) => {
+      trashedPaths.push(...paths);
+    },
+    writeLog: async () => "logs/run-test.json",
+  });
+
+  const program = new Command();
+  program.exitOverride();
+  cmd.register(program, { output, verbose: false });
+
+  await program.parseAsync(["node", "diskcare", "clean", "--apply", "--no-dry-run"]);
+
+  assert.deepEqual(trashedPaths, []);
+  assert.ok(
+    output.warns.some((w) => w.includes("confirmation is missing")),
+    "should warn about missing confirmation",
+  );
+});
+
+test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
+  const output = new FakeOutput();
+  const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
+
+  const trashedPaths: string[] = [];
+
+  const cmd = new CleanCommand({
+    nowMs: () => nowMs,
+    scanAll: async () => [makeEligibleTarget(nowMs)],
+    loadRules: async () => makeRulesEngine(),
+    trashFn: async (paths: string[]) => {
+      trashedPaths.push(...paths);
+    },
+    writeLog: async () => "logs/run-test.json",
+  });
+
+  const program = new Command();
+  program.exitOverride();
+  cmd.register(program, { output, verbose: false });
+
+  await program.parseAsync([
+    "node",
+    "diskcare",
+    "clean",
+    "--apply",
+    "--no-dry-run",
+    "--yes",
+  ]);
+
+  assert.deepEqual(trashedPaths, ["D:\\diskcare\\.sandbox-cache"]);
+  assert.ok(
+    output.infos.some((l) => l.includes("apply results: trashed=1")),
+    "should print apply results",
+  );
+});
