@@ -38,7 +38,7 @@ function makeTarget(overrides: Partial<ScanTarget>): ScanTarget {
 }
 
 test("buildCleanPlan property: never returns negative estimatedBytes", () => {
-  const nowMs = Date.now();
+  const nowMs = Date.parse("2026-01-21T00:00:00.000Z");
 
   const arbTarget = fc.record({
     exists: fc.boolean(),

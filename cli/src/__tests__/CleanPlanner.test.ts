@@ -5,6 +5,8 @@ import { buildCleanPlan } from "../cleaning/CleanPlanner.js";
 import type { ScanTarget } from "@diskcare/scanner-core";
 import type { RulesEngine } from "@diskcare/rules-engine";
 
+const FIXED_NOW_MS = Date.parse("2026-01-21T00:00:00.000Z");
+
 // Minimal fake RulesEngine
 function makeRulesEngine(decision: {
   risk: "safe" | "caution" | "do-not-touch";
@@ -21,8 +23,6 @@ function makeRulesEngine(decision: {
 }
 
 function baseTarget(overrides?: Partial<ScanTarget>): ScanTarget {
-  const nowMs = Date.now();
-
   return {
     id: "test-target",
     kind: "os-temp",
@@ -32,7 +32,7 @@ function baseTarget(overrides?: Partial<ScanTarget>): ScanTarget {
     metrics: {
       totalBytes: 100,
       fileCount: 1,
-      lastModifiedAt: nowMs - 10 * 24 * 60 * 60 * 1000, // 10 days ago
+      lastModifiedAt: FIXED_NOW_MS - 10 * 24 * 60 * 60 * 1000, // 10 days ago
       lastAccessedAt: null,
       skipped: false,
     },
@@ -41,7 +41,7 @@ function baseTarget(overrides?: Partial<ScanTarget>): ScanTarget {
 }
 
 test("eligible when risk=safe and age >= safeAfterDays", () => {
-  const nowMs = Date.now();
+  const nowMs = FIXED_NOW_MS;
 
   const plan = buildCleanPlan({
     targets: [
@@ -65,7 +65,7 @@ test("eligible when risk=safe and age >= safeAfterDays", () => {
 });
 
 test("caution when risk=safe but age < safeAfterDays", () => {
-  const nowMs = Date.now();
+  const nowMs = FIXED_NOW_MS;
 
   const plan = buildCleanPlan({
     targets: [
@@ -89,7 +89,7 @@ test("caution when risk=safe but age < safeAfterDays", () => {
 });
 
 test("partial analysis forces caution", () => {
-  const nowMs = Date.now();
+  const nowMs = FIXED_NOW_MS;
 
   const plan = buildCleanPlan({
     targets: [
@@ -115,7 +115,7 @@ test("partial analysis forces caution", () => {
 });
 
 test("missing path is blocked", () => {
-  const nowMs = Date.now();
+  const nowMs = FIXED_NOW_MS;
 
   const plan = buildCleanPlan({
     targets: [
@@ -133,7 +133,7 @@ test("missing path is blocked", () => {
 });
 
 test("do-not-touch is always blocked", () => {
-  const nowMs = Date.now();
+  const nowMs = FIXED_NOW_MS;
 
   const plan = buildCleanPlan({
     targets: [baseTarget()],
@@ -147,7 +147,7 @@ test("do-not-touch is always blocked", () => {
 });
 
 test("caution when lastModifiedAt is null (cannot determine age)", () => {
-  const nowMs = Date.now();
+  const nowMs = FIXED_NOW_MS;
 
   const plan = buildCleanPlan({
     targets: [
@@ -171,7 +171,7 @@ test("caution when lastModifiedAt is null (cannot determine age)", () => {
 });
 
 test("eligible when safeAfterDays=0 and age can be determined", () => {
-  const nowMs = Date.now();
+  const nowMs = FIXED_NOW_MS;
 
   const plan = buildCleanPlan({
     targets: [
@@ -196,7 +196,7 @@ test("eligible when safeAfterDays=0 and age can be determined", () => {
 });
 
 test("caution when rulesEngine is null (defaults apply)", () => {
-  const nowMs = Date.now();
+  const nowMs = FIXED_NOW_MS;
 
   const plan = buildCleanPlan({
     targets: [
@@ -221,7 +221,7 @@ test("caution when rulesEngine is null (defaults apply)", () => {
 });
 
 test("blocked when analysis is skipped (exists=true, skipped=true)", () => {
-  const nowMs = Date.now();
+  const nowMs = FIXED_NOW_MS;
 
   const plan = buildCleanPlan({
     targets: [
