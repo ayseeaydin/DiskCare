@@ -26,12 +26,8 @@ export class ScannerService {
   }
 
   async scanAll(): Promise<ScanTarget[]> {
-    const targets: DiscoveredTarget[] = [];
-
-    for (const scanner of this.scanners) {
-      const found = await scanner.scan();
-      targets.push(...found);
-    }
+    const discoveries = await Promise.all(this.scanners.map((s) => s.scan()));
+    const targets: DiscoveredTarget[] = discoveries.flat();
 
     // Deterministic output order for CLI/logs
     targets.sort((a, b) => a.id.localeCompare(b.id));
