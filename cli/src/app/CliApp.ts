@@ -8,6 +8,7 @@ import type { CommandContext } from "../types/CommandContext.js";
 import { APP_VERSION } from "../utils/constants.js";
 import { handleCommandError } from "../utils/commandErrors.js";
 import { getDefaultConfigPath } from "../utils/configPaths.js";
+import { installSignalHandlers } from "../utils/signals.js";
 
 export class CliApp {
   private readonly program: Command;
@@ -29,6 +30,8 @@ export class CliApp {
   }
 
   async run(argv: string[]): Promise<void> {
+    installSignalHandlers({ output: this.context.output, proc: process });
+
     this.program
       .name("diskcare")
       .description("Developer-focused disk hygiene CLI (safe-by-default)")
