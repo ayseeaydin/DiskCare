@@ -39,7 +39,9 @@ test("InitCommand - creates rules.json using policy template", async () => {
         files.set(filePath, content);
       },
       stat: async (_filePath: string) => {
-        throw new Error("ENOENT");
+        const err = new Error("ENOENT");
+        (err as any).code = "ENOENT";
+        throw err;
       },
     },
   });
@@ -94,6 +96,72 @@ test("InitCommand - does not overwrite existing config without --force", async (
   assert.equal(process.exitCode, 1);
   assert.ok(output.errors.some((l) => l.startsWith("error:")));
   assert.ok(output.errors.some((l) => l === "code: VALIDATION_ERROR"));
+
+  process.exitCode = prevExitCode;
+});
+
+test("InitCommand - refuses to overwrite when config path exists but is not a file", async () => {
+  const output = new FakeOutput();
+  const configPath = "/virtual/config/rules.json";
+
+  const cmd = new InitCommand({
+    fs: {
+      mkdir: async () => undefined,
+      writeFile: async () => {
+        throw new Error("should not write");
+      },
+      stat: async (_filePath: string) => ({ isFile: () => false }),
+    },
+  });
+
+  const program = new Command();
+  program.exitOverride();
+
+  const prevExitCode = process.exitCode;
+  process.exitCode = 0;
+
+  const context: CommandContext = { output, verbose: false, configPath };
+  cmd.register(program, context);
+
+  await program.parseAsync(["node", "diskcare", "init", "--force"]);
+
+  assert.equal(process.exitCode, 1);
+  assert.ok(output.errors.some((l) => l === "code: VALIDATION_ERROR"));
+
+  process.exitCode = prevExitCode;
+});
+
+test("InitCommand - reports CONFIG_WRITE_ERROR when config path cannot be accessed", async () => {
+  const output = new FakeOutput();
+  const configPath = "/virtual/config/rules.json";
+
+  const cmd = new InitCommand({
+    fs: {
+      mkdir: async () => undefined,
+      writeFile: async () => {
+        throw new Error("should not write");
+      },
+      stat: async (_filePath: string) => {
+        const err = new Error("EACCES: permission denied");
+        (err as any).code = "EACCES";
+        throw err;
+      },
+    },
+  });
+
+  const program = new Command();
+  program.exitOverride();
+
+  const prevExitCode = process.exitCode;
+  process.exitCode = 0;
+
+  const context: CommandContext = { output, verbose: false, configPath };
+  cmd.register(program, context);
+
+  await program.parseAsync(["node", "diskcare", "init"]);
+
+  assert.equal(process.exitCode, 1);
+  assert.ok(output.errors.some((l) => l === "code: CONFIG_WRITE_ERROR"));
 
   process.exitCode = prevExitCode;
 });

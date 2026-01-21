@@ -46,12 +46,16 @@ export class InitCommand extends BaseCommand {
     const policy = this.parsePolicy(options.policy);
     const configPath = context.configPath;
 
-    if (!options.force) {
-      const exists = await this.fileExists(configPath);
-      if (exists) {
-        throw new ValidationError("Config file already exists (use --force to overwrite)", {
+    const existing = await this.getExistingConfigEntry(configPath);
+    if (existing.exists) {
+      if (!options.force) {
+        throw new ValidationError("Config path already exists (use --force to overwrite)", {
           configPath,
         });
+      }
+
+      if (!existing.isFile) {
+        throw new ValidationError("Config path exists and is not a file", { configPath });
       }
     }
 
@@ -93,14 +97,28 @@ export class InitCommand extends BaseCommand {
     };
   }
 
-  private async fileExists(filePath: string): Promise<boolean> {
+  private async getExistingConfigEntry(
+    filePath: string,
+  ): Promise<{ exists: boolean; isFile: boolean }> {
     try {
       const s = await this.fs().stat(filePath);
-      return s.isFile();
-    } catch {
-      return false;
+      return { exists: true, isFile: s.isFile() };
+    } catch (err) {
+      if (isErrno(err, "ENOENT")) {
+        return { exists: false, isFile: false };
+      }
+      throw new ConfigWriteError("Failed to access config path", { configPath: filePath }, err);
     }
   }
+}
+
+function isErrno(err: unknown, code: string): boolean {
+  if (!err) return false;
+  if (typeof err === "object" && "code" in err && (err as any).code === code) return true;
+  if (err instanceof Error && typeof err.message === "string" && err.message.includes(code)) {
+    return true;
+  }
+  return false;
 }
 
 const CUSTOM_POLICY_CONFIG: unknown = {
