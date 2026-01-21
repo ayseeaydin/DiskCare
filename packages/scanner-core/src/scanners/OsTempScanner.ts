@@ -3,8 +3,14 @@ import type { DiscoveredTarget } from "../types/ScanTarget.js";
 import type { Scanner } from "./BaseScanner.js";
 
 export class OsTempScanner implements Scanner {
+  private readonly tmpdir: string;
+
+  constructor(deps?: { tmpdir?: string }) {
+    this.tmpdir = deps?.tmpdir ?? os.tmpdir();
+  }
+
   async scan(): Promise<DiscoveredTarget[]> {
-    const tempPath = os.tmpdir();
+    const tempPath = this.tmpdir;
 
     return [
       {
