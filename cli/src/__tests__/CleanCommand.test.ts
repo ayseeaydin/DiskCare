@@ -143,3 +143,39 @@ test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
     "should print apply results",
   );
 });
+
+test("CleanCommand - reports batch trash failure clearly", async () => {
+  const output = new FakeOutput();
+  const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
+
+  const cmd = new CleanCommand({
+    nowMs: () => nowMs,
+    scanAll: async (_context) => [makeEligibleTarget(nowMs)],
+    loadRules: async () => makeRulesEngine(),
+    trashFn: async () => {
+      throw new Error("boom");
+    },
+    writeLog: async () => "logs/run-test.json",
+  });
+
+  const program = new Command();
+  program.exitOverride();
+  cmd.register(program, {
+    output,
+    verbose: false,
+    cwd: "D:\\diskcare",
+    platform: "win32",
+    env: {},
+    homedir: "C:\\Users\\test",
+    pid: 123,
+    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
+    configPath: "config/rules.json",
+    setExitCode: () => {},
+  });
+
+  await program.parseAsync(["node", "diskcare", "clean", "--apply", "--no-dry-run", "--yes"]);
+
+  assert.ok(output.infos.some((l) => l.includes("apply results: trashed=0 failed=1")));
+  assert.ok(output.warns.some((l) => l.includes("failed: sandbox-cache")));
+  assert.ok(output.warns.some((l) => l.includes("batch trash failed")));
+});

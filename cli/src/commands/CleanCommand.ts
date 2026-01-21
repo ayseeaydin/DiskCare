@@ -157,7 +157,7 @@ export class CleanCommand extends BaseCommand {
         estimatedBytes: item.estimatedBytes,
       }));
     } catch (err) {
-      const message = truncate(toOneLine(toErrorMessage(err)), 180);
+      const message = truncate(`batch trash failed: ${toOneLine(toErrorMessage(err))}`, 180);
       return eligible.map((item) => ({
         id: item.id,
         path: item.path,
