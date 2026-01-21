@@ -29,7 +29,7 @@ type NowFn = () => Date;
 
 export type ScanCommandDeps = {
   nowFn: NowFn;
-  scanAll: () => Promise<ScanTarget[]>;
+  scanAll: (context: CommandContext) => Promise<ScanTarget[]>;
   loadRules: (context: CommandContext) => Promise<RulesEngine | null>;
   writeLog: (context: CommandContext, payload: unknown) => Promise<string>;
 };
@@ -50,7 +50,7 @@ export class ScanCommand extends BaseCommand {
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
     const options = this.parseOptions(args);
     const deps = this.resolveDeps(context);
-    const targets = await deps.scanAll();
+    const targets = await deps.scanAll(context);
 
     // Load rules config (do not crash CLI if missing; stay explainable)
     const rulesEngine = await deps.loadRules(context);
@@ -88,11 +88,15 @@ export class ScanCommand extends BaseCommand {
     };
   }
 
-  private async defaultScanAll(): Promise<ScanTarget[]> {
+  private async defaultScanAll(context: CommandContext): Promise<ScanTarget[]> {
     const scannerService = new ScannerService([
       new OsTempScanner(),
-      new NpmCacheScanner(),
-      new SandboxCacheScanner(),
+      new NpmCacheScanner({
+        platform: context.platform,
+        env: context.env,
+        homedir: context.homedir,
+      }),
+      new SandboxCacheScanner({ cwd: context.cwd }),
     ]);
 
     return scannerService.scanAll();

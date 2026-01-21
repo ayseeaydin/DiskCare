@@ -30,7 +30,7 @@ test("ScanCommand - uses injected nowFn for payload timestamp", async () => {
   let wrotePayload: any = null;
 
   const cmd = new ScanCommand({
-    scanAll: async () => [],
+    scanAll: async (_context) => [],
     loadRules: async () => null,
     writeLog: async (_context, payload) => {
       wrotePayload = payload;
@@ -45,6 +45,9 @@ test("ScanCommand - uses injected nowFn for payload timestamp", async () => {
     output,
     verbose: false,
     cwd: "/virtual",
+    platform: "win32",
+    env: {},
+    homedir: "C:\\Users\\test",
     pid: 123,
     nowFn: () => {
       nowCalls++;

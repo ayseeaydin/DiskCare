@@ -5,6 +5,12 @@ export type CommandContext = {
   verbose?: boolean;
   /** Current working directory for this CLI invocation. */
   cwd: string;
+  /** Platform for this CLI invocation (wired from process.platform). */
+  platform: NodeJS.Platform;
+  /** Environment variables for this CLI invocation (wired from process.env). */
+  env: NodeJS.ProcessEnv;
+  /** Home directory for this CLI invocation (wired from os.homedir()). */
+  homedir: string;
   /** Process id for this CLI invocation. */
   pid: number;
   /** Current time source for this CLI invocation. */

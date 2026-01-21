@@ -34,7 +34,7 @@ type CleanOptions = {
  */
 export type CleanCommandDeps = {
   nowMs: () => number;
-  scanAll: () => Promise<ScanTarget[]>;
+  scanAll: (context: CommandContext) => Promise<ScanTarget[]>;
   loadRules: (context: CommandContext) => Promise<RulesEngine | null>;
   trashFn: (paths: string[]) => Promise<void>;
   writeLog: (context: CommandContext, payload: unknown) => Promise<string>;
@@ -121,7 +121,7 @@ export class CleanCommand extends BaseCommand {
     context: CommandContext,
     deps: CleanCommandDeps,
   ): Promise<{ targets: ScanTarget[]; rulesEngine: RulesEngine | null }> {
-    const targets = await deps.scanAll();
+    const targets = await deps.scanAll(context);
     const rulesEngine = await deps.loadRules(context);
     return { targets, rulesEngine };
   }
@@ -294,11 +294,15 @@ export class CleanCommand extends BaseCommand {
   /**
    * Default implementations (used when no deps injected).
    */
-  private async defaultScanAll(): Promise<ScanTarget[]> {
+  private async defaultScanAll(context: CommandContext): Promise<ScanTarget[]> {
     const scannerService = new ScannerService([
       new OsTempScanner(),
-      new NpmCacheScanner(),
-      new SandboxCacheScanner(),
+      new NpmCacheScanner({
+        platform: context.platform,
+        env: context.env,
+        homedir: context.homedir,
+      }),
+      new SandboxCacheScanner({ cwd: context.cwd }),
     ]);
     return scannerService.scanAll();
   }

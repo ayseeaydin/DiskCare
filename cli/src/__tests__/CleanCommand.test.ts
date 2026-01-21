@@ -64,7 +64,7 @@ test("CleanCommand - does not call trash when --apply --no-dry-run but missing -
 
   const cmd = new CleanCommand({
     nowMs: () => nowMs,
-    scanAll: async () => [makeEligibleTarget(nowMs)],
+    scanAll: async (_context) => [makeEligibleTarget(nowMs)],
     loadRules: async () => makeRulesEngine(),
     trashFn: async (paths: string[]) => {
       trashedPaths.push(...paths);
@@ -78,6 +78,9 @@ test("CleanCommand - does not call trash when --apply --no-dry-run but missing -
     output,
     verbose: false,
     cwd: "D:\\diskcare",
+    platform: "win32",
+    env: {},
+    homedir: "C:\\Users\\test",
     pid: 123,
     nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath: "config/rules.json",
@@ -101,7 +104,7 @@ test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
 
   const cmd = new CleanCommand({
     nowMs: () => nowMs,
-    scanAll: async () => [makeEligibleTarget(nowMs)],
+    scanAll: async (_context) => [makeEligibleTarget(nowMs)],
     loadRules: async () => makeRulesEngine(),
     trashFn: async (paths: string[]) => {
       trashedPaths.push(...paths);
@@ -115,6 +118,9 @@ test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
     output,
     verbose: false,
     cwd: "D:\\diskcare",
+    platform: "win32",
+    env: {},
+    homedir: "C:\\Users\\test",
     pid: 123,
     nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath: "config/rules.json",

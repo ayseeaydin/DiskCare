@@ -57,6 +57,9 @@ test("InitCommand - creates rules.json using policy template", async () => {
     nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
     setExitCode: () => {},
+    platform: "linux",
+    env: {},
+    homedir: "/home/test",
   };
   cmd.register(program, context);
 
@@ -98,6 +101,9 @@ test("InitCommand - does not overwrite existing config without --force", async (
     output,
     verbose: false,
     cwd: "/virtual",
+    platform: "linux",
+    env: {},
+    homedir: "/home/test",
     pid: 123,
     nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
@@ -136,6 +142,9 @@ test("InitCommand - refuses to overwrite when config path exists but is not a fi
     output,
     verbose: false,
     cwd: "/virtual",
+    platform: "linux",
+    env: {},
+    homedir: "/home/test",
     pid: 123,
     nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
@@ -177,6 +186,9 @@ test("InitCommand - reports CONFIG_WRITE_ERROR when config path cannot be access
     output,
     verbose: false,
     cwd: "/virtual",
+    platform: "linux",
+    env: {},
+    homedir: "/home/test",
     pid: 123,
     nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
@@ -221,6 +233,9 @@ test("InitCommand - lists policies without writing a config file", async () => {
     nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath,
     setExitCode: () => {},
+    platform: "linux",
+    env: {},
+    homedir: "/home/test",
   };
   cmd.register(program, context);
 

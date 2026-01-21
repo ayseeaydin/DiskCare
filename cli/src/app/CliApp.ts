@@ -21,6 +21,9 @@ export class CliApp {
       output: new ConsoleOutput(),
       verbose: false,
       cwd,
+      platform: process.platform,
+      env: process.env,
+      homedir: os.homedir(),
       pid: process.pid,
       nowFn: () => new Date(),
       setExitCode: (code) => {

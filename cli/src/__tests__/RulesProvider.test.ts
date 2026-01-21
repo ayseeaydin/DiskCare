@@ -34,6 +34,9 @@ test("RulesProvider.tryLoad - warns and returns null when rules config fails", a
   const engine = await provider.tryLoad({
     output,
     cwd: "/virtual",
+    platform: "linux",
+    env: {},
+    homedir: "/home/test",
     pid: 123,
     nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
     configPath: rulesPath,
