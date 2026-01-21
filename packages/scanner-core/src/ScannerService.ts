@@ -1,5 +1,5 @@
 import { FileSystemAnalyzer } from "./analyzers/FileSystemAnalyzer.js";
-import type { BaseScanner } from "./scanners/BaseScanner.js";
+import type { Scanner } from "./scanners/BaseScanner.js";
 import type { DiscoveredTarget, ScanTarget } from "./types/ScanTarget.js";
 import type { ScanMetrics } from "./types/ScanMetrics.js";
 import { pathExists } from "./utils/pathExists.js";
@@ -18,7 +18,7 @@ export class ScannerService {
   private readonly pathExistsFn: (p: string) => Promise<boolean>;
 
   constructor(
-    private readonly scanners: BaseScanner[],
+    private readonly scanners: Scanner[],
     deps: ScannerServiceDeps = {},
   ) {
     this.analyzer = deps.analyzer ?? new FileSystemAnalyzer();

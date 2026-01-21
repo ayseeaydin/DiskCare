@@ -1,6 +1,6 @@
 export { ScannerService } from "./ScannerService.js";
 
-export { BaseScanner } from "./scanners/BaseScanner.js";
+export type { Scanner } from "./scanners/BaseScanner.js";
 export { OsTempScanner } from "./scanners/OsTempScanner.js";
 export { NpmCacheScanner } from "./scanners/NpmCacheScanner.js";
 export { SandboxCacheScanner } from "./scanners/SandboxCacheScanner.js";

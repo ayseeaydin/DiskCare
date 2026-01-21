@@ -7,12 +7,10 @@ import type { DiscoveredTarget } from "../types/ScanTarget.js";
 import { toErrorMessageOneLine } from "../utils/errorMessage.js";
 import { isNonEmptyString } from "../utils/typeGuards.js";
 import { err, ok, type Result } from "../utils/result.js";
-import { BaseScanner } from "./BaseScanner.js";
+import type { Scanner } from "./BaseScanner.js";
 
-export class NpmCacheScanner extends BaseScanner {
-  constructor(private readonly runner: CommandRunner = new NodeCommandRunner()) {
-    super();
-  }
+export class NpmCacheScanner implements Scanner {
+  constructor(private readonly runner: CommandRunner = new NodeCommandRunner()) {}
 
   async scan(): Promise<DiscoveredTarget[]> {
     const resolution = await this.resolveNpmCachePath();

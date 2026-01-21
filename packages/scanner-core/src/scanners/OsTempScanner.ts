@@ -1,8 +1,8 @@
 import os from "node:os";
 import type { DiscoveredTarget } from "../types/ScanTarget.js";
-import { BaseScanner } from "./BaseScanner.js";
+import type { Scanner } from "./BaseScanner.js";
 
-export class OsTempScanner extends BaseScanner {
+export class OsTempScanner implements Scanner {
   async scan(): Promise<DiscoveredTarget[]> {
     const tempPath = os.tmpdir();
 

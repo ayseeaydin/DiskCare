@@ -1,5 +1,9 @@
 import type { DiscoveredTarget } from "../types/ScanTarget.js";
 
-export abstract class BaseScanner {
-  abstract scan(): Promise<DiscoveredTarget[]>;
+/**
+ * Scanner interface for discovering cleanup targets.
+ * Prefer composition: each scanner is a standalone service.
+ */
+export interface Scanner {
+  scan(): Promise<DiscoveredTarget[]>;
 }

@@ -2,13 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { ScannerService } from "../ScannerService.js";
-import type { BaseScanner } from "../scanners/BaseScanner.js";
+import type { Scanner } from "../scanners/BaseScanner.js";
 import type { DiscoveredTarget } from "../types/ScanTarget.js";
 
 const VIRTUAL_EXISTING_DIR = "/virtual/existing";
 const VIRTUAL_MISSING_DIR = "/virtual/missing";
 
-class FakeScanner implements BaseScanner {
+class FakeScanner implements Scanner {
   constructor(private readonly out: DiscoveredTarget[]) {}
   async scan(): Promise<DiscoveredTarget[]> {
     return this.out;
