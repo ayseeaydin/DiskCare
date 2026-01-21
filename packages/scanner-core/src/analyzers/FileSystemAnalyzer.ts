@@ -34,39 +34,53 @@ export class FileSystemAnalyzer {
 
     let skippedEntries = 0;
 
-    const walk = async (currentPath: string): Promise<void> => {
-      let entries: Dirent[];
-      try {
-        entries = await this.fsLike.readdir(currentPath, { withFileTypes: true });
-      } catch {
-        skippedEntries += 1;
-        return;
-      }
+    const fsLike = this.fsLike;
 
-      for (const entry of entries) {
-        const fullPath = path.join(currentPath, entry.name);
+    const walkFiles = async function* (
+      startDir: string,
+    ): AsyncGenerator<{ fullPath: string; entry: Dirent }, void, void> {
+      const stack: string[] = [startDir];
 
-        let stat;
+      while (stack.length > 0) {
+        const currentDir = stack.pop() as string;
+
+        let entries: Dirent[];
         try {
-          stat = await this.fsLike.stat(fullPath);
+          entries = await fsLike.readdir(currentDir, { withFileTypes: true });
         } catch {
           skippedEntries += 1;
           continue;
         }
 
-        if (entry.isFile()) {
-          fileCount += 1;
-          totalBytes += stat.size;
+        for (const entry of entries) {
+          const fullPath = path.join(currentDir, entry.name);
+          if (entry.isDirectory()) {
+            stack.push(fullPath);
+            continue;
+          }
 
-          lastModifiedAt = maxTimestamp(lastModifiedAt, stat.mtimeMs);
-          lastAccessedAt = maxTimestamp(lastAccessedAt, stat.atimeMs);
-        } else if (entry.isDirectory()) {
-          await walk(fullPath);
+          if (entry.isFile()) {
+            yield { fullPath, entry };
+          }
         }
       }
     };
 
-    await walk(rootPath);
+    for await (const { fullPath } of walkFiles(rootPath)) {
+      let stat;
+      try {
+        stat = await this.fsLike.stat(fullPath);
+      } catch {
+        skippedEntries += 1;
+        continue;
+      }
+
+      fileCount += 1;
+      totalBytes += stat.size;
+
+      lastModifiedAt = maxTimestamp(lastModifiedAt, stat.mtimeMs);
+      lastAccessedAt = maxTimestamp(lastAccessedAt, stat.atimeMs);
+    }
 
     return {
       totalBytes,
