@@ -118,9 +118,13 @@ node cli/dist/index.js report
 
 ## Configuration | Yapılandırma
 
-DiskCare reads rules from `./config/rules.json` by default.
+DiskCare reads rules from `./config/rules.json` when it exists.
 
-Varsayılan olarak kuralları `./config/rules.json` dosyasından okur.
+If that file is missing, it falls back to a per-user default config location.
+
+Varsayılan olarak `./config/rules.json` varsa onu okur.
+
+Bu dosya yoksa kullanıcı bazlı (per-user) varsayılan config konumuna düşer.
 
 - Create a starter config: `diskcare init` (won't overwrite unless `--force`)
 - See available templates: `diskcare init --list-policies`
