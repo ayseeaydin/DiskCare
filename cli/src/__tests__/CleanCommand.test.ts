@@ -100,14 +100,14 @@ test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
   const output = new FakeOutput();
   const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
 
-  const trashedPaths: string[] = [];
+  const trashedBatches: string[][] = [];
 
   const cmd = new CleanCommand({
     nowMs: () => nowMs,
     scanAll: async (_context) => [makeEligibleTarget(nowMs)],
     loadRules: async () => makeRulesEngine(),
     trashFn: async (paths: string[]) => {
-      trashedPaths.push(...paths);
+      trashedBatches.push([...paths]);
     },
     writeLog: async () => "logs/run-test.json",
   });
@@ -136,7 +136,8 @@ test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
     "--yes",
   ]);
 
-  assert.deepEqual(trashedPaths, ["D:\\diskcare\\.sandbox-cache"]);
+  assert.equal(trashedBatches.length, 1);
+  assert.deepEqual(trashedBatches[0], ["D:\\diskcare\\.sandbox-cache"]);
   assert.ok(
     output.infos.some((l) => l.includes("apply results: trashed=1")),
     "should print apply results",

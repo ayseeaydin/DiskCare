@@ -134,46 +134,37 @@ export class CleanCommand extends BaseCommand {
     if (!options.apply) return [];
 
     const eligible = plan.items.filter((i) => i.status === "eligible");
-    const results: ApplyResult[] = [];
-
-    for (const item of eligible) {
-      if (!canApply) {
-        results.push({
-          id: item.id,
-          path: item.path,
-          status: "skipped",
-          estimatedBytes: item.estimatedBytes,
-          message: options.dryRun
-            ? "dry-run is enabled; no changes were made."
-            : "confirmation required: pass --yes to apply",
-        });
-        continue;
-      }
-
-      results.push(await this.trashItem(deps, item.id, item.path, item.estimatedBytes));
+    if (!canApply) {
+      return eligible.map((item) => ({
+        id: item.id,
+        path: item.path,
+        status: "skipped" as const,
+        estimatedBytes: item.estimatedBytes,
+        message: options.dryRun
+          ? "dry-run is enabled; no changes were made."
+          : "confirmation required: pass --yes to apply",
+      }));
     }
 
-    return results;
-  }
+    const paths = eligible.map((i) => i.path);
 
-  private async trashItem(
-    deps: Pick<CleanCommandDeps, "trashFn">,
-    id: string,
-    itemPath: string,
-    estimatedBytes: number,
-  ): Promise<ApplyResult> {
     try {
-      await deps.trashFn([itemPath]);
-      return { id, path: itemPath, status: "trashed", estimatedBytes };
+      await deps.trashFn(paths);
+      return eligible.map((item) => ({
+        id: item.id,
+        path: item.path,
+        status: "trashed" as const,
+        estimatedBytes: item.estimatedBytes,
+      }));
     } catch (err) {
-      const message = toOneLine(toErrorMessage(err));
-      return {
-        id,
-        path: itemPath,
-        status: "failed",
-        estimatedBytes,
-        message: truncate(message, 180),
-      };
+      const message = truncate(toOneLine(toErrorMessage(err)), 180);
+      return eligible.map((item) => ({
+        id: item.id,
+        path: item.path,
+        status: "failed" as const,
+        estimatedBytes: item.estimatedBytes,
+        message,
+      }));
     }
   }
 
