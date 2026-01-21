@@ -5,8 +5,19 @@ import { APP_VERSION } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
 import { LogWriteError } from "../errors/DiskcareError.js";
 
+type NowFn = () => Date;
+
 export class LogWriter {
-  constructor(private readonly logsDir: string) {}
+  private readonly nowFn: NowFn;
+
+  constructor(
+    private readonly logsDir: string,
+    deps?: {
+      nowFn?: NowFn;
+    },
+  ) {
+    this.nowFn = deps?.nowFn ?? (() => new Date());
+  }
 
   async writeRunLog(payload: unknown): Promise<string> {
     try {
@@ -15,11 +26,11 @@ export class LogWriter {
       throw new LogWriteError("Failed to create logs directory", { logsDir: this.logsDir }, err);
     }
 
-    const fileBase = `run-${timestampForFileName(new Date())}-${process.pid}-${randomSuffix()}`;
+    const fileBase = `run-${timestampForFileName(this.nowFn())}-${process.pid}-${randomSuffix()}`;
     const finalPath = path.join(this.logsDir, `${fileBase}.json`);
     const tmpPath = path.join(this.logsDir, `${fileBase}.tmp`);
 
-    const content = safeStringify(payload);
+    const content = safeStringify(payload, this.nowFn);
 
     // Atomic write: write temp then rename
     try {
@@ -63,7 +74,7 @@ function randomSuffix(): string {
   return crypto.randomBytes(4).toString("hex");
 }
 
-function safeStringify(payload: unknown): string {
+function safeStringify(payload: unknown, nowFn: NowFn): string {
   try {
     return JSON.stringify(payload, jsonReplacer, 2);
   } catch (err) {
@@ -72,7 +83,7 @@ function safeStringify(payload: unknown): string {
     return JSON.stringify(
       {
         version: APP_VERSION,
-        timestamp: new Date().toISOString(),
+        timestamp: nowFn().toISOString(),
         command: "unknown",
         error: `LogWriter JSON.stringify failed: ${message}`,
       },
