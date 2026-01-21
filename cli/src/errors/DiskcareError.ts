@@ -27,6 +27,15 @@ export class ConfigLoadError extends DiskcareError {
 }
 
 /**
+ * Configuration writing errors (init, etc.)
+ */
+export class ConfigWriteError extends DiskcareError {
+  constructor(message: string, context?: Record<string, unknown>, cause?: unknown) {
+    super(message, "CONFIG_WRITE_ERROR", context, cause);
+  }
+}
+
+/**
  * File system scanning errors
  */
 export class ScanError extends DiskcareError {

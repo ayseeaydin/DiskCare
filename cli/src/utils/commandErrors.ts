@@ -32,6 +32,8 @@ function suggestionForCode(code: string): string | null {
   switch (code) {
     case "CONFIG_LOAD_ERROR":
       return "Check config/rules.json exists and is valid JSON.";
+    case "CONFIG_WRITE_ERROR":
+      return "Check the config path is writable (permissions, path, disk space).";
     case "LOG_WRITE_ERROR":
       return "Check the logs directory is writable (permissions, path, disk space).";
     case "SCAN_ERROR":

@@ -1,0 +1,99 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import { Command } from "commander";
+
+import { InitCommand } from "../commands/InitCommand.js";
+import type { CommandContext } from "../types/CommandContext.js";
+
+class FakeOutput {
+  readonly infos: string[] = [];
+  readonly warns: string[] = [];
+  readonly errors: string[] = [];
+
+  info(message: string): void {
+    this.infos.push(message);
+  }
+  warn(message: string): void {
+    this.warns.push(message);
+  }
+  error(message: string): void {
+    this.errors.push(message);
+  }
+}
+
+test("InitCommand - creates rules.json using policy template", async () => {
+  const output = new FakeOutput();
+  const files = new Map<string, string>();
+
+  const configPath = "/virtual/config/rules.json";
+  const createdDirs: string[] = [];
+
+  const cmd = new InitCommand({
+    fs: {
+      mkdir: async (dir: string) => {
+        createdDirs.push(dir);
+        return undefined;
+      },
+      writeFile: async (filePath: string, content: string) => {
+        files.set(filePath, content);
+      },
+      stat: async (_filePath: string) => {
+        throw new Error("ENOENT");
+      },
+    },
+  });
+
+  const program = new Command();
+  program.exitOverride();
+
+  const context: CommandContext = { output, verbose: false, configPath };
+  cmd.register(program, context);
+
+  await program.parseAsync(["node", "diskcare", "init", "--policy", "aggressive"]);
+
+  const raw = files.get(configPath);
+  assert.ok(raw, "should write config file");
+
+  const parsed = JSON.parse(raw ?? "{}") as any;
+  assert.equal(parsed.defaults.safeAfterDays, 14);
+  assert.ok(Array.isArray(parsed.rules));
+  assert.ok(createdDirs.some((d) => d.includes("/virtual/config")));
+
+  assert.ok(output.infos.some((l) => l.includes("Created rules config")));
+  assert.ok(output.infos.some((l) => l.includes("Policy: aggressive")));
+});
+
+test("InitCommand - does not overwrite existing config without --force", async () => {
+  const output = new FakeOutput();
+  const files = new Map<string, string>([["/virtual/config/rules.json", "{\n}\n"]]);
+
+  const configPath = "/virtual/config/rules.json";
+
+  const cmd = new InitCommand({
+    fs: {
+      mkdir: async () => undefined,
+      writeFile: async (filePath: string, content: string) => {
+        files.set(filePath, content);
+      },
+      stat: async (_filePath: string) => ({ isFile: () => true }),
+    },
+  });
+
+  const program = new Command();
+  program.exitOverride();
+
+  const prevExitCode = process.exitCode;
+  process.exitCode = 0;
+
+  const context: CommandContext = { output, verbose: false, configPath };
+  cmd.register(program, context);
+
+  await program.parseAsync(["node", "diskcare", "init"]);
+
+  assert.equal(process.exitCode, 1);
+  assert.ok(output.errors.some((l) => l.startsWith("error:")));
+  assert.ok(output.errors.some((l) => l === "code: VALIDATION_ERROR"));
+
+  process.exitCode = prevExitCode;
+});
