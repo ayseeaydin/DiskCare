@@ -56,6 +56,7 @@ type LoggedApplyResult = {
 export type ReportSummary = {
   runCount: number;
   latestRunAt: string | null;
+  latestRunFile: string | null;
 
   // latest scan snapshot
   latestScanAt: string | null;
@@ -77,6 +78,7 @@ export type ReportSummary = {
 };
 
 type ParsedLog = {
+  file: string;
   command: string;
   timestamp: string;
   dryRun: boolean;
@@ -97,7 +99,9 @@ export class ReportService {
     const logs = await this.loadLogs();
 
     const runCount = logs.length;
-    const latestRunAt = this.maxTimestamp(logs);
+    const latest = this.pickLatestByTimestamp(logs);
+    const latestRunAt = latest?.timestamp ?? null;
+    const latestRunFile = latest ? path.basename(latest.file) : null;
 
     const scan = this.summarizeLatestScan(logs);
     const apply = this.summarizeApplyRuns(logs);
@@ -105,6 +109,7 @@ export class ReportService {
     return {
       runCount,
       latestRunAt,
+      latestRunFile,
 
       latestScanAt: scan.latestScanAt,
       scanTotalBytes: scan.scanTotalBytes,
@@ -125,8 +130,37 @@ export class ReportService {
   }
 
   private async loadLogs(): Promise<ParsedLog[]> {
-    const files = await this.listJsonFilesSafe(this.logsDir);
-    return this.readLogsSafe(files);
+    const [files, latest] = await Promise.all([
+      this.listJsonFilesSafe(this.logsDir),
+      this.readLatestRunLogPathSafe(),
+    ]);
+
+    const unique = new Set<string>(files);
+    if (latest) unique.add(latest);
+
+    return this.readLogsSafe([...unique]);
+  }
+
+  private async readLatestRunLogPathSafe(): Promise<string | null> {
+    const metaPath = path.join(this.logsDir, "meta", "latest-run.json");
+
+    try {
+      const raw = await this.reportFs.readFile(metaPath, "utf8");
+      const parsed = JSON.parse(raw) as unknown;
+      if (!isObject(parsed)) return null;
+
+      const logFile = asString((parsed as JsonObject).logFile);
+      if (!logFile) return null;
+
+      // Defensive: only allow a simple filename; no path traversal.
+      if (logFile !== path.basename(logFile)) return null;
+      if (logFile.includes("/") || logFile.includes("\\")) return null;
+      if (!logFile.endsWith(".json")) return null;
+
+      return path.join(this.logsDir, logFile);
+    } catch {
+      return null;
+    }
   }
 
   private summarizeLatestScan(logs: ParsedLog[]): {
@@ -281,6 +315,7 @@ export class ReportService {
         if (!command || !timestamp) continue;
 
         out.push({
+          file,
           command,
           timestamp,
           dryRun: asBoolean(parsed.dryRun) ?? true,
@@ -296,11 +331,6 @@ export class ReportService {
     }
 
     return out;
-  }
-
-  private maxTimestamp(logs: ParsedLog[]): string | null {
-    const latest = this.pickLatestByTimestamp(logs);
-    return latest?.timestamp ?? null;
   }
 
   private pickLatestByTimestamp<T extends { timestamp?: string }>(items: T[]): T | null {

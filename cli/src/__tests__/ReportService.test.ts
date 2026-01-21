@@ -122,6 +122,7 @@ test("ReportService.summarize - aggregates latest scan snapshot and apply aggreg
   // top-level
   assert.equal(summary.runCount, 2);
   assert.equal(summary.latestRunAt, new Date("2026-01-16T11:00:00.000Z").toISOString());
+  assert.equal(summary.latestRunFile, "run-apply.json");
 
   // scan (latest)
   assert.equal(summary.latestScanAt, new Date("2026-01-16T10:00:00.000Z").toISOString());
@@ -130,6 +131,63 @@ test("ReportService.summarize - aggregates latest scan snapshot and apply aggreg
   assert.equal(summary.scanSkippedTargets, 1);
 
   // apply aggregates
+  assert.equal(summary.applyRuns, 1);
+  assert.equal(summary.trashedCount, 1);
+  assert.equal(summary.failedCount, 0);
+  assert.equal(summary.latestApplyAt, new Date("2026-01-16T11:00:00.000Z").toISOString());
+  assert.equal(summary.trashedEstimatedBytes, 50);
+});
+
+test("ReportService.summarize - uses meta/latest-run.json when logs dir listing fails", async () => {
+  const logsDir = path.join(path.sep, "virtual", "logs");
+
+  const applyLog = {
+    version: "0.0.1",
+    timestamp: new Date("2026-01-16T11:00:00.000Z").toISOString(),
+    command: "clean",
+    dryRun: false,
+    apply: true,
+    applySummary: {
+      trashed: 1,
+      failed: 0,
+      trashedEstimatedBytes: 50,
+    },
+  };
+
+  const metaPath = path.join(logsDir, "meta", "latest-run.json");
+  const applyPath = path.join(logsDir, "run-apply.json");
+
+  const filesByPath = new Map<string, string>([
+    [metaPath, JSON.stringify({ logFile: "run-apply.json" }, null, 2)],
+    [applyPath, JSON.stringify(applyLog, null, 2)],
+  ]);
+
+  const fakeFs = {
+    readdir: async (_dir: string) => {
+      throw new Error("EACCES: cannot list directory");
+    },
+    readFile: async (file: string, encoding: "utf8") => {
+      assert.equal(encoding, "utf8");
+      const content = filesByPath.get(file);
+      if (content === undefined) throw new Error(`ENOENT: no such file ${file}`);
+      return content;
+    },
+  };
+
+  const service = new ReportService(logsDir, fakeFs);
+  const summary = await service.summarize();
+
+  assert.equal(summary.runCount, 1);
+  assert.equal(summary.latestRunAt, new Date("2026-01-16T11:00:00.000Z").toISOString());
+  assert.equal(summary.latestRunFile, "run-apply.json");
+
+  // no scan logs available
+  assert.equal(summary.latestScanAt, null);
+  assert.equal(summary.scanTotalBytes, 0);
+  assert.equal(summary.scanMissingTargets, 0);
+  assert.equal(summary.scanSkippedTargets, 0);
+
+  // apply aggregates from pointed log
   assert.equal(summary.applyRuns, 1);
   assert.equal(summary.trashedCount, 1);
   assert.equal(summary.failedCount, 0);
