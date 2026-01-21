@@ -41,7 +41,7 @@ export class ScanCommand extends BaseCommand {
     // Load rules config (do not crash CLI if missing; stay explainable)
     const rulesEngine = await new RulesProvider(context.configPath).tryLoad(context);
 
-    const logPath = await this.writeScanLog({ dryRun: options.dryRun, targets });
+    const logPath = await this.writeScanLog(context, { dryRun: options.dryRun, targets });
 
     if (options.asJson) {
       // JSON output intentionally stays stable; we don't add logPath yet.
@@ -72,8 +72,11 @@ export class ScanCommand extends BaseCommand {
     return scannerService.scanAll();
   }
 
-  private async writeScanLog(input: { dryRun: boolean; targets: ScanTarget[] }): Promise<string> {
-    const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
+  private async writeScanLog(
+    context: CommandContext,
+    input: { dryRun: boolean; targets: ScanTarget[] },
+  ): Promise<string> {
+    const logWriter = new LogWriter(path.resolve(context.cwd, "logs"), { pid: context.pid });
     const payload = {
       version: APP_VERSION,
       timestamp: new Date().toISOString(),

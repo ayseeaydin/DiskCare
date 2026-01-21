@@ -3,6 +3,10 @@ import type { Output } from "../output/Output.js";
 export type CommandContext = {
   output: Output;
   verbose?: boolean;
+  /** Current working directory for this CLI invocation. */
+  cwd: string;
+  /** Process id for this CLI invocation. */
+  pid: number;
   /**
    * Optional hook for setting an exit code (primarily for tests).
    * CliApp wires this to process.exitCode.

@@ -16,14 +16,17 @@ export class CliApp {
 
   constructor(private readonly commands: BaseCommand[]) {
     this.program = new Command();
+    const cwd = process.cwd();
     this.context = {
       output: new ConsoleOutput(),
       verbose: false,
+      cwd,
+      pid: process.pid,
       setExitCode: (code) => {
         process.exitCode = code;
       },
       configPath: getDefaultConfigPath({
-        cwd: process.cwd(),
+        cwd,
         platform: process.platform,
         env: process.env,
         homedir: os.homedir(),
@@ -46,7 +49,7 @@ export class CliApp {
       const opts = this.program.opts<{ verbose?: boolean; config?: string }>();
       this.context.verbose = opts.verbose ?? false;
       if (typeof opts.config === "string" && opts.config.trim().length > 0) {
-        this.context.configPath = path.resolve(process.cwd(), opts.config);
+        this.context.configPath = path.resolve(this.context.cwd, opts.config);
       }
     });
 

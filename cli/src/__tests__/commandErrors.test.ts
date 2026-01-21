@@ -31,6 +31,8 @@ test("handleCommandError - prints code + hint and sets exitCode", () => {
   const context: CommandContext = {
     output,
     verbose: false,
+    cwd: "/virtual",
+    pid: 123,
     configPath: "config/rules.json",
     setExitCode: (code) => {
       exitCode = code;

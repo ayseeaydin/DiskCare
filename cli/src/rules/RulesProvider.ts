@@ -16,8 +16,8 @@ export class RulesProvider {
     private readonly loader: RulesConfigLoaderLike = new RulesConfigLoader(),
   ) {}
 
-  static fromCwd(): RulesProvider {
-    const rulesPath = path.resolve(process.cwd(), "config", "rules.json");
+  static fromCwd(cwd: string): RulesProvider {
+    const rulesPath = path.resolve(cwd, "config", "rules.json");
     return new RulesProvider(rulesPath);
   }
 

@@ -37,7 +37,7 @@ export type CleanCommandDeps = {
   scanAll: () => Promise<ScanTarget[]>;
   loadRules: (context: CommandContext) => Promise<RulesEngine | null>;
   trashFn: (paths: string[]) => Promise<void>;
-  writeLog: (payload: unknown) => Promise<string>;
+  writeLog: (context: CommandContext, payload: unknown) => Promise<string>;
 };
 
 export class CleanCommand extends BaseCommand {
@@ -79,6 +79,7 @@ export class CleanCommand extends BaseCommand {
     const applySummary = this.computeApplySummary(options.apply, canApply, applyResults);
 
     const logPath = await deps.writeLog(
+      context,
       this.buildRunLogPayload({ options, plan, applyResults, applySummary }),
     );
 
@@ -303,8 +304,8 @@ export class CleanCommand extends BaseCommand {
     return new RulesProvider(context.configPath).tryLoad(context);
   }
 
-  private async defaultWriteLog(payload: unknown): Promise<string> {
-    const logWriter = new LogWriter(path.resolve(process.cwd(), "logs"));
+  private async defaultWriteLog(context: CommandContext, payload: unknown): Promise<string> {
+    const logWriter = new LogWriter(path.resolve(context.cwd, "logs"), { pid: context.pid });
     return logWriter.writeRunLog(payload);
   }
 }

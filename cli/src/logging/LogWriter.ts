@@ -9,14 +9,17 @@ type NowFn = () => Date;
 
 export class LogWriter {
   private readonly nowFn: NowFn;
+  private readonly pid: number;
 
   constructor(
     private readonly logsDir: string,
     deps?: {
       nowFn?: NowFn;
+      pid?: number;
     },
   ) {
     this.nowFn = deps?.nowFn ?? (() => new Date());
+    this.pid = deps?.pid ?? process.pid;
   }
 
   async writeRunLog(payload: unknown): Promise<string> {
@@ -26,7 +29,7 @@ export class LogWriter {
       throw new LogWriteError("Failed to create logs directory", { logsDir: this.logsDir }, err);
     }
 
-    const fileBase = `run-${timestampForFileName(this.nowFn())}-${process.pid}-${randomSuffix()}`;
+    const fileBase = `run-${timestampForFileName(this.nowFn())}-${this.pid}-${randomSuffix()}`;
     const finalPath = path.join(this.logsDir, `${fileBase}.json`);
     const tmpPath = path.join(this.logsDir, `${fileBase}.tmp`);
 

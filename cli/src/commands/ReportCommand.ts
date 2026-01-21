@@ -15,7 +15,7 @@ export class ReportCommand extends BaseCommand {
   }
 
   protected async execute(_args: unknown[], context: CommandContext): Promise<void> {
-    const logsDir = path.resolve(process.cwd(), "logs");
+    const logsDir = path.resolve(context.cwd, "logs");
     const service = new ReportService(logsDir);
 
     const summary = await service.summarize();

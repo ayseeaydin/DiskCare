@@ -49,7 +49,14 @@ test("InitCommand - creates rules.json using policy template", async () => {
   const program = new Command();
   program.exitOverride();
 
-  const context: CommandContext = { output, verbose: false, configPath, setExitCode: () => {} };
+  const context: CommandContext = {
+    output,
+    verbose: false,
+    cwd: "/virtual",
+    pid: 123,
+    configPath,
+    setExitCode: () => {},
+  };
   cmd.register(program, context);
 
   await program.parseAsync(["node", "diskcare", "init", "--policy", "aggressive"]);
@@ -89,6 +96,8 @@ test("InitCommand - does not overwrite existing config without --force", async (
   const context: CommandContext = {
     output,
     verbose: false,
+    cwd: "/virtual",
+    pid: 123,
     configPath,
     setExitCode: (code) => {
       exitCode = code;
@@ -124,6 +133,8 @@ test("InitCommand - refuses to overwrite when config path exists but is not a fi
   const context: CommandContext = {
     output,
     verbose: false,
+    cwd: "/virtual",
+    pid: 123,
     configPath,
     setExitCode: (code) => {
       exitCode = code;
@@ -162,6 +173,8 @@ test("InitCommand - reports CONFIG_WRITE_ERROR when config path cannot be access
   const context: CommandContext = {
     output,
     verbose: false,
+    cwd: "/virtual",
+    pid: 123,
     configPath,
     setExitCode: (code) => {
       exitCode = code;
@@ -196,7 +209,14 @@ test("InitCommand - lists policies without writing a config file", async () => {
   const program = new Command();
   program.exitOverride();
 
-  const context: CommandContext = { output, verbose: false, configPath, setExitCode: () => {} };
+  const context: CommandContext = {
+    output,
+    verbose: false,
+    cwd: "/virtual",
+    pid: 123,
+    configPath,
+    setExitCode: () => {},
+  };
   cmd.register(program, context);
 
   await program.parseAsync(["node", "diskcare", "init", "--list-policies"]);

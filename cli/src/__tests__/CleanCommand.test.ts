@@ -74,7 +74,14 @@ test("CleanCommand - does not call trash when --apply --no-dry-run but missing -
 
   const program = new Command();
   program.exitOverride();
-  cmd.register(program, { output, verbose: false, configPath: "config/rules.json", setExitCode: () => {} });
+  cmd.register(program, {
+    output,
+    verbose: false,
+    cwd: "D:\\diskcare",
+    pid: 123,
+    configPath: "config/rules.json",
+    setExitCode: () => {},
+  });
 
   await program.parseAsync(["node", "diskcare", "clean", "--apply", "--no-dry-run"]);
 
@@ -103,7 +110,14 @@ test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
 
   const program = new Command();
   program.exitOverride();
-  cmd.register(program, { output, verbose: false, configPath: "config/rules.json", setExitCode: () => {} });
+  cmd.register(program, {
+    output,
+    verbose: false,
+    cwd: "D:\\diskcare",
+    pid: 123,
+    configPath: "config/rules.json",
+    setExitCode: () => {},
+  });
 
   await program.parseAsync([
     "node",
