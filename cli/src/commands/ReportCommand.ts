@@ -4,21 +4,39 @@ import path from "node:path";
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { ReportService } from "../reporting/ReportService.js";
+import type { ReportSummary } from "../reporting/ReportService.js";
 import { formatBytes } from "../formatters/formatBytes.js";
+
+type ReportOptions = {
+  json?: boolean;
+};
+
+export type ReportCommandDeps = {
+  summarize: (context: CommandContext) => Promise<ReportSummary>;
+};
 
 export class ReportCommand extends BaseCommand {
   readonly name = "report";
   readonly description = "Summarize past runs from logs";
 
-  protected configure(_cmd: Command): void {
-    // no options for now
+  constructor(private readonly deps?: Partial<ReportCommandDeps>) {
+    super();
+  }
+
+  protected configure(cmd: Command): void {
+    cmd.option("--json", "Output JSON");
   }
 
   protected async execute(_args: unknown[], context: CommandContext): Promise<void> {
-    const logsDir = path.resolve(context.cwd, "logs");
-    const service = new ReportService(logsDir);
+    const options = this.parseOptions(_args);
+    const deps = this.resolveDeps();
 
-    const summary = await service.summarize();
+    const summary = await deps.summarize(context);
+
+    if (options.asJson) {
+      context.output.info(JSON.stringify({ command: "report", ...summary }, null, 2));
+      return;
+    }
 
     context.output.info("report");
     context.output.info(`  runs:                 ${summary.runCount}`);
@@ -37,6 +55,27 @@ export class ReportCommand extends BaseCommand {
     context.output.info(`  trashed:              ${summary.trashedCount}`);
     context.output.info(`  failed:               ${summary.failedCount}`);
     context.output.info(`  latest apply:         ${summary.latestApplyAt ?? "-"}`);
-    context.output.info(`  trashed est bytes:    ${formatBytes(summary.trashedEstimatedBytes)}`);
+    context.output.info(
+      `  trashed est bytes:    ${formatBytes(summary.trashedEstimatedBytes)}`,
+    );
+  }
+
+  private resolveDeps(): ReportCommandDeps {
+    return {
+      summarize: this.deps?.summarize ?? this.defaultSummarize.bind(this),
+    };
+  }
+
+  private parseOptions(args: unknown[]): { asJson: boolean } {
+    const options = (args[0] ?? {}) as ReportOptions;
+    return {
+      asJson: options.json ?? false,
+    };
+  }
+
+  private async defaultSummarize(context: CommandContext): Promise<ReportSummary> {
+    const logsDir = path.resolve(context.cwd, "logs");
+    const service = new ReportService(logsDir);
+    return service.summarize();
   }
 }
