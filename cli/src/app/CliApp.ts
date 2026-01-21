@@ -1,10 +1,13 @@
 import { Command } from "commander";
 import path from "node:path";
+import os from "node:os";
+import fs from "node:fs";
 import { ConsoleOutput } from "../output/ConsoleOutput.js";
 import type { BaseCommand } from "../commands/BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { APP_VERSION } from "../utils/constants.js";
 import { handleCommandError } from "../utils/commandErrors.js";
+import { getDefaultConfigPath } from "../utils/configPaths.js";
 
 export class CliApp {
   private readonly program: Command;
@@ -15,7 +18,13 @@ export class CliApp {
     this.context = {
       output: new ConsoleOutput(),
       verbose: false,
-      configPath: path.resolve(process.cwd(), "config", "rules.json"),
+      configPath: getDefaultConfigPath({
+        cwd: process.cwd(),
+        platform: process.platform,
+        env: process.env,
+        homedir: os.homedir(),
+        pathExists: (p) => fs.existsSync(p),
+      }),
     };
   }
 
