@@ -1,15 +1,23 @@
 import type { Command } from "commander";
 import path from "node:path";
+import { z } from "zod";
 
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { ReportService } from "../reporting/ReportService.js";
 import type { ReportSummary } from "../reporting/ReportService.js";
 import { formatBytes } from "../formatters/formatBytes.js";
+import { ValidationError } from "../errors/DiskcareError.js";
 
 type ReportOptions = {
   json?: boolean;
 };
+
+const ReportOptionsSchema = z
+  .object({
+    json: z.boolean().optional(),
+  })
+  .passthrough();
 
 export type ReportCommandDeps = {
   summarize: (context: CommandContext) => Promise<ReportSummary>;
@@ -67,7 +75,14 @@ export class ReportCommand extends BaseCommand {
   }
 
   private parseOptions(args: unknown[]): { asJson: boolean } {
-    const options = (args[0] ?? {}) as ReportOptions;
+    const parsed = ReportOptionsSchema.safeParse(args[0] ?? {});
+    if (!parsed.success) {
+      throw new ValidationError("Invalid report command options", {
+        issues: parsed.error.issues,
+      });
+    }
+
+    const options: ReportOptions = parsed.data;
     return {
       asJson: options.json ?? false,
     };
