@@ -20,13 +20,16 @@ async function withTempDir(fn: (dir: string) => Promise<void>): Promise<void> {
 
 type RunResult = { exitCode: number; stdout: string; stderr: string };
 
-async function runCli(args: string[], opts: { cwd: string }): Promise<RunResult> {
+async function runCli(
+  args: string[],
+  opts: { cwd: string; env?: Record<string, string | undefined> },
+): Promise<RunResult> {
   const cliEntry = path.resolve(__dirname, "..", "index.js");
 
   return await new Promise<RunResult>((resolve, reject) => {
     const child = spawn(process.execPath, [cliEntry, ...args], {
       cwd: opts.cwd,
-      env: { ...process.env },
+      env: { ...process.env, ...opts.env },
       stdio: ["ignore", "pipe", "pipe"],
     });
 
@@ -164,5 +167,33 @@ test("CLI E2E - report --json is parseable and stable", async () => {
     assert.equal(typeof parsed.applyRuns, "number");
     assert.equal(typeof parsed.trashedCount, "number");
     assert.equal(typeof parsed.failedCount, "number");
+  });
+});
+
+test("CLI E2E - scan --json is parseable and stable", async () => {
+  await withTempDir(async (cwd) => {
+    const configPath = path.resolve(cwd, "config", "rules.json");
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.writeFile(
+      configPath,
+      JSON.stringify({ rules: [], defaults: { risk: "caution", safeAfterDays: 30 } }, null, 2),
+      "utf8",
+    );
+
+    const result = await runCli(["scan", "--json"], {
+      cwd,
+      env: {
+        // Keep E2E fast and deterministic: only the sandbox target.
+        DISKCARE_SCAN_ONLY: "sandbox",
+      },
+    });
+
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stderr.trim(), "");
+
+    const parsed = JSON.parse(result.stdout.trim()) as Record<string, unknown>;
+    assert.equal(parsed.command, "scan");
+    assert.equal(typeof parsed.dryRun, "boolean");
+    assert.ok(Array.isArray(parsed.targets));
   });
 });
