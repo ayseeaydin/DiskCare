@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 import path from "node:path";
 import fs from "node:fs/promises";
+import { z } from "zod";
 
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
@@ -11,6 +12,14 @@ type InitOptions = {
   force?: boolean;
   listPolicies?: boolean;
 };
+
+const InitOptionsSchema = z
+  .object({
+    policy: z.string().optional(),
+    force: z.boolean().optional(),
+    listPolicies: z.boolean().optional(),
+  })
+  .passthrough();
 
 type InitFs = {
   mkdir: (dir: string, opts: { recursive: true }) => Promise<string | undefined>;
@@ -84,7 +93,14 @@ export class InitCommand extends BaseCommand {
   }
 
   private parseOptions(args: unknown[]): { policy: string; force: boolean; listPolicies: boolean } {
-    const options = (args[0] ?? {}) as InitOptions;
+    const parsed = InitOptionsSchema.safeParse(args[0] ?? {});
+    if (!parsed.success) {
+      throw new ValidationError("Invalid init command options", {
+        issues: parsed.error.issues,
+      });
+    }
+
+    const options: InitOptions = parsed.data;
     return {
       policy: String(options.policy ?? "conservative"),
       force: options.force ?? false,
@@ -125,7 +141,10 @@ export class InitCommand extends BaseCommand {
 
 function isErrno(err: unknown, code: string): boolean {
   if (!err) return false;
-  if (typeof err === "object" && "code" in err && (err as any).code === code) return true;
+  if (typeof err === "object" && "code" in err) {
+    const c = (err as { code?: unknown }).code;
+    if (typeof c === "string" && c === code) return true;
+  }
   if (err instanceof Error && typeof err.message === "string" && err.message.includes(code)) {
     return true;
   }
