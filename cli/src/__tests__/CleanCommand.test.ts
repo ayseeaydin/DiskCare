@@ -56,7 +56,9 @@ function makeRulesEngine(): RulesEngine {
   });
 }
 
-test("CleanCommand - does not call trash when --apply --no-dry-run but missing --yes", async () => {
+test(
+  "CleanCommand - should not call trash when --apply --no-dry-run but missing --yes",
+  async () => {
   const output = new FakeOutput();
   const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
 
@@ -94,9 +96,10 @@ test("CleanCommand - does not call trash when --apply --no-dry-run but missing -
     output.warns.some((w) => w.includes("confirmation is missing")),
     "should warn about missing confirmation",
   );
-});
+  },
+);
 
-test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
+test("CleanCommand - should call trash when --apply --no-dry-run --yes", async () => {
   const output = new FakeOutput();
   const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
 
@@ -144,7 +147,7 @@ test("CleanCommand - calls trash when --apply --no-dry-run --yes", async () => {
   );
 });
 
-test("CleanCommand - reports batch trash failure clearly", async () => {
+test("CleanCommand - should report batch trash failure clearly", async () => {
   const output = new FakeOutput();
   const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
 

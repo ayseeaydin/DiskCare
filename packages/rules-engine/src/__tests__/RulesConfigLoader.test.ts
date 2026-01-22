@@ -5,7 +5,7 @@ import path from "node:path";
 import { RulesConfigLoader } from "../RulesConfigLoader.js";
 import type { RuleConfig } from "../types/RuleConfig.js";
 
-test("RulesConfigLoader.loadFromFile - loads valid JSON and returns RuleConfig", async () => {
+test("RulesConfigLoader.loadFromFile - should load valid JSON and return RuleConfig", async () => {
   const rulesPath = path.join(path.sep, "virtual", "rules.json");
 
   const expected: RuleConfig = {
@@ -47,7 +47,7 @@ test("RulesConfigLoader.loadFromFile - loads valid JSON and returns RuleConfig",
 
 });
 
-test("RulesConfigLoader.loadFromFile - throws on invalid JSON", async () => {
+test("RulesConfigLoader.loadFromFile - should throw on invalid JSON", async () => {
   const rulesPath = path.join(path.sep, "virtual", "rules.json");
   const filesByPath = new Map<string, string>([[rulesPath, "{ invalid json"]]);
 
@@ -65,7 +65,7 @@ test("RulesConfigLoader.loadFromFile - throws on invalid JSON", async () => {
   await assert.rejects(async () => loader.loadFromFile(rulesPath));
 });
 
-test("RulesConfigLoader.loadFromFile - rejects unknown risk levels", async () => {
+test("RulesConfigLoader.loadFromFile - should reject unknown risk levels", async () => {
   const rulesPath = path.join(path.sep, "virtual", "rules.json");
 
   const invalid = {
@@ -96,7 +96,7 @@ test("RulesConfigLoader.loadFromFile - rejects unknown risk levels", async () =>
   await assert.rejects(async () => loader.loadFromFile(rulesPath));
 });
 
-test("RulesConfigLoader.loadFromFile - rejects invalid rule id format", async () => {
+test("RulesConfigLoader.loadFromFile - should reject invalid rule id format", async () => {
   const rulesPath = path.join(path.sep, "virtual", "rules.json");
 
   const invalid = {
@@ -127,7 +127,9 @@ test("RulesConfigLoader.loadFromFile - rejects invalid rule id format", async ()
   await assert.rejects(async () => loader.loadFromFile(rulesPath));
 });
 
-test("RulesConfigLoader.loadFromFile - rejects safeAfterDays out of range or non-integer", async () => {
+test(
+  "RulesConfigLoader.loadFromFile - should reject safeAfterDays out of range or non-integer",
+  async () => {
   const rulesPath = path.join(path.sep, "virtual", "rules.json");
 
   const invalid = {
@@ -168,4 +170,5 @@ test("RulesConfigLoader.loadFromFile - rejects safeAfterDays out of range or non
   });
 
   await assert.rejects(async () => loader.loadFromFile(rulesPath));
-});
+  },
+);

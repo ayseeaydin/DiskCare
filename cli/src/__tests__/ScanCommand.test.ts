@@ -22,7 +22,7 @@ class FakeOutput {
   }
 }
 
-test("ScanCommand - uses injected nowFn for payload timestamp", async () => {
+test("ScanCommand - should use injected nowFn for payload timestamp", async () => {
   const output = new FakeOutput();
   const fixed = new Date("2026-01-21T12:34:56.000Z");
 

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { RulesEngine } from "../RulesEngine.js";
 import type { RuleConfig } from "../types/RuleConfig.js";
 
-test("RulesEngine.decide - when rule exists, returns rule decision", () => {
+test("RulesEngine.decide - should return rule decision when rule exists", () => {
   const config: RuleConfig = {
     rules: [
       {
@@ -29,7 +29,9 @@ test("RulesEngine.decide - when rule exists, returns rule decision", () => {
   assert.deepEqual(decision.reasons, ["npm cache is reproducible; safe to clean when old."]);
 });
 
-test("RulesEngine.decide - when rule does not exist, falls back to defaults with explainable reason", () => {
+test(
+  "RulesEngine.decide - should fall back to defaults with explainable reason when rule does not exist",
+  () => {
   const config: RuleConfig = {
     rules: [
       {
@@ -57,7 +59,8 @@ test("RulesEngine.decide - when rule does not exist, falls back to defaults with
   const reason0 = decision.reasons[0];
   assert.ok(typeof reason0 === "string");
   assert.match(reason0, /No specific rule found for 'unknown-target'\. Using defaults\./);
-});
+  },
+);
 
 test("RulesEngine.decide - supports do-not-touch", () => {
   const config: RuleConfig = {

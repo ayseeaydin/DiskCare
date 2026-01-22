@@ -16,7 +16,7 @@ async function pathExists(p: string): Promise<boolean> {
   }
 }
 
-test("LogWriter - writes latest-run pointer next to run log (best-effort)", async () => {
+test("LogWriter - should write latest-run pointer next to run log (best-effort)", async () => {
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "diskcare-logwriter-"));
   const logsDir = path.join(tmpRoot, "logs");
 
@@ -37,7 +37,9 @@ test("LogWriter - writes latest-run pointer next to run log (best-effort)", asyn
   assert.equal(meta.logFile, path.basename(finalPath));
 });
 
-test("LogWriter - ignores latest-run pointer errors (does not fail main log write)", async () => {
+test(
+  "LogWriter - should ignore latest-run pointer errors (does not fail main log write)",
+  async () => {
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "diskcare-logwriter-"));
   const logsDir = path.join(tmpRoot, "logs");
 
@@ -56,4 +58,5 @@ test("LogWriter - ignores latest-run pointer errors (does not fail main log writ
     false,
     "latest-run.json should not exist when meta dir is blocked",
   );
-});
+  },
+);
