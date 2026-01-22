@@ -59,35 +59,83 @@ export class CleanCommand extends BaseCommand {
     const deps = this.resolveDeps(context);
 
     const timestampMs = deps.nowMs();
+    const plan = await this.buildPlan(context, deps, options, timestampMs);
+    const { canApply, applyResults, applySummary } = await this.applyIfNeeded(plan, options, deps);
+    const logPath = await this.writeRunLog(context, deps, { options, plan, applyResults, applySummary, timestampMs });
 
+    this.printOutput(context, { options, plan, canApply, applyResults, logPath });
+  }
+
+  private async buildPlan(
+    context: CommandContext,
+    deps: Pick<CleanCommandDeps, "scanAll" | "loadRules">,
+    options: { dryRun: boolean; apply: boolean },
+    timestampMs: number,
+  ): Promise<ReturnType<typeof buildCleanPlan>> {
     const { targets, rulesEngine } = await this.collectInputs(context, deps);
-    const plan = buildCleanPlan({
+    return buildCleanPlan({
       targets,
       rulesEngine,
       nowMs: timestampMs,
       dryRun: options.dryRun,
       apply: options.apply,
     });
+  }
 
+  private async applyIfNeeded(
+    plan: ReturnType<typeof buildCleanPlan>,
+    options: { dryRun: boolean; apply: boolean; yes: boolean },
+    deps: Pick<CleanCommandDeps, "trashFn">,
+  ): Promise<{ canApply: boolean; applyResults: ApplyResult[]; applySummary: ApplySummary | undefined }> {
     const canApply = this.canApply(options);
     const applyResults = await this.maybeApplyPlan(plan, options, deps, canApply);
     const applySummary = this.computeApplySummary(options.apply, canApply, applyResults);
+    return { canApply, applyResults, applySummary };
+  }
 
-    const logPath = await deps.writeLog(
+  private async writeRunLog(
+    context: CommandContext,
+    deps: Pick<CleanCommandDeps, "writeLog">,
+    input: {
+      options: { dryRun: boolean; apply: boolean };
+      plan: ReturnType<typeof buildCleanPlan>;
+      applyResults: ApplyResult[];
+      applySummary: ApplySummary | undefined;
+      timestampMs: number;
+    },
+  ): Promise<string> {
+    return deps.writeLog(
       context,
-      this.buildRunLogPayload({ options, plan, applyResults, applySummary, timestampMs }),
+      this.buildRunLogPayload({
+        options: input.options,
+        plan: input.plan,
+        applyResults: input.applyResults,
+        applySummary: input.applySummary,
+        timestampMs: input.timestampMs,
+      }),
     );
+  }
 
-    if (options.asJson) {
+  private printOutput(
+    context: CommandContext,
+    input: {
+      options: { dryRun: boolean; asJson: boolean; apply: boolean; yes: boolean };
+      plan: ReturnType<typeof buildCleanPlan>;
+      canApply: boolean;
+      applyResults: ApplyResult[];
+      logPath: string;
+    },
+  ): void {
+    if (input.options.asJson) {
       context.output.info(
-        JSON.stringify(options.apply ? { ...plan, applyResults } : plan, null, 2),
+        JSON.stringify(input.options.apply ? { ...input.plan, applyResults: input.applyResults } : input.plan, null, 2),
       );
       return;
     }
 
-    this.printPlan(context, plan, options);
-    this.printApplySection(context, options, canApply, applyResults);
-    context.output.info(`Saved log: ${logPath}`);
+    this.printPlan(context, input.plan, input.options);
+    this.printApplySection(context, input.options, input.canApply, input.applyResults);
+    context.output.info(`Saved log: ${input.logPath}`);
   }
 
   private parseOptions(args: unknown[]): { dryRun: boolean; asJson: boolean; apply: boolean; yes: boolean } {
@@ -112,7 +160,7 @@ export class CleanCommand extends BaseCommand {
 
   private async collectInputs(
     context: CommandContext,
-    deps: CleanCommandDeps,
+    deps: Pick<CleanCommandDeps, "scanAll" | "loadRules">,
   ): Promise<{ targets: ScanTarget[]; rulesEngine: RulesEngine | null }> {
     const targets = await deps.scanAll(context);
     const rulesEngine = await deps.loadRules(context);
