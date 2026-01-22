@@ -47,9 +47,7 @@ export class CleanCommand extends BaseCommand {
     cmd.option("--json", "Output JSON plan");
     cmd.option("--apply", "Apply changes: move eligible targets to Trash/Recycle Bin");
 
-    // IMPORTANT:
-    // We define the NEGATABLE option so commander understands `--no-dry-run`.
-    // Default is dryRun=true (safe-by-default). Passing `--no-dry-run` flips to false.
+    // Commander needs a negatable option to support `--no-dry-run`.
     cmd.option("--no-dry-run", "Disable dry-run (required to actually trash files)");
 
     // Extra confirmation gate for real applies.
