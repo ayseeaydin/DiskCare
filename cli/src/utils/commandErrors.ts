@@ -4,7 +4,7 @@ import { toErrorMessage, toOneLine } from "./errors.js";
 
 function getCause(err: unknown): unknown {
   if (err && typeof err === "object" && "cause" in err) {
-    return (err as any).cause;
+    return (err as { cause?: unknown }).cause;
   }
   return undefined;
 }
