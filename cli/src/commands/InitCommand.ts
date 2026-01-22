@@ -6,6 +6,7 @@ import { z } from "zod";
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { ConfigWriteError, ValidationError } from "../errors/DiskcareError.js";
+import { fromPromise } from "../utils/result.js";
 
 type InitOptions = {
   policy?: string;
@@ -127,28 +128,25 @@ export class InitCommand extends BaseCommand {
   private async getExistingConfigEntry(
     filePath: string,
   ): Promise<{ exists: boolean; isFile: boolean }> {
-    try {
-      const s = await this.fs().stat(filePath);
-      return { exists: true, isFile: s.isFile() };
-    } catch (err) {
-      if (isErrno(err, "ENOENT")) {
-        return { exists: false, isFile: false };
-      }
-      throw new ConfigWriteError("Failed to access config path", { configPath: filePath }, err);
+    const s = await fromPromise(this.fs().stat(filePath));
+    if (s.ok) {
+      return { exists: true, isFile: s.value.isFile() };
     }
+
+    const code = getErrnoCode(s.error);
+    if (code === "ENOENT") {
+      return { exists: false, isFile: false };
+    }
+
+    throw new ConfigWriteError("Failed to access config path", { configPath: filePath }, s.error);
   }
 }
 
-function isErrno(err: unknown, code: string): boolean {
-  if (!err) return false;
-  if (typeof err === "object" && "code" in err) {
-    const c = (err as { code?: unknown }).code;
-    if (typeof c === "string" && c === code) return true;
-  }
-  if (err instanceof Error && typeof err.message === "string" && err.message.includes(code)) {
-    return true;
-  }
-  return false;
+function getErrnoCode(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  if (!("code" in err)) return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
 }
 
 const CUSTOM_POLICY_CONFIG: unknown = {
