@@ -1,52 +1,84 @@
 # DiskCare
 
-> **⚠️ Development Phase** | **Geliştirme Aşamasında**
+**DiskCare** geliştiricilere yönelik, disk üzerindeki önbellek ve geçici dosyaları analiz edip güvenli şekilde temizlemeyi amaçlayan bir komut satırı uygulamasıdır. Kural tabanlı karar motoru ile hangi dosyaların ne zaman ve ne kadar güvenli şekilde silinebileceğini planlar, işlemleri ve kararları JSON log olarak kaydeder.
 
-A developer-focused disk hygiene CLI that safely analyzes and cleans reproducible cache files using rule-based decision engine.
+## Mevcut Durum
 
-Geliştiricilere odaklı, kural tabanlı karar motoruyla önbellek ve geçici dosyaları güvenle analiz edip temizleyen bir disk hijyen aracı.
+- Temel CLI komutları (scan, clean, report, config, init) çalışır durumda.
+- Dosya sistemi üzerinde yaygın önbellek ve temp dizinlerini tarayabiliyor.
+- Kural tabanlı temizlik planı oluşturulabiliyor (config/rules.json ile).
+- Temizlik işlemleri varsayılan olarak dry-run modunda, gerçek silme için açık onay gerektiriyor.
+- Her çalıştırma JSON log olarak kaydediliyor (`logs/` dizini).
+- Hatalar kod ve kısa açıklama ile tutarlı şekilde raporlanıyor, `--verbose` ile detay alınabiliyor.
+- Testler ve kodun büyük kısmı tamamlanmış durumda, bazı ek modüller ve gelişmiş raporlama henüz eksik.
 
----
+## Kısa Mimari Özeti
 
-## What It Does | Ne Yapar
+- **cli/**: Ana uygulama ve komutlar (scan, clean, report, config, init, schedule).
+- **packages/scanner-core/**: Dosya sistemi tarama ve analiz modülleri.
+- **packages/rules-engine/**: Temizlik kurallarını ve risk değerlendirmesini yöneten motor.
+- **config/**: Temizlik kuralları (rules.json).
+- **logs/**: Her çalıştırmanın JSON logları.
 
-DiskCare scans common developer cache directories (npm cache, OS temp, etc.), calculates space usage, and plans safe cleanup operations based on configurable rules. Every decision is explainable and logged.
+## Kullanım
 
-DiskCare yaygın geliştirici önbellek dizinlerini (npm cache, OS temp, vb.) tarar, alan kullanımını hesaplar ve yapılandırılabilir kurallara göre güvenli temizleme işlemleri planlar. Her karar açıklanabilir ve loglanır.
+```bash
+# Bağımlılıkları yükle
+npm install
 
-**Key Features | Temel Özellikler:**
+# CLI'yi çalıştır (yardım için)
+node cli/dist/index.js --help
 
-- 🛡️ Safe by default (dry-run mode) | Varsayılan olarak güvenli (dry-run modu)
-- ✅ Explicit apply gate: `--apply --no-dry-run --yes` required | Açık onay kapısı: `--apply --no-dry-run --yes` zorunlu
-- 🧠 Rule-based decisions with risk levels | Risk seviyeleriyle kural tabanlı kararlar
-- 📊 Detailed file system metrics | Detaylı dosya sistemi metrikleri
-- 📝 JSON audit logs | JSON denetim kayıtları
-- 🗑️ Safe deletion via OS trash | İşletim sistemi çöp kutusu ile güvenli silme
-- 🧯 Consistent errors with codes + `--verbose` for stack/cause | Kodlu tutarlı hatalar + detay için `--verbose`
+# Temizlik planı oluştur (dry-run)
+node cli/dist/index.js clean
 
----
+# Gerçek temizlik (açık onay gerektirir)
+node cli/dist/index.js clean --apply --no-dry-run --yes
 
-## Architecture | Mimari
-
-**Monorepo structure with 3 packages:**
-
+# Rapor oluştur
+node cli/dist/index.js report
 ```
-cli/                        # Main CLI application | Ana CLI uygulaması
-  src/
-    commands/               # scan, clean, report, schedule
-    cleaning/               # CleanPlanner
-    reporting/              # ReportService
-    logging/                # JSON run logs
 
-packages/
-  scanner-core/             # File system scanning & analysis
-    src/
-      scanners/             # NpmCache, OsTemp, SandboxCache
-      analyzers/            # FileSystemAnalyzer
+## Güvenlik Modeli
 
-  rules-engine/             # Decision engine for cleanup safety
-    src/                    # config loader + rules evaluation
+- Varsayılan olarak dry-run: dosya silinmez, sadece planlama yapılır.
+- Gerçek silme için `--apply --no-dry-run --yes` bayraklarının hepsi gereklidir.
+
+## Loglar
+
+- Her komut çalıştırıldığında ilgili JSON logu `logs/` dizinine kaydedilir.
+
+## Hatalar ve Debug
+
+- Hatalar kod ve kısa açıklama ile raporlanır.
+- `--verbose` ile detaylı hata ve stack trace alınabilir.
+
+## Yapılandırma
+
+- Temizlik kuralları `config/rules.json` dosyasından okunur.
+- Başlangıç config oluşturmak için: `diskcare init`
+- Farklı politika şablonları için: `diskcare init --list-policies`
+- Config yolunu değiştirmek için: `--config <path>`
+
+## Eksikler ve Geliştirme Alanları
+
+- Ek scanner tipleri (pip, cargo, Docker) henüz tamamlanmadı.
+- Gelişmiş raporlama ve zamanlama (schedule) komutu üzerinde çalışmalar devam ediyor.
+- Dokümantasyon ve örnek kullanım senaryoları geliştirilmeli.
+
+## Test ve Geliştirme
+
+```bash
+# Tüm testleri çalıştır
+npm test
+
+# Kodun stilini kontrol et
+npm run lint
 ```
+
+## Lisans
+
+MIT
 
 **Tech Stack:**
 
