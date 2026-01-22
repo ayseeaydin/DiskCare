@@ -4,12 +4,14 @@ import path from "node:path";
 import type { ScanTarget } from "@diskcare/scanner-core";
 import type { RulesEngine } from "@diskcare/rules-engine";
 import trash from "trash";
+import { z } from "zod";
 
 import { BaseCommand } from "./BaseCommand.js";
 import type { ApplyResult, ApplySummary, CleanLog } from "../types/RunLog.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { formatBytes } from "../formatters/formatBytes.js";
 import { truncate } from "../formatters/truncate.js";
+import { ValidationError } from "../errors/DiskcareError.js";
 import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
 import { buildCleanPlan } from "../cleaning/CleanPlanner.js";
@@ -23,6 +25,15 @@ type CleanOptions = {
   apply?: boolean;
   yes?: boolean;
 };
+
+const CleanOptionsSchema = z
+  .object({
+    json: z.boolean().optional(),
+    dryRun: z.boolean().optional(),
+    apply: z.boolean().optional(),
+    yes: z.boolean().optional(),
+  })
+  .passthrough();
 
 /**
  * Dependencies for CleanCommand (enables testing).
@@ -139,7 +150,14 @@ export class CleanCommand extends BaseCommand {
   }
 
   private parseOptions(args: unknown[]): { dryRun: boolean; asJson: boolean; apply: boolean; yes: boolean } {
-    const options = (args[0] ?? {}) as CleanOptions;
+    const parsed = CleanOptionsSchema.safeParse(args[0] ?? {});
+    if (!parsed.success) {
+      throw new ValidationError("Invalid clean command options", {
+        issues: parsed.error.issues,
+      });
+    }
+
+    const options: CleanOptions = parsed.data;
     return {
       dryRun: options.dryRun ?? true,
       asJson: options.json ?? false,
