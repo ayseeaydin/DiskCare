@@ -1,10 +1,21 @@
 import type { Command } from "commander";
 import fs from "node:fs/promises";
+import { z } from "zod";
 
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { ValidationError } from "../errors/DiskcareError.js";
 import { toOneLine } from "../utils/errors.js";
+
+type ConfigOptions = {
+  json?: boolean;
+};
+
+const ConfigOptionsSchema = z
+  .object({
+    json: z.boolean().optional(),
+  })
+  .passthrough();
 
 type ConfigFs = {
   stat: (filePath: string) => Promise<{ isFile: () => boolean }>;
@@ -29,7 +40,14 @@ export class ConfigCommand extends BaseCommand {
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
     const action = String(args[0] ?? "").trim();
-    const options = (args[1] ?? {}) as { json?: boolean };
+    const optionsParsed = ConfigOptionsSchema.safeParse(args[1] ?? {});
+    if (!optionsParsed.success) {
+      throw new ValidationError("Invalid config command options", {
+        issues: optionsParsed.error.issues,
+      });
+    }
+
+    const options: ConfigOptions = optionsParsed.data;
 
     if (action.length === 0) {
       context.output.info("config commands:");
@@ -76,8 +94,7 @@ export class ConfigCommand extends BaseCommand {
       const s = await this.fs().stat(configPath);
       return { exists: true, isFile: s.isFile() };
     } catch (err) {
-      const code =
-        err && typeof err === "object" && "code" in err ? String((err as any).code) : "";
+      const code = getErrnoCode(err);
       if (code === "ENOENT") {
         return { exists: false };
       }
@@ -86,4 +103,11 @@ export class ConfigCommand extends BaseCommand {
       return { exists: null, error: msg };
     }
   }
+}
+
+function getErrnoCode(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  if (!("code" in err)) return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
 }
