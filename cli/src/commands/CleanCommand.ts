@@ -17,6 +17,7 @@ import { RulesProvider } from "../rules/RulesProvider.js";
 import { buildCleanPlan } from "../cleaning/CleanPlanner.js";
 import { APP_VERSION, MAX_DISPLAYED_REASONS } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
+import { fromPromise } from "../utils/result.js";
 import { defaultScanAll } from "../scanning/defaultScanAll.js";
 
 type CleanOptions = {
@@ -212,24 +213,24 @@ export class CleanCommand extends BaseCommand {
 
     const paths = eligible.map((i) => i.path);
 
-    try {
-      await deps.trashFn(paths);
+    const trashResult = await fromPromise(deps.trashFn(paths));
+    if (trashResult.ok) {
       return eligible.map((item) => ({
         id: item.id,
         path: item.path,
         status: "trashed" as const,
         estimatedBytes: item.estimatedBytes,
       }));
-    } catch (err) {
-      const message = truncate(`batch trash failed: ${toOneLine(toErrorMessage(err))}`, 180);
-      return eligible.map((item) => ({
-        id: item.id,
-        path: item.path,
-        status: "failed" as const,
-        estimatedBytes: item.estimatedBytes,
-        message,
-      }));
     }
+
+    const message = truncate(`batch trash failed: ${toOneLine(toErrorMessage(trashResult.error))}`, 180);
+    return eligible.map((item) => ({
+      id: item.id,
+      path: item.path,
+      status: "failed" as const,
+      estimatedBytes: item.estimatedBytes,
+      message,
+    }));
   }
 
   private computeApplySummary(
