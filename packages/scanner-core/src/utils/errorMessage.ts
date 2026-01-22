@@ -4,7 +4,7 @@
 export function toErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   try {
-    return JSON.stringify(err);
+    return typeof err === "string" ? err : JSON.stringify(err);
   } catch {
     return String(err);
   }
