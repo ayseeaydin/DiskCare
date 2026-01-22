@@ -1,13 +1,14 @@
 import path from "node:path";
 
 import { RulesConfigError, RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
+import type { RuleConfig } from "@diskcare/rules-engine";
 
 import type { CommandContext } from "../types/CommandContext.js";
 import { truncate } from "../formatters/truncate.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
 
 type RulesConfigLoaderLike = {
-  loadFromFile: (filePath: string) => Promise<unknown>;
+  loadFromFile: (filePath: string) => Promise<RuleConfig>;
 };
 
 export class RulesProvider {
@@ -24,7 +25,7 @@ export class RulesProvider {
   async tryLoad(context: CommandContext): Promise<RulesEngine | null> {
     try {
       const rulesConfig = await this.loader.loadFromFile(this.rulesPath);
-      return new RulesEngine(rulesConfig as any);
+      return new RulesEngine(rulesConfig);
     } catch (err) {
       const msg = toOneLine(toErrorMessage(err));
 
