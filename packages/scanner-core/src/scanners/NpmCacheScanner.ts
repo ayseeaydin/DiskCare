@@ -122,11 +122,13 @@ export function normalizeNpmCachePath(
 
 function stripTrailingSeparators(normalized: string, p: typeof path.posix | typeof path.win32): string {
   const root = p.parse(normalized).root;
-  let result = normalized;
+  let end = normalized.length;
 
-  while (result.length > root.length && (result.endsWith(p.sep) || result.endsWith("/") || result.endsWith("\\"))) {
-    result = result.slice(0, -1);
+  while (end > root.length) {
+    const ch = normalized[end - 1];
+    if (ch !== "/" && ch !== "\\") break;
+    end -= 1;
   }
 
-  return result;
+  return end === normalized.length ? normalized : normalized.slice(0, end);
 }
