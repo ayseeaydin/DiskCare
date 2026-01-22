@@ -77,6 +77,25 @@ test("CLI E2E - config path --json prefers local config", async () => {
   });
 });
 
+test("CLI E2E - --config overrides resolved configPath", async () => {
+  await withTempDir(async (cwd) => {
+    const configPath = path.resolve(cwd, "custom-rules.json");
+    await fs.writeFile(
+      configPath,
+      JSON.stringify({ rules: [], defaults: { risk: "caution", safeAfterDays: 30 } }, null, 2),
+      "utf8",
+    );
+
+    const result = await runCli(["--config", configPath, "config", "path", "--json"], { cwd });
+
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stderr.trim(), "");
+
+    const parsed = JSON.parse(result.stdout.trim()) as { configPath: string };
+    assert.equal(parsed.configPath, configPath);
+  });
+});
+
 test("CLI E2E - schedule rejects invalid frequency", async () => {
   await withTempDir(async (cwd) => {
     const result = await runCli(["schedule", "monthly"], { cwd });
