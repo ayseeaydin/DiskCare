@@ -7,6 +7,7 @@ import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { ConfigWriteError, ValidationError } from "../errors/DiskcareError.js";
 import { fromPromise } from "../utils/result.js";
+import { getErrnoCode } from "../utils/errno.js";
 
 type InitOptions = {
   policy?: string;
@@ -153,13 +154,6 @@ export class InitCommand extends BaseCommand {
 
     throw new ConfigWriteError("Failed to access config path", { configPath: filePath }, s.error);
   }
-}
-
-function getErrnoCode(err: unknown): string | null {
-  if (!err || typeof err !== "object") return null;
-  if (!("code" in err)) return null;
-  const code = (err as { code?: unknown }).code;
-  return typeof code === "string" ? code : null;
 }
 
 const CUSTOM_POLICY_CONFIG: unknown = {

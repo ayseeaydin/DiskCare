@@ -5,6 +5,7 @@ import { APP_VERSION, LOG_META_DIR_NAME } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
 import { LogWriteError } from "../errors/DiskcareError.js";
 import { fromPromise } from "../utils/result.js";
+import { getErrnoCode } from "../utils/errno.js";
 
 type NowFn = () => Date;
 
@@ -104,13 +105,6 @@ export class LogWriter {
 
     throw rename1.error;
   }
-}
-
-function getErrnoCode(err: unknown): string | null {
-  if (!err || typeof err !== "object") return null;
-  if (!("code" in err)) return null;
-  const code = (err as { code?: unknown }).code;
-  return typeof code === "string" ? code : null;
 }
 
 function timestampForFileName(d: Date): string {

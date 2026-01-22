@@ -7,6 +7,7 @@ import type { CommandContext } from "../types/CommandContext.js";
 import { ValidationError } from "../errors/DiskcareError.js";
 import { toOneLine } from "../utils/errors.js";
 import { fromPromise } from "../utils/result.js";
+import { getErrnoCode } from "../utils/errno.js";
 
 type ConfigOptions = {
   json?: boolean;
@@ -104,11 +105,4 @@ export class ConfigCommand extends BaseCommand {
     const msg = s.error instanceof Error ? s.error.message : String(s.error);
     return { exists: null, error: msg };
   }
-}
-
-function getErrnoCode(err: unknown): string | null {
-  if (!err || typeof err !== "object") return null;
-  if (!("code" in err)) return null;
-  const code = (err as { code?: unknown }).code;
-  return typeof code === "string" ? code : null;
 }
