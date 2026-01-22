@@ -6,6 +6,7 @@ import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { ValidationError } from "../errors/DiskcareError.js";
 import { toOneLine } from "../utils/errors.js";
+import { fromPromise } from "../utils/result.js";
 
 type ConfigOptions = {
   json?: boolean;
@@ -90,18 +91,18 @@ export class ConfigCommand extends BaseCommand {
   private async tryGetMeta(
     configPath: string,
   ): Promise<{ exists: boolean | null; isFile?: boolean; error?: string }> {
-    try {
-      const s = await this.fs().stat(configPath);
-      return { exists: true, isFile: s.isFile() };
-    } catch (err) {
-      const code = getErrnoCode(err);
-      if (code === "ENOENT") {
-        return { exists: false };
-      }
-
-      const msg = err instanceof Error ? err.message : String(err);
-      return { exists: null, error: msg };
+    const s = await fromPromise(this.fs().stat(configPath));
+    if (s.ok) {
+      return { exists: true, isFile: s.value.isFile() };
     }
+
+    const code = getErrnoCode(s.error);
+    if (code === "ENOENT") {
+      return { exists: false };
+    }
+
+    const msg = s.error instanceof Error ? s.error.message : String(s.error);
+    return { exists: null, error: msg };
   }
 }
 
