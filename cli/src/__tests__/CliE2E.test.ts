@@ -197,3 +197,27 @@ test("CLI E2E - scan --json is parseable and stable", async () => {
     assert.ok(Array.isArray(parsed.targets));
   });
 });
+
+test("CLI E2E - --help prints usage", async () => {
+  await withTempDir(async (cwd) => {
+    const result = await runCli(["--help"], { cwd });
+
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stderr.trim(), "");
+
+    assert.ok(result.stdout.includes("Developer-focused disk hygiene CLI"));
+    assert.ok(result.stdout.includes("diskcare"));
+    assert.ok(result.stdout.toLowerCase().includes("commands"));
+  });
+});
+
+test("CLI E2E - --version prints version", async () => {
+  await withTempDir(async (cwd) => {
+    const result = await runCli(["--version"], { cwd });
+
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stderr.trim(), "");
+
+    assert.ok(/^0\.0\.1\b/.test(result.stdout.trim()));
+  });
+});
