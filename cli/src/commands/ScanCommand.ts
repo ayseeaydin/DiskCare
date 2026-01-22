@@ -2,6 +2,7 @@ import type { Command } from "commander";
 import type { ScanTarget } from "@diskcare/scanner-core";
 import type { RulesEngine } from "@diskcare/rules-engine";
 import path from "node:path";
+import { z } from "zod";
 
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
@@ -14,11 +15,19 @@ import { RulesProvider } from "../rules/RulesProvider.js";
 import { APP_VERSION } from "../utils/constants.js";
 import { toOneLine } from "../utils/errors.js";
 import { defaultScanAll } from "../scanning/defaultScanAll.js";
+import { ValidationError } from "../errors/DiskcareError.js";
 
 type ScanOptions = {
   json?: boolean;
   dryRun?: boolean;
 };
+
+const ScanOptionsSchema = z
+  .object({
+    json: z.boolean().optional(),
+    dryRun: z.boolean().optional(),
+  })
+  .passthrough();
 
 type NowFn = () => Date;
 
@@ -76,7 +85,14 @@ export class ScanCommand extends BaseCommand {
   }
 
   private parseOptions(args: unknown[]): { dryRun: boolean; asJson: boolean } {
-    const options = (args[0] ?? {}) as ScanOptions;
+    const parsed = ScanOptionsSchema.safeParse(args[0] ?? {});
+    if (!parsed.success) {
+      throw new ValidationError("Invalid scan command options", {
+        issues: parsed.error.issues,
+      });
+    }
+
+    const options: ScanOptions = parsed.data;
     return {
       dryRun: options.dryRun ?? true,
       asJson: options.json ?? false,
