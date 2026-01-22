@@ -136,3 +136,33 @@ test("CLI E2E - init --list-policies exits cleanly", async () => {
     assert.ok(result.stdout.includes("conservative"));
   });
 });
+
+test("CLI E2E - report --json is parseable and stable", async () => {
+  await withTempDir(async (cwd) => {
+    const result = await runCli(["report", "--json"], { cwd });
+
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stderr.trim(), "");
+
+    const parsed = JSON.parse(result.stdout.trim()) as Record<string, unknown>;
+    assert.equal(parsed.command, "report");
+
+    assert.equal(typeof parsed.runCount, "number");
+    assert.ok(
+      parsed.latestRunAt === null || typeof parsed.latestRunAt === "string",
+      "latestRunAt should be null|string",
+    );
+    assert.ok(
+      parsed.latestRunFile === null || typeof parsed.latestRunFile === "string",
+      "latestRunFile should be null|string",
+    );
+
+    assert.equal(typeof parsed.scanTotalBytes, "number");
+    assert.equal(typeof parsed.scanMissingTargets, "number");
+    assert.equal(typeof parsed.scanSkippedTargets, "number");
+
+    assert.equal(typeof parsed.applyRuns, "number");
+    assert.equal(typeof parsed.trashedCount, "number");
+    assert.equal(typeof parsed.failedCount, "number");
+  });
+});
