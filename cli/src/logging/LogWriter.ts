@@ -24,10 +24,13 @@ export class LogWriter {
   }
 
   async writeRunLog(payload: unknown): Promise<string> {
-    try {
-      await fs.mkdir(this.logsDir, { recursive: true });
-    } catch (err) {
-      throw new LogWriteError("Failed to create logs directory", { logsDir: this.logsDir }, err);
+    const mkdirResult = await fromPromise(fs.mkdir(this.logsDir, { recursive: true }));
+    if (!mkdirResult.ok) {
+      throw new LogWriteError(
+        "Failed to create logs directory",
+        { logsDir: this.logsDir },
+        mkdirResult.error,
+      );
     }
 
     const fileBase = `run-${timestampForFileName(this.nowFn())}-${this.pid}-${randomSuffix()}`;
@@ -37,23 +40,23 @@ export class LogWriter {
     const content = safeStringify(payload, this.nowFn);
 
     // Atomic write: write temp then rename
-    try {
-      await fs.writeFile(tmpPath, content, { encoding: "utf8", flag: "wx" });
-    } catch (err) {
+    const writeResult = await fromPromise(
+      fs.writeFile(tmpPath, content, { encoding: "utf8", flag: "wx" }),
+    );
+    if (!writeResult.ok) {
       throw new LogWriteError(
         "Failed to write log temp file",
         { tmpPath, finalPath, logsDir: this.logsDir },
-        err,
+        writeResult.error,
       );
     }
 
-    try {
-      await fs.rename(tmpPath, finalPath);
-    } catch (err) {
+    const renameResult = await fromPromise(fs.rename(tmpPath, finalPath));
+    if (!renameResult.ok) {
       throw new LogWriteError(
         "Failed to finalize log file",
         { tmpPath, finalPath, logsDir: this.logsDir },
-        err,
+        renameResult.error,
       );
     }
 
