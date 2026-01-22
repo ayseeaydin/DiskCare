@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 import type { CommandContext } from "../types/CommandContext.js";
 import { handleCommandError } from "../utils/commandErrors.js";
+import { fromPromise } from "../utils/result.js";
 
 export abstract class BaseCommand {
   abstract readonly name: string;
@@ -14,10 +15,9 @@ export abstract class BaseCommand {
     const cmd = program.command(this.name).description(this.description);
     this.configure(cmd);
     cmd.action(async (...args: unknown[]) => {
-      try {
-        await this.execute(args, context);
-      } catch (err) {
-        handleCommandError(context, err);
+      const r = await fromPromise(this.execute(args, context));
+      if (!r.ok) {
+        handleCommandError(context, r.error);
       }
     });
   }
