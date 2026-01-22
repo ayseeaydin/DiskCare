@@ -9,6 +9,7 @@ import { APP_VERSION } from "../utils/constants.js";
 import { handleCommandError } from "../utils/commandErrors.js";
 import { getDefaultConfigPath } from "../utils/configPaths.js";
 import { installSignalHandlers } from "../utils/signals.js";
+import { fromPromise } from "../utils/result.js";
 
 export class CliApp {
   private readonly program: Command;
@@ -61,10 +62,9 @@ export class CliApp {
       cmd.register(this.program, this.context);
     }
 
-    try {
-      await this.program.parseAsync(argv);
-    } catch (err) {
-      handleCommandError(this.context, err);
+    const parsed = await fromPromise(this.program.parseAsync(argv));
+    if (!parsed.ok) {
+      handleCommandError(this.context, parsed.error);
     }
   }
 }
