@@ -82,11 +82,24 @@ export class InitCommand extends BaseCommand {
     const configJson = buildPolicyConfig(policy);
     const dir = path.dirname(configPath);
 
-    try {
-      await this.fs().mkdir(dir, { recursive: true });
-      await this.fs().writeFile(configPath, JSON.stringify(configJson, null, 2) + "\n", "utf8");
-    } catch (err) {
-      throw new ConfigWriteError("Failed to write rules config", { configPath, dir }, err);
+    const mkdirResult = await fromPromise(this.fs().mkdir(dir, { recursive: true }));
+    if (!mkdirResult.ok) {
+      throw new ConfigWriteError(
+        "Failed to write rules config",
+        { configPath, dir },
+        mkdirResult.error,
+      );
+    }
+
+    const writeResult = await fromPromise(
+      this.fs().writeFile(configPath, JSON.stringify(configJson, null, 2) + "\n", "utf8"),
+    );
+    if (!writeResult.ok) {
+      throw new ConfigWriteError(
+        "Failed to write rules config",
+        { configPath, dir },
+        writeResult.error,
+      );
     }
 
     context.output.info(`Created rules config: ${configPath}`);
