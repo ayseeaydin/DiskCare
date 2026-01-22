@@ -3,6 +3,7 @@ import type { RuleConfig } from "./types/RuleConfig.js";
 import type { RiskLevel } from "./types/Decision.js";
 import { isFiniteNumber, isNonEmptyString, isRecord } from "./utils/typeGuards.js";
 import { MAX_SAFE_AFTER_DAYS, MIN_SAFE_AFTER_DAYS } from "./utils/constants.js";
+import { fromPromise } from "./utils/result.js";
 
 type RulesFs = {
   readFile: (filePath: string, encoding: "utf8") => Promise<string>;
@@ -27,16 +28,16 @@ export class RulesConfigLoader {
   constructor(private readonly rulesFs: RulesFs = fs) {}
 
   async loadFromFile(filePath: string): Promise<RuleConfig> {
-    let raw: string;
-    try {
-      raw = await this.rulesFs.readFile(filePath, "utf8");
-    } catch (err) {
+    const rawResult = await fromPromise(this.rulesFs.readFile(filePath, "utf8"));
+    if (!rawResult.ok) {
       throw new RulesConfigError(
         `Cannot read rules config file: ${filePath}`,
         filePath,
-        err,
+        rawResult.error,
       );
     }
+
+    const raw = rawResult.value;
 
     let parsed: unknown;
     try {
