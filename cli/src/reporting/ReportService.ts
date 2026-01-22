@@ -2,6 +2,8 @@ import path from "node:path";
 
 import fs from "node:fs/promises";
 
+import { fromPromise } from "../utils/result.js";
+
 type ReportFs = {
   readdir: (dir: string) => Promise<string[]>;
   readFile: (file: string, encoding: "utf8") => Promise<string>;
@@ -144,23 +146,26 @@ export class ReportService {
   private async readLatestRunLogPathSafe(): Promise<string | null> {
     const metaPath = path.join(this.logsDir, "meta", "latest-run.json");
 
-    try {
-      const raw = await this.reportFs.readFile(metaPath, "utf8");
-      const parsed = JSON.parse(raw) as unknown;
-      if (!isObject(parsed)) return null;
+    const rawRes = await fromPromise(this.reportFs.readFile(metaPath, "utf8"));
+    if (!rawRes.ok) return null;
 
-      const logFile = asString((parsed as JsonObject).logFile);
-      if (!logFile) return null;
+    const parsedRes = await fromPromise(
+      Promise.resolve().then(() => JSON.parse(rawRes.value) as unknown),
+    );
+    if (!parsedRes.ok) return null;
 
-      // Defensive: only allow a simple filename; no path traversal.
-      if (logFile !== path.basename(logFile)) return null;
-      if (logFile.includes("/") || logFile.includes("\\")) return null;
-      if (!logFile.endsWith(".json")) return null;
+    const parsed = parsedRes.value;
+    if (!isObject(parsed)) return null;
 
-      return path.join(this.logsDir, logFile);
-    } catch {
-      return null;
-    }
+    const logFile = asString((parsed as JsonObject).logFile);
+    if (!logFile) return null;
+
+    // Defensive: only allow a simple filename; no path traversal.
+    if (logFile !== path.basename(logFile)) return null;
+    if (logFile.includes("/") || logFile.includes("\\")) return null;
+    if (!logFile.endsWith(".json")) return null;
+
+    return path.join(this.logsDir, logFile);
   }
 
   private summarizeLatestScan(logs: ParsedLog[]): {
@@ -292,42 +297,43 @@ export class ReportService {
   }
 
   private async listJsonFilesSafe(dir: string): Promise<string[]> {
-    try {
-      const entries = await this.reportFs.readdir(dir);
-      return entries.filter((f) => f.endsWith(".json")).map((f) => path.join(dir, f));
-    } catch {
-      return [];
-    }
+    const entriesRes = await fromPromise(this.reportFs.readdir(dir));
+    if (!entriesRes.ok) return [];
+
+    return entriesRes.value.filter((f) => f.endsWith(".json")).map((f) => path.join(dir, f));
   }
 
   private async readLogsSafe(files: string[]): Promise<ParsedLog[]> {
     const out: ParsedLog[] = [];
 
     for (const file of files) {
-      try {
-        const raw = await this.reportFs.readFile(file, "utf8");
-        const parsed = JSON.parse(raw) as unknown;
-        if (!isObject(parsed)) continue;
+      const rawRes = await fromPromise(this.reportFs.readFile(file, "utf8"));
+      if (!rawRes.ok) continue;
 
-        const command = asString(parsed.command);
-        const timestamp = asString(parsed.timestamp);
+      const parsedRes = await fromPromise(
+        Promise.resolve().then(() => JSON.parse(rawRes.value) as unknown),
+      );
+      if (!parsedRes.ok) continue;
 
-        if (!command || !timestamp) continue;
+      const parsed = parsedRes.value;
+      if (!isObject(parsed)) continue;
 
-        out.push({
-          file,
-          command,
-          timestamp,
-          dryRun: asBoolean(parsed.dryRun) ?? true,
-          apply: asBoolean(parsed.apply) ?? false,
-          targets: (parsed as JsonObject).targets,
-          plan: (parsed as JsonObject).plan,
-          applyResults: (parsed as JsonObject).applyResults,
-          applySummary: (parsed as JsonObject).applySummary,
-        });
-      } catch {
-        // ignore
-      }
+      const command = asString(parsed.command);
+      const timestamp = asString(parsed.timestamp);
+
+      if (!command || !timestamp) continue;
+
+      out.push({
+        file,
+        command,
+        timestamp,
+        dryRun: asBoolean(parsed.dryRun) ?? true,
+        apply: asBoolean(parsed.apply) ?? false,
+        targets: (parsed as JsonObject).targets,
+        plan: (parsed as JsonObject).plan,
+        applyResults: (parsed as JsonObject).applyResults,
+        applySummary: (parsed as JsonObject).applySummary,
+      });
     }
 
     return out;
