@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import { APP_VERSION } from "../utils/constants.js";
+import { APP_VERSION, LOG_META_DIR_NAME } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
 import { LogWriteError } from "../errors/DiskcareError.js";
 
@@ -69,7 +69,7 @@ export class LogWriter {
   }
 
   private async writeLatestRunPointer(finalPath: string): Promise<void> {
-    const metaDir = path.join(this.logsDir, "meta");
+    const metaDir = path.join(this.logsDir, LOG_META_DIR_NAME);
     await fs.mkdir(metaDir, { recursive: true });
 
     const metaPath = path.join(metaDir, "latest-run.json");

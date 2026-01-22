@@ -24,3 +24,13 @@ export const TRUNCATE_SUFFIX = "…";
  * (Kept explicit so truncate logic stays self-documenting.)
  */
 export const TRUNCATE_SUFFIX_LENGTH = TRUNCATE_SUFFIX.length;
+
+/**
+ * Default logs directory name under cwd.
+ */
+export const LOG_DIR_NAME = "logs";
+
+/**
+ * Logs metadata directory name under logsDir.
+ */
+export const LOG_META_DIR_NAME = "meta";

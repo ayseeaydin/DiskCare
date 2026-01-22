@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import type { RuleConfig } from "./types/RuleConfig.js";
 import type { RiskLevel } from "./types/Decision.js";
 import { isFiniteNumber, isNonEmptyString, isRecord } from "./utils/typeGuards.js";
+import { MAX_SAFE_AFTER_DAYS, MIN_SAFE_AFTER_DAYS } from "./utils/constants.js";
 
 type RulesFs = {
   readFile: (filePath: string, encoding: "utf8") => Promise<string>;
@@ -93,8 +94,8 @@ function isRiskLevel(value: unknown): value is RiskLevel {
 function isValidSafeAfterDays(value: unknown): value is number {
   if (!isFiniteNumber(value)) return false;
   if (!Number.isInteger(value)) return false;
-  if (value < 0) return false;
-  if (value > 9999) return false;
+  if (value < MIN_SAFE_AFTER_DAYS) return false;
+  if (value > MAX_SAFE_AFTER_DAYS) return false;
   return true;
 }
 
