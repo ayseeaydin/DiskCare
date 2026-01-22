@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { APP_VERSION, LOG_META_DIR_NAME } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
 import { LogWriteError } from "../errors/DiskcareError.js";
+import { fromPromise } from "../utils/result.js";
 
 type NowFn = () => Date;
 
@@ -86,18 +87,27 @@ export class LogWriter {
 
     await fs.writeFile(tmpMetaPath, content, { encoding: "utf8" });
 
-    try {
-      await fs.rename(tmpMetaPath, metaPath);
-    } catch (err: any) {
-      // Windows can error when destination exists; replace in a safe-ish way.
-      if (err && (err.code === "EEXIST" || err.code === "EPERM")) {
-        await fs.rm(metaPath, { force: true });
-        await fs.rename(tmpMetaPath, metaPath);
-        return;
-      }
-      throw err;
+    const rename1 = await fromPromise(fs.rename(tmpMetaPath, metaPath));
+    if (rename1.ok) return;
+
+    // Windows can error when destination exists; replace in a safe-ish way.
+    const code = getErrnoCode(rename1.error);
+    if (code === "EEXIST" || code === "EPERM") {
+      await fs.rm(metaPath, { force: true });
+      const rename2 = await fromPromise(fs.rename(tmpMetaPath, metaPath));
+      if (rename2.ok) return;
+      throw rename2.error;
     }
+
+    throw rename1.error;
   }
+}
+
+function getErrnoCode(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  if (!("code" in err)) return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
 }
 
 function timestampForFileName(d: Date): string {
