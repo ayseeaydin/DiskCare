@@ -126,7 +126,7 @@ export class ScanCommand extends BaseCommand {
     // Prefer payload.timestamp to keep filename time aligned with payload time.
     const extractedTimestamp =
       payload && typeof payload === "object" && "timestamp" in payload
-        ? (payload as any).timestamp
+        ? (payload as Record<string, unknown>).timestamp
         : undefined;
     const parsed = typeof extractedTimestamp === "string" ? new Date(extractedTimestamp) : null;
     const now = parsed && Number.isFinite(parsed.getTime()) ? parsed : context.nowFn();
