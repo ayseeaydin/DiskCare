@@ -8,11 +8,13 @@ import type { CommandContext } from "../types/CommandContext.js";
 import { ConfigWriteError, ValidationError } from "../errors/DiskcareError.js";
 import { fromPromise } from "../utils/result.js";
 import { getErrnoCode } from "../utils/errno.js";
+import { getUserConfigPath } from "../utils/configPaths.js";
 
 type InitOptions = {
   policy?: string;
   force?: boolean;
   listPolicies?: boolean;
+  user?: boolean;
 };
 
 const InitOptionsSchema = z
@@ -20,6 +22,7 @@ const InitOptionsSchema = z
     policy: z.string().optional(),
     force: z.boolean().optional(),
     listPolicies: z.boolean().optional(),
+    user: z.boolean().optional(),
   })
   .passthrough();
 
@@ -51,6 +54,10 @@ export class InitCommand extends BaseCommand {
     );
     cmd.option("--force", "Overwrite existing config file (default: no)");
     cmd.option("--list-policies", "List available policy templates and exit");
+
+    // Opt-in only: force writing to per-user config path.
+    // Default remains context.configPath (selected by CliApp strategy).
+    cmd.option("--user", "Write rules.json to the per-user config path");
   }
 
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
@@ -65,7 +72,12 @@ export class InitCommand extends BaseCommand {
     }
 
     const policy = this.parsePolicy(options.policy);
-    const configPath = context.configPath;
+
+    const configPath = options.user
+      ? getUserConfigPath({ platform: context.platform, env: context.env, homedir: context.homedir })
+      : context.configPath;
+
+    const fsLike = this.fs();
 
     const existing = await this.getExistingConfigEntry(configPath);
     if (existing.exists) {
@@ -83,7 +95,7 @@ export class InitCommand extends BaseCommand {
     const configJson = buildPolicyConfig(policy);
     const dir = path.dirname(configPath);
 
-    const mkdirResult = await fromPromise(this.fs().mkdir(dir, { recursive: true }));
+    const mkdirResult = await fromPromise(fsLike.mkdir(dir, { recursive: true }));
     if (!mkdirResult.ok) {
       throw new ConfigWriteError(
         "Failed to write rules config",
@@ -93,7 +105,7 @@ export class InitCommand extends BaseCommand {
     }
 
     const writeResult = await fromPromise(
-      this.fs().writeFile(configPath, JSON.stringify(configJson, null, 2) + "\n", "utf8"),
+      fsLike.writeFile(configPath, JSON.stringify(configJson, null, 2) + "\n", "utf8"),
     );
     if (!writeResult.ok) {
       throw new ConfigWriteError(
@@ -107,7 +119,12 @@ export class InitCommand extends BaseCommand {
     context.output.info(`Policy: ${policy}`);
   }
 
-  private parseOptions(args: unknown[]): { policy: string; force: boolean; listPolicies: boolean } {
+  private parseOptions(args: unknown[]): {
+    policy: string;
+    force: boolean;
+    listPolicies: boolean;
+    user: boolean;
+  } {
     const parsed = InitOptionsSchema.safeParse(args[0] ?? {});
     if (!parsed.success) {
       throw new ValidationError("Invalid init command options", {
@@ -120,6 +137,7 @@ export class InitCommand extends BaseCommand {
       policy: String(options.policy ?? "conservative"),
       force: options.force ?? false,
       listPolicies: options.listPolicies ?? false,
+      user: options.user ?? false,
     };
   }
 
@@ -142,7 +160,9 @@ export class InitCommand extends BaseCommand {
   private async getExistingConfigEntry(
     filePath: string,
   ): Promise<{ exists: boolean; isFile: boolean }> {
-    const s = await fromPromise(this.fs().stat(filePath));
+    const fsLike = this.fs();
+
+    const s = await fromPromise(fsLike.stat(filePath));
     if (s.ok) {
       return { exists: true, isFile: s.value.isFile() };
     }
