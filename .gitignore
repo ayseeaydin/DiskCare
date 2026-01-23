@@ -48,3 +48,6 @@ config/*.local.json
 
 # Diskcare sandbox (local test)
 .sandbox-cache/
+
+# Random files
+diskcare_dump.txt
