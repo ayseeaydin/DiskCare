@@ -1,230 +1,285 @@
 # DiskCare
 
-**DiskCare** geliştiricilere yönelik, disk üzerindeki önbellek ve geçici dosyaları analiz edip güvenli şekilde temizlemeyi amaçlayan bir komut satırı uygulamasıdır. Kural tabanlı karar motoru ile hangi dosyaların ne zaman ve ne kadar güvenli şekilde silinebileceğini planlar, işlemleri ve kararları JSON log olarak kaydeder.
-
-## Mevcut Durum
-
-- Temel CLI komutları (scan, clean, report, config, init) çalışır durumda.
-- Dosya sistemi üzerinde yaygın önbellek ve temp dizinlerini tarayabiliyor.
-- Kural tabanlı temizlik planı oluşturulabiliyor (config/rules.json ile).
-- Temizlik işlemleri varsayılan olarak dry-run modunda, gerçek silme için açık onay gerektiriyor.
-- Her çalıştırma JSON log olarak kaydediliyor (`logs/` dizini).
-- Hatalar kod ve kısa açıklama ile tutarlı şekilde raporlanıyor, `--verbose` ile detay alınabiliyor.
-- Testler ve kodun büyük kısmı tamamlanmış durumda, bazı ek modüller ve gelişmiş raporlama henüz eksik.
-
-## Kısa Mimari Özeti
-
-- **cli/**: Ana uygulama ve komutlar (scan, clean, report, config, init, schedule).
-- **packages/scanner-core/**: Dosya sistemi tarama ve analiz modülleri.
-- **packages/rules-engine/**: Temizlik kurallarını ve risk değerlendirmesini yöneten motor.
-- **config/**: Temizlik kuralları (rules.json).
-- **logs/**: Her çalıştırmanın JSON logları.
-
-## Kullanım
-
-```bash
-# Bağımlılıkları yükle
-npm install
-
-# CLI'yi çalıştır (yardım için)
-node cli/dist/index.js --help
-
-# Temizlik planı oluştur (dry-run)
-node cli/dist/index.js clean
-
-# Gerçek temizlik (açık onay gerektirir)
-node cli/dist/index.js clean --apply --no-dry-run --yes
-
-# Rapor oluştur
-node cli/dist/index.js report
-```
-
-## Güvenlik Modeli
-
-- Varsayılan olarak dry-run: dosya silinmez, sadece planlama yapılır.
-- Gerçek silme için `--apply --no-dry-run --yes` bayraklarının hepsi gereklidir.
-
-## Loglar
-
-- Her komut çalıştırıldığında ilgili JSON logu `logs/` dizinine kaydedilir.
-
-## Hatalar ve Debug
-
-- Hatalar kod ve kısa açıklama ile raporlanır.
-- `--verbose` ile detaylı hata ve stack trace alınabilir.
-
-## Yapılandırma
-
-- Temizlik kuralları `config/rules.json` dosyasından okunur.
-- Başlangıç config oluşturmak için: `diskcare init`
-- Farklı politika şablonları için: `diskcare init --list-policies`
-- Config yolunu değiştirmek için: `--config <path>`
-
-## Eksikler ve Geliştirme Alanları
-
-- Ek scanner tipleri (pip, cargo, Docker) henüz tamamlanmadı.
-- Gelişmiş raporlama ve zamanlama (schedule) komutu üzerinde çalışmalar devam ediyor.
-- Dokümantasyon ve örnek kullanım senaryoları geliştirilmeli.
-
-## Test ve Geliştirme
-
-```bash
-# Tüm testleri çalıştır
-npm test
-
-# Kodun stilini kontrol et
-npm run lint
-```
-
-## Lisans
-
-MIT
-
-**Tech Stack:**
-
-- TypeScript 5.5+, Node.js 18+
-- Commander.js for CLI
-- npm workspaces
-- Native Node.js test runner
+> **Developer‑focused disk hygiene CLI** — analyze, plan, and safely clean cache & temp files with explainable rules and audit logs.
 
 ---
 
-## Usage | Kullanım
+## Why DiskCare Exists
 
-```bash
-# Install dependencies | Bağımlılıkları yükle
-npm install
+Over time, a developer machine silently fills up.
 
-# Build all packages | Tüm paketleri derle
-npm run build
+Caches, temp folders, build artifacts, abandoned sandboxes…
+Eventually you can’t install a new program without manually hunting folders and googling:
 
-# Run the CLI (built) | CLI'yi çalıştır (build sonrası)
-node cli/dist/index.js --help
+> “Can I delete this? Will my system break?”
 
-# Create a starter rules config (default: ./config/rules.json)
-# Başlangıç rules config oluştur (varsayılan: ./config/rules.json)
-node cli/dist/index.js init
+That uncertainty costs time, focus, and confidence. The computer starts to feel *out of control*.
 
-# List available init policies
-# Mevcut init policy seçeneklerini listele
-node cli/dist/index.js init --list-policies
+**DiskCare was built to take control back.**
 
-# Use a custom config path (applies to all commands)
-# Özel config yolu kullan (tüm komutlara uygulanır)
-node cli/dist/index.js --config ./config/rules.dev.json init --policy aggressive
+Not by blindly deleting files — but by:
 
-# Scan disk targets | Disk hedeflerini tara
-node cli/dist/index.js scan
+* discovering known safe targets,
+* analyzing them,
+* deciding with explicit rules,
+* and acting only when you consciously confirm.
 
-# Plan cleanup (dry-run) | Temizleme planla (dry-run)
-node cli/dist/index.js clean
-
-# Execute cleanup (requires explicit confirmation flags)
-# Temizlemeyi uygula (açık onay flag'leri zorunlu)
-node cli/dist/index.js clean --apply --no-dry-run --yes
-
-# Generate report | Rapor oluştur
-node cli/dist/index.js report
-```
-
-### Safety Model | Güvenlik Modeli
-
-- Default is dry-run: no deletion happens unless you explicitly opt in.
-- Varsayılan davranış dry-run: açıkça izin vermeden silme yapılmaz.
-- To actually delete, you must pass **all**: `--apply --no-dry-run --yes`.
-- Gerçek silme için **hepsi** gerekir: `--apply --no-dry-run --yes`.
-
-### Logs | Loglar
-
-- Runs write JSON logs under `./logs` (relative to your current working directory).
-- Çalıştırmalar `./logs` altına JSON log yazar (çalıştığın dizine göre).
-
-### Errors & Debugging | Hatalar ve Debug
-
-- Errors are reported consistently with a code and a short hint.
-- Hatalar kod + kısa ipucu ile tutarlı şekilde raporlanır.
-- Use `--verbose` to include stack trace and cause chain.
-- Stack trace ve cause zinciri için `--verbose` kullan.
+DiskCare is designed for people who care about **safety, transparency, and reproducibility**.
 
 ---
 
-## Configuration | Yapılandırma
+## What DiskCare Does
 
-DiskCare reads rules from `./config/rules.json` when it exists.
+DiskCare scans known disk‑hogging locations (OS temp, npm cache, project sandboxes, etc.), analyzes them, and builds a **cleaning plan** using a **rule engine**.
 
-If that file is missing, it falls back to a per-user default config location.
+Every run is:
 
-Varsayılan olarak `./config/rules.json` varsa onu okur.
+* explainable,
+* logged,
+* reversible (Trash, not hard‑delete),
+* and safe‑by‑default.
 
-Bu dosya yoksa kullanıcı bazlı (per-user) varsayılan config konumuna düşer.
+### Core Capabilities
 
-- Create a starter config: `diskcare init` (won't overwrite unless `--force`)
-- See available templates: `diskcare init --list-policies`
-- Başlangıç config oluştur: `diskcare init` (`--force` olmadan overwrite etmez)
-- Mevcut template'leri gör: `diskcare init --list-policies`
-- Override config path globally: `--config <path>`
-- Config yolunu global değiştir: `--config <path>`
+* 🔍 **Target discovery** – finds common cache & temp locations
+* 📊 **Filesystem analysis** – size, file count, age, partial/permission errors
+* 🧠 **Rule engine** – risk levels + safeAfterDays policies
+* 📝 **Audit logging** – every run saved as structured JSON
+* 🛡 **Safety gates** – dry‑run first, triple‑confirmation to apply
+* 📈 **Reports** – summarize historical cleanups
 
-Edit `config/rules.json` to customize cleanup behavior:
+---
+
+## Safety Model (Non‑Negotiable)
+
+DiskCare is intentionally hard to misuse.
+
+Default behavior:
+
+```
+diskcare clean
+```
+
+➡ builds a plan
+➡ deletes nothing
+
+To actually move files to Trash, **all three** are required:
+
+```
+diskcare clean --apply --no-dry-run --yes
+```
+
+This design prevents:
+
+* accidental deletes
+* copy‑paste disasters
+* automation without intent
+
+Files are moved to **Trash / Recycle Bin**, not permanently removed.
+
+---
+
+## Example Workflow
+
+### 1. Scan your system
+
+```bash
+diskcare scan
+```
+
+You get a structured report:
+
+* what exists
+* what was skipped
+* how big each target is
+* which rules apply
+
+A JSON log is saved automatically.
+
+---
+
+### 2. Build a cleaning plan
+
+```bash
+diskcare clean
+```
+
+DiskCare classifies every target:
+
+* `eligible`
+* `caution`
+* `blocked`
+
+Each one comes with **reasons**.
+
+Nothing is deleted.
+
+---
+
+### 3. Apply consciously
+
+```bash
+diskcare clean --apply --no-dry-run --yes
+```
+
+Eligible targets are moved to Trash.
+
+The run is logged with:
+
+* per‑target results
+* failure reasons
+* estimated freed space
+
+---
+
+### 4. Review history
+
+```bash
+diskcare report
+```
+
+Get a summary of:
+
+* total runs
+* latest scan snapshot
+* total cleaned space
+* failed vs successful applies
+
+---
+
+## Architecture Overview
+
+```
+cli/
+  commands/        → scan, clean, report, init, config, schedule
+  cleaning/        → plan builder
+  logging/         → atomic audit logs
+  reporting/       → historical aggregation
+
+packages/
+  scanner-core/    → filesystem analyzers & scanners
+  rules-engine/   → policy & risk decision engine
+```
+
+### Design Principles
+
+* deterministic outputs
+* dependency injection everywhere
+* testable without touching real disk
+* logs as a first‑class product feature
+
+---
+
+## Configuration
+
+Rules are defined in `rules.json`.
+
+Generate a starter config:
+
+```bash
+diskcare init
+```
+
+Available templates:
+
+```bash
+diskcare init --list-policies
+```
+
+Override path globally:
+
+```bash
+diskcare --config ./my-rules.json scan
+```
+
+---
+
+## Example Rule
 
 ```json
 {
-  "rules": [
-    {
-      "id": "npm-cache",
-      "risk": "safe",
-      "safeAfterDays": 14,
-      "description": "npm cache is reproducible"
-    }
-  ],
-  "defaults": {
-    "risk": "caution",
-    "safeAfterDays": 30
-  }
+  "id": "npm-cache",
+  "risk": "safe",
+  "safeAfterDays": 14,
+  "description": "npm cache is reproducible"
 }
 ```
 
----
+Rules define:
 
-## Current Status | Mevcut Durum
-
-**✅ Implemented | Tamamlandı:**
-
-- Core scanning engine with multiple scanners
-- Rule-based decision engine
-- CLI commands: scan, clean, report
-- File system analysis (size, count, age)
-- JSON audit logging
-- Comprehensive test coverage
-- CLI lint with complexity / size budgets
-- Centralized CLI error handling (`--verbose`, error codes + hints)
-
-**🚧 In Progress | Devam Eden:**
-
-- Additional scanner types (pip, cargo, Docker)
-- Enhanced reporting
-- Schedule command
+* how risky a target is
+* how old it must be before eligibility
+* why it exists
 
 ---
 
-## Contributing Notes | Katkı Notları
+## Logging Model
 
-- Engineering standards, DI approach, and testing guidelines: `docs/quality.md`
+Each run produces a JSON log in `./logs/`.
+
+They include:
+
+* scan metrics
+* clean plans
+* apply results
+* timestamps
+* versioning
+
+A meta pointer tracks the latest run.
+
+This makes DiskCare usable for:
+
+* audits
+* dashboards
+* automation
+* long‑term disk hygiene tracking
 
 ---
 
-## Development | Geliştirme
+## Current Status
 
-```bash
-# Run all tests (all workspaces) | Tüm testler
-npm test
+### Implemented
 
-# Lint CLI | CLI lint
-npm run lint
-```
+* Core scanning engine
+* Rule‑based decision system
+* scan / clean / report / init / config commands
+* safe‑by‑default apply gates
+* atomic structured logging
+* comprehensive automated tests
+
+### In Progress
+
+* additional scanners (pip, cargo, docker, browsers)
+* richer report output
+* scheduling implementation
+
+---
+
+## Non‑Goals
+
+DiskCare is **not**:
+
+* a one‑click “boost your PC” cleaner
+* a registry optimizer
+* a black‑box deleter
+
+It is a **developer control tool**.
+
+---
+
+## Philosophy
+
+Your machine should not slowly become an unknown territory.
+
+DiskCare treats disk cleanup as an engineering problem:
+observable, explainable, versioned, and safe.
 
 ---
 
 ## License
 
 MIT
+
+---
+
+If you use DiskCare and it saved you from manual cleanup hell — the product did its job.
