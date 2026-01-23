@@ -6,7 +6,7 @@ import { NodeCommandRunner } from "../utils/CommandRunner.js";
 import type { DiscoveredTarget } from "../types/ScanTarget.js";
 import { toErrorMessageOneLine } from "../utils/errorMessage.js";
 import { isNonEmptyString } from "../utils/typeGuards.js";
-import { err, ok, type Result } from "../utils/result.js";
+import { err, ok, type Result, fromPromise } from "../utils/result.js";
 import type { Scanner } from "./BaseScanner.js";
 
 export class NpmCacheScanner implements Scanner {
@@ -73,24 +73,22 @@ export class NpmCacheScanner implements Scanner {
   }
 
   private async tryGetNpmConfigCache(): Promise<Result<string, unknown>> {
-    try {
-      const { stdout } = await this.runner.run("npm", ["config", "get", "cache"]);
-      const raw = stdout.trim();
+    const runResult = await fromPromise(this.runner.run("npm", ["config", "get", "cache"]));
+    if (!runResult.ok) return err(runResult.error);
 
-      // npm can return "undefined" or empty
-      if (!isNonEmptyString(raw) || raw === "undefined" || raw === "null") {
-        return err(new Error("npm returned empty/undefined cache path"));
-      }
+    const raw = runResult.value.stdout.trim();
 
-      const normalized = normalizeNpmCachePath(raw, { platform: this.platform, homedir: this.homedir });
-      if (!normalized) {
-        return err(new Error("npm returned an unparseable cache path"));
-      }
-
-      return ok(normalized);
-    } catch (cause) {
-      return err(cause);
+    // npm can return "undefined" or empty
+    if (!isNonEmptyString(raw) || raw === "undefined" || raw === "null") {
+      return err(new Error("npm returned empty/undefined cache path"));
     }
+
+    const normalized = normalizeNpmCachePath(raw, { platform: this.platform, homedir: this.homedir });
+    if (!normalized) {
+      return err(new Error("npm returned an unparseable cache path"));
+    }
+
+    return ok(normalized);
   }
 }
 
