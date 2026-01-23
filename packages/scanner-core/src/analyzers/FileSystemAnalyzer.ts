@@ -5,6 +5,7 @@ import type { Dirent } from "node:fs";
 import type { ScanMetrics } from "../types/ScanMetrics.js";
 import type { FsLike } from "./FsLike.js";
 import { toErrorMessageOneLine } from "../utils/errorMessage.js";
+import { fromPromise } from "../utils/result.js";
 
 function defaultFs(): FsLike {
   return {
@@ -18,13 +19,13 @@ export class FileSystemAnalyzer {
 
   async analyze(rootPath: string): Promise<ScanMetrics> {
     // Verify root is accessible early (explainable behavior)
-    try {
-      const rootStat = await this.fsLike.stat(rootPath);
-      if (!rootStat.isDirectory()) {
-        return emptyMetrics(`Path is not a directory: ${rootPath}`);
-      }
-    } catch (err) {
-      return emptyMetrics(`Cannot access path: ${rootPath} (${toErrorMessageOneLine(err)})`);
+    const rootStatRes = await fromPromise(this.fsLike.stat(rootPath));
+    if (!rootStatRes.ok) {
+      return emptyMetrics(`Cannot access path: ${rootPath} (${toErrorMessageOneLine(rootStatRes.error)})`);
+    }
+    const rootStat = rootStatRes.value;
+    if (!rootStat.isDirectory()) {
+      return emptyMetrics(`Path is not a directory: ${rootPath}`);
     }
 
     let totalBytes = 0;
@@ -44,13 +45,12 @@ export class FileSystemAnalyzer {
       while (stack.length > 0) {
         const currentDir = stack.pop() as string;
 
-        let entries: Dirent[];
-        try {
-          entries = await fsLike.readdir(currentDir, { withFileTypes: true });
-        } catch {
+        const entriesRes = await fromPromise(fsLike.readdir(currentDir, { withFileTypes: true }));
+        if (!entriesRes.ok) {
           skippedEntries += 1;
           continue;
         }
+        const entries = entriesRes.value;
 
         for (const entry of entries) {
           const fullPath = path.join(currentDir, entry.name);
@@ -67,13 +67,12 @@ export class FileSystemAnalyzer {
     };
 
     for await (const { fullPath } of walkFiles(rootPath)) {
-      let stat;
-      try {
-        stat = await this.fsLike.stat(fullPath);
-      } catch {
+      const statRes = await fromPromise(this.fsLike.stat(fullPath));
+      if (!statRes.ok) {
         skippedEntries += 1;
         continue;
       }
+      const stat = statRes.value;
 
       fileCount += 1;
       totalBytes += stat.size;
