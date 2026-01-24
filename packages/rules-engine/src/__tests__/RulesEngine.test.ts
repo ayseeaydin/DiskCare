@@ -29,9 +29,7 @@ test("RulesEngine.decide - should return rule decision when rule exists", () => 
   assert.deepEqual(decision.reasons, ["npm cache is reproducible; safe to clean when old."]);
 });
 
-test(
-  "RulesEngine.decide - should fall back to defaults with explainable reason when rule does not exist",
-  () => {
+test("RulesEngine.decide - should fall back to defaults with explainable reason when rule does not exist", () => {
   const config: RuleConfig = {
     rules: [
       {
@@ -59,8 +57,7 @@ test(
   const reason0 = decision.reasons[0];
   assert.ok(typeof reason0 === "string");
   assert.match(reason0, /No specific rule found for 'unknown-target'\. Using defaults\./);
-  },
-);
+});
 
 test("RulesEngine.decide - supports do-not-touch", () => {
   const config: RuleConfig = {

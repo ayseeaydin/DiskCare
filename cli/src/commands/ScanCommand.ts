@@ -61,7 +61,11 @@ export class ScanCommand extends BaseCommand {
 
     const logPath = await deps.writeLog(
       context,
-      this.buildRunLogPayload({ dryRun: options.dryRun, targets, timestamp: deps.nowFn().toISOString() }),
+      this.buildRunLogPayload({
+        dryRun: options.dryRun,
+        targets,
+        timestamp: deps.nowFn().toISOString(),
+      }),
     );
 
     if (options.asJson) {
@@ -158,7 +162,11 @@ export class ScanCommand extends BaseCommand {
     context.output.info(`Saved log: ${input.logPath}`);
   }
 
-  private printTarget(context: CommandContext, t: ScanTarget, rulesEngine: RulesEngine | null): void {
+  private printTarget(
+    context: CommandContext,
+    t: ScanTarget,
+    rulesEngine: RulesEngine | null,
+  ): void {
     const exists = t.exists === true ? "yes" : "no";
     const skipped = t.metrics?.skipped === true ? "yes" : "no";
 

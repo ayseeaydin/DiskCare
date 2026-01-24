@@ -37,9 +37,7 @@ test("LogWriter - should write latest-run pointer next to run log (best-effort)"
   assert.equal(meta.logFile, path.basename(finalPath));
 });
 
-test(
-  "LogWriter - should ignore latest-run pointer errors (does not fail main log write)",
-  async () => {
+test("LogWriter - should ignore latest-run pointer errors (does not fail main log write)", async () => {
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "diskcare-logwriter-"));
   const logsDir = path.join(tmpRoot, "logs");
 
@@ -58,5 +56,4 @@ test(
     false,
     "latest-run.json should not exist when meta dir is blocked",
   );
-  },
-);
+});

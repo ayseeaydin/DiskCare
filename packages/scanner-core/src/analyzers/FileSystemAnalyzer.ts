@@ -21,7 +21,9 @@ export class FileSystemAnalyzer {
     // Verify root is accessible early (explainable behavior)
     const rootStatRes = await fromPromise(this.fsLike.stat(rootPath));
     if (!rootStatRes.ok) {
-      return emptyMetrics(`Cannot access path: ${rootPath} (${toErrorMessageOneLine(rootStatRes.error)})`);
+      return emptyMetrics(
+        `Cannot access path: ${rootPath} (${toErrorMessageOneLine(rootStatRes.error)})`,
+      );
     }
     const rootStat = rootStatRes.value;
     if (!rootStat.isDirectory()) {

@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { getDefaultConfigPath, getLocalProjectConfigPath, getUserConfigPath } from "../utils/configPaths.js";
+import {
+  getDefaultConfigPath,
+  getLocalProjectConfigPath,
+  getUserConfigPath,
+} from "../utils/configPaths.js";
 
 function toPosix(p: string): string {
   return p.replaceAll("\\", "/");

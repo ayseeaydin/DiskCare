@@ -56,9 +56,7 @@ function makeRulesEngine(): RulesEngine {
   });
 }
 
-test(
-  "CleanCommand - should not call trash when --apply --no-dry-run but missing --yes",
-  async () => {
+test("CleanCommand - should not call trash when --apply --no-dry-run but missing --yes", async () => {
   const output = new FakeOutput();
   const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
 
@@ -96,8 +94,7 @@ test(
     output.warns.some((w) => w.includes("confirmation is missing")),
     "should warn about missing confirmation",
   );
-  },
-);
+});
 
 test("CleanCommand - should call trash when --apply --no-dry-run --yes", async () => {
   const output = new FakeOutput();
@@ -130,14 +127,7 @@ test("CleanCommand - should call trash when --apply --no-dry-run --yes", async (
     setExitCode: () => {},
   });
 
-  await program.parseAsync([
-    "node",
-    "diskcare",
-    "clean",
-    "--apply",
-    "--no-dry-run",
-    "--yes",
-  ]);
+  await program.parseAsync(["node", "diskcare", "clean", "--apply", "--no-dry-run", "--yes"]);
 
   assert.equal(trashedBatches.length, 1);
   assert.deepEqual(trashedBatches[0], ["D:\\diskcare\\.sandbox-cache"]);

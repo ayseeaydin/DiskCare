@@ -43,19 +43,12 @@ export class RulesConfigLoader {
     try {
       parsed = JSON.parse(raw);
     } catch (err) {
-      throw new RulesConfigError(
-        `Invalid JSON in rules config: ${filePath}`,
-        filePath,
-        err,
-      );
+      throw new RulesConfigError(`Invalid JSON in rules config: ${filePath}`, filePath, err);
     }
 
     // Basic validation
     if (!isValidRuleConfig(parsed)) {
-      throw new RulesConfigError(
-        `Invalid rules config schema in: ${filePath}`,
-        filePath,
-      );
+      throw new RulesConfigError(`Invalid rules config schema in: ${filePath}`, filePath);
     }
 
     return parsed;

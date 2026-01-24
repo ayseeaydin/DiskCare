@@ -63,9 +63,7 @@ export class ReportCommand extends BaseCommand {
     context.output.info(`  trashed:              ${summary.trashedCount}`);
     context.output.info(`  failed:               ${summary.failedCount}`);
     context.output.info(`  latest apply:         ${summary.latestApplyAt ?? "-"}`);
-    context.output.info(
-      `  trashed est bytes:    ${formatBytes(summary.trashedEstimatedBytes)}`,
-    );
+    context.output.info(`  trashed est bytes:    ${formatBytes(summary.trashedEstimatedBytes)}`);
   }
 
   private resolveDeps(): ReportCommandDeps {

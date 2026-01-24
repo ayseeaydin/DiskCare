@@ -83,7 +83,10 @@ export class NpmCacheScanner implements Scanner {
       return err(new Error("npm returned empty/undefined cache path"));
     }
 
-    const normalized = normalizeNpmCachePath(raw, { platform: this.platform, homedir: this.homedir });
+    const normalized = normalizeNpmCachePath(raw, {
+      platform: this.platform,
+      homedir: this.homedir,
+    });
     if (!normalized) {
       return err(new Error("npm returned an unparseable cache path"));
     }
@@ -118,7 +121,10 @@ export function normalizeNpmCachePath(
   return stripTrailingSeparators(p.normalize(unquoted), p);
 }
 
-function stripTrailingSeparators(normalized: string, p: typeof path.posix | typeof path.win32): string {
+function stripTrailingSeparators(
+  normalized: string,
+  p: typeof path.posix | typeof path.win32,
+): string {
   const root = p.parse(normalized).root;
   let end = normalized.length;
 
