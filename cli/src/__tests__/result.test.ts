@@ -29,7 +29,10 @@ test("Result - map maps ok and leaves err", () => {
   assert.deepEqual(a, ok(20));
 
   const b: Result<number, string> = err("bad");
-  assert.deepEqual(map(b, (n: number) => n * 10), b);
+  assert.deepEqual(
+    map(b, (n: number) => n * 10),
+    b,
+  );
 });
 
 test("Result - mapErr maps err and leaves ok", () => {
@@ -37,7 +40,10 @@ test("Result - mapErr maps err and leaves ok", () => {
   assert.deepEqual(a, err("wrapped:bad"));
 
   const b: Result<number, string> = ok(1);
-  assert.deepEqual(mapErr(b, (e) => `wrapped:${e}`), b);
+  assert.deepEqual(
+    mapErr(b, (e) => `wrapped:${e}`),
+    b,
+  );
 });
 
 test("Result - unwrapOr returns ok value or fallback", () => {

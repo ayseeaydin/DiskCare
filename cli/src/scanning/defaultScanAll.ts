@@ -9,7 +9,9 @@ import {
 import type { CommandContext } from "../types/CommandContext.js";
 
 export async function defaultScanAll(context: CommandContext): Promise<ScanTarget[]> {
-  const scanOnly = String(context.env.DISKCARE_SCAN_ONLY ?? "").trim().toLowerCase();
+  const scanOnly = String(context.env.DISKCARE_SCAN_ONLY ?? "")
+    .trim()
+    .toLowerCase();
 
   const scanners =
     scanOnly === "sandbox" || scanOnly === "sandbox-only"

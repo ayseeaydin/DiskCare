@@ -22,7 +22,7 @@ function makeRunner(result: { stdout: string; stderr?: string } | Error): Comman
 }
 
 test("NpmCacheScanner - resolves via npm config (deterministic)", async () => {
-  const runner = makeRunner({ stdout: "\"~/cache/\"\n" });
+  const runner = makeRunner({ stdout: '"~/cache/"\n' });
   const scanner = new NpmCacheScanner({
     runner,
     platform: "linux",

@@ -74,7 +74,11 @@ export class InitCommand extends BaseCommand {
     const policy = this.parsePolicy(options.policy);
 
     const configPath = options.user
-      ? getUserConfigPath({ platform: context.platform, env: context.env, homedir: context.homedir })
+      ? getUserConfigPath({
+          platform: context.platform,
+          env: context.env,
+          homedir: context.homedir,
+        })
       : context.configPath;
 
     const fsLike = this.fs();

@@ -13,16 +13,16 @@ Eventually you can’t install a new program without manually hunting folders an
 
 > “Can I delete this? Will my system break?”
 
-That uncertainty costs time, focus, and confidence. The computer starts to feel *out of control*.
+That uncertainty costs time, focus, and confidence. The computer starts to feel _out of control_.
 
 **DiskCare was built to take control back.**
 
 Not by blindly deleting files — but by:
 
-* discovering known safe targets,
-* analyzing them,
-* deciding with explicit rules,
-* and acting only when you consciously confirm.
+- discovering known safe targets,
+- analyzing them,
+- deciding with explicit rules,
+- and acting only when you consciously confirm.
 
 DiskCare is designed for people who care about **safety, transparency, and reproducibility**.
 
@@ -34,19 +34,19 @@ DiskCare scans known disk‑hogging locations (OS temp, npm cache, project sandb
 
 Every run is:
 
-* explainable,
-* logged,
-* reversible (Trash, not hard‑delete),
-* and safe‑by‑default.
+- explainable,
+- logged,
+- reversible (Trash, not hard‑delete),
+- and safe‑by‑default.
 
 ### Core Capabilities
 
-* 🔍 **Target discovery** – finds common cache & temp locations
-* 📊 **Filesystem analysis** – size, file count, age, partial/permission errors
-* 🧠 **Rule engine** – risk levels + safeAfterDays policies
-* 📝 **Audit logging** – every run saved as structured JSON
-* 🛡 **Safety gates** – dry‑run first, triple‑confirmation to apply
-* 📈 **Reports** – summarize historical cleanups
+- 🔍 **Target discovery** – finds common cache & temp locations
+- 📊 **Filesystem analysis** – size, file count, age, partial/permission errors
+- 🧠 **Rule engine** – risk levels + safeAfterDays policies
+- 📝 **Audit logging** – every run saved as structured JSON
+- 🛡 **Safety gates** – dry‑run first, triple‑confirmation to apply
+- 📈 **Reports** – summarize historical cleanups
 
 ---
 
@@ -71,9 +71,9 @@ diskcare clean --apply --no-dry-run --yes
 
 This design prevents:
 
-* accidental deletes
-* copy‑paste disasters
-* automation without intent
+- accidental deletes
+- copy‑paste disasters
+- automation without intent
 
 Files are moved to **Trash / Recycle Bin**, not permanently removed.
 
@@ -89,10 +89,10 @@ diskcare scan
 
 You get a structured report:
 
-* what exists
-* what was skipped
-* how big each target is
-* which rules apply
+- what exists
+- what was skipped
+- how big each target is
+- which rules apply
 
 A JSON log is saved automatically.
 
@@ -106,9 +106,9 @@ diskcare clean
 
 DiskCare classifies every target:
 
-* `eligible`
-* `caution`
-* `blocked`
+- `eligible`
+- `caution`
+- `blocked`
 
 Each one comes with **reasons**.
 
@@ -126,9 +126,9 @@ Eligible targets are moved to Trash.
 
 The run is logged with:
 
-* per‑target results
-* failure reasons
-* estimated freed space
+- per‑target results
+- failure reasons
+- estimated freed space
 
 ---
 
@@ -140,10 +140,10 @@ diskcare report
 
 Get a summary of:
 
-* total runs
-* latest scan snapshot
-* total cleaned space
-* failed vs successful applies
+- total runs
+- latest scan snapshot
+- total cleaned space
+- failed vs successful applies
 
 ---
 
@@ -163,10 +163,10 @@ packages/
 
 ### Design Principles
 
-* deterministic outputs
-* dependency injection everywhere
-* testable without touching real disk
-* logs as a first‑class product feature
+- deterministic outputs
+- dependency injection everywhere
+- testable without touching real disk
+- logs as a first‑class product feature
 
 ---
 
@@ -207,9 +207,9 @@ diskcare --config ./my-rules.json scan
 
 Rules define:
 
-* how risky a target is
-* how old it must be before eligibility
-* why it exists
+- how risky a target is
+- how old it must be before eligibility
+- why it exists
 
 ---
 
@@ -219,20 +219,20 @@ Each run produces a JSON log in `./logs/`.
 
 They include:
 
-* scan metrics
-* clean plans
-* apply results
-* timestamps
-* versioning
+- scan metrics
+- clean plans
+- apply results
+- timestamps
+- versioning
 
 A meta pointer tracks the latest run.
 
 This makes DiskCare usable for:
 
-* audits
-* dashboards
-* automation
-* long‑term disk hygiene tracking
+- audits
+- dashboards
+- automation
+- long‑term disk hygiene tracking
 
 ---
 
@@ -240,18 +240,18 @@ This makes DiskCare usable for:
 
 ### Implemented
 
-* Core scanning engine
-* Rule‑based decision system
-* scan / clean / report / init / config commands
-* safe‑by‑default apply gates
-* atomic structured logging
-* comprehensive automated tests
+- Core scanning engine
+- Rule‑based decision system
+- scan / clean / report / init / config commands
+- safe‑by‑default apply gates
+- atomic structured logging
+- comprehensive automated tests
 
 ### In Progress
 
-* additional scanners (pip, cargo, docker, browsers)
-* richer report output
-* scheduling implementation
+- additional scanners (pip, cargo, docker, browsers)
+- richer report output
+- scheduling implementation
 
 ---
 
@@ -259,9 +259,9 @@ This makes DiskCare usable for:
 
 DiskCare is **not**:
 
-* a one‑click “boost your PC” cleaner
-* a registry optimizer
-* a black‑box deleter
+- a one‑click “boost your PC” cleaner
+- a registry optimizer
+- a black‑box deleter
 
 It is a **developer control tool**.
 

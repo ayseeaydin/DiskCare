@@ -73,7 +73,13 @@ export class CleanCommand extends BaseCommand {
     const timestampMs = deps.nowMs();
     const plan = await this.buildPlan(context, deps, options, timestampMs);
     const { canApply, applyResults, applySummary } = await this.applyIfNeeded(plan, options, deps);
-    const logPath = await this.writeRunLog(context, deps, { options, plan, applyResults, applySummary, timestampMs });
+    const logPath = await this.writeRunLog(context, deps, {
+      options,
+      plan,
+      applyResults,
+      applySummary,
+      timestampMs,
+    });
 
     this.printOutput(context, { options, plan, canApply, applyResults, logPath });
   }
@@ -98,7 +104,11 @@ export class CleanCommand extends BaseCommand {
     plan: ReturnType<typeof buildCleanPlan>,
     options: { dryRun: boolean; apply: boolean; yes: boolean },
     deps: Pick<CleanCommandDeps, "trashFn">,
-  ): Promise<{ canApply: boolean; applyResults: ApplyResult[]; applySummary: ApplySummary | undefined }> {
+  ): Promise<{
+    canApply: boolean;
+    applyResults: ApplyResult[];
+    applySummary: ApplySummary | undefined;
+  }> {
     const canApply = this.canApply(options);
     const applyResults = await this.maybeApplyPlan(plan, options, deps, canApply);
     const applySummary = this.computeApplySummary(options.apply, canApply, applyResults);
@@ -140,7 +150,11 @@ export class CleanCommand extends BaseCommand {
   ): void {
     if (input.options.asJson) {
       context.output.info(
-        JSON.stringify(input.options.apply ? { ...input.plan, applyResults: input.applyResults } : input.plan, null, 2),
+        JSON.stringify(
+          input.options.apply ? { ...input.plan, applyResults: input.applyResults } : input.plan,
+          null,
+          2,
+        ),
       );
       return;
     }
@@ -150,7 +164,12 @@ export class CleanCommand extends BaseCommand {
     context.output.info(`Saved log: ${input.logPath}`);
   }
 
-  private parseOptions(args: unknown[]): { dryRun: boolean; asJson: boolean; apply: boolean; yes: boolean } {
+  private parseOptions(args: unknown[]): {
+    dryRun: boolean;
+    asJson: boolean;
+    apply: boolean;
+    yes: boolean;
+  } {
     const parsed = CleanOptionsSchema.safeParse(args[0] ?? {});
     if (!parsed.success) {
       throw new ValidationError("Invalid clean command options", {
@@ -223,7 +242,10 @@ export class CleanCommand extends BaseCommand {
       }));
     }
 
-    const message = truncate(`batch trash failed: ${toOneLine(toErrorMessage(trashResult.error))}`, 180);
+    const message = truncate(
+      `batch trash failed: ${toOneLine(toErrorMessage(trashResult.error))}`,
+      180,
+    );
     return eligible.map((item) => ({
       id: item.id,
       path: item.path,
@@ -272,7 +294,11 @@ export class CleanCommand extends BaseCommand {
     };
   }
 
-  private printPlan(context: CommandContext, plan: ReturnType<typeof buildCleanPlan>, options: { dryRun: boolean; apply: boolean }): void {
+  private printPlan(
+    context: CommandContext,
+    plan: ReturnType<typeof buildCleanPlan>,
+    options: { dryRun: boolean; apply: boolean },
+  ): void {
     const { items, summary } = plan;
 
     context.output.info(`clean plan (dryRun=${options.dryRun}, apply=${options.apply})`);
@@ -333,9 +359,13 @@ export class CleanCommand extends BaseCommand {
     if (options.dryRun) {
       context.output.warn("apply requested, but dry-run is enabled; nothing was moved to Trash.");
     } else if (!options.yes) {
-      context.output.warn("apply requested, but confirmation is missing; nothing was moved to Trash.");
+      context.output.warn(
+        "apply requested, but confirmation is missing; nothing was moved to Trash.",
+      );
     } else {
-      context.output.warn("apply requested, but apply gates were not satisfied; nothing was moved to Trash.");
+      context.output.warn(
+        "apply requested, but apply gates were not satisfied; nothing was moved to Trash.",
+      );
     }
 
     context.output.warn("To actually apply, run: diskcare clean --apply --no-dry-run --yes");

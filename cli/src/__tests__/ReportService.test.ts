@@ -5,9 +5,7 @@ import path from "node:path";
 
 import { ReportService } from "../reporting/ReportService.js";
 
-test(
-  "ReportService.summarize - should aggregate latest scan snapshot and apply aggregates from logs",
-  async () => {
+test("ReportService.summarize - should aggregate latest scan snapshot and apply aggregates from logs", async () => {
   const logsDir = path.join(path.sep, "virtual", "logs");
 
   // minimal scan log
@@ -138,12 +136,9 @@ test(
   assert.equal(summary.failedCount, 0);
   assert.equal(summary.latestApplyAt, new Date("2026-01-16T11:00:00.000Z").toISOString());
   assert.equal(summary.trashedEstimatedBytes, 50);
-  },
-);
+});
 
-test(
-  "ReportService.summarize - should use meta/latest-run.json when logs dir listing fails",
-  async () => {
+test("ReportService.summarize - should use meta/latest-run.json when logs dir listing fails", async () => {
   const logsDir = path.join(path.sep, "virtual", "logs");
 
   const applyLog = {
@@ -198,5 +193,4 @@ test(
   assert.equal(summary.failedCount, 0);
   assert.equal(summary.latestApplyAt, new Date("2026-01-16T11:00:00.000Z").toISOString());
   assert.equal(summary.trashedEstimatedBytes, 50);
-  },
-);
+});
