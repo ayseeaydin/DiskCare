@@ -83,7 +83,7 @@ export class ReportCommand extends BaseCommand {
       });
     }
 
-    const options: ReportOptions = parsed.data;
+    const options = parsed.data;
     return {
       asJson: options.json ?? false,
     };

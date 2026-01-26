@@ -112,7 +112,7 @@ export class ScanCommand extends BaseCommand {
       });
     }
 
-    const options: ScanOptions = parsed.data;
+    const options = parsed.data;
     return {
       dryRun: options.dryRun ?? true,
       asJson: options.json ?? false,

@@ -11,6 +11,7 @@ export const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 /**
  * Max number of reasons to show per plan item in human output.
+ * Keeps CLI output concise and readable. Increase if users need more context per item.
  */
 export const MAX_DISPLAYED_REASONS = 2;
 

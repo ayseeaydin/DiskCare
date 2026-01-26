@@ -196,7 +196,7 @@ export class CleanCommand extends BaseCommand {
       });
     }
 
-    const options: CleanOptions = parsed.data;
+    const options = parsed.data;
     return {
       dryRun: options.dryRun ?? true,
       asJson: options.json ?? false,
