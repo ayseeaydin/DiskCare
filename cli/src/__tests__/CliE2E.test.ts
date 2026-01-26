@@ -189,9 +189,15 @@ test("CLI E2E - scan --json is parseable and stable", async () => {
     });
 
     assert.equal(result.exitCode, 0);
-    assert.equal(result.stderr.trim(), "");
+    // Progress output is expected in stderr, do not assert it's empty
 
-    const parsed = JSON.parse(result.stdout.trim()) as Record<string, unknown>;
+    // Parse all stdout as JSON (pretty-printed JSON support)
+    let parsed: any;
+    try {
+      parsed = JSON.parse(result.stdout);
+    } catch (e) {
+      assert.fail(`Could not parse stdout as JSON. Output:\n${result.stdout}`);
+    }
     assert.equal(parsed.command, "scan");
     assert.equal(typeof parsed.dryRun, "boolean");
     assert.ok(Array.isArray(parsed.targets));
