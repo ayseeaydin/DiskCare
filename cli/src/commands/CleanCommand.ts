@@ -84,7 +84,7 @@ export class CleanCommand extends BaseCommand {
       timestampMs,
     });
 
-    this.printOutput(context, { options, plan, canApply, applyResults, logPath });
+    this.printOutput(context, { options, plan, canApply, applyResults, logPath, configPath: context.configPath });
   }
 
   private async buildPlan(
@@ -149,20 +149,29 @@ export class CleanCommand extends BaseCommand {
       canApply: boolean;
       applyResults: ApplyResult[];
       logPath: string;
+      configPath: string;
     },
   ): void {
     if (input.options.asJson) {
-      context.output.info(
-        JSON.stringify(
-          input.options.apply ? { ...input.plan, applyResults: input.applyResults } : input.plan,
-          null,
-          2,
-        ),
-      );
+      let out: any;
+      if (input.options.apply) {
+        out = {
+          ...input.plan,
+          applyResults: input.applyResults,
+          configPath: input.configPath,
+        };
+      } else {
+        out = {
+          ...input.plan,
+          configPath: input.configPath,
+        };
+      }
+      context.output.info(JSON.stringify(out, null, 2));
       return;
     }
 
     this.printPlan(context, input.plan, input.options);
+    context.output.info(`configPath: ${input.configPath}`);
     this.printApplySection(context, input.options, input.canApply, input.applyResults);
     context.output.info(`Saved log: ${input.logPath}`);
   }

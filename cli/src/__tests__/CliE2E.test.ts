@@ -149,7 +149,6 @@ test("CLI E2E - report --json is parseable and stable", async () => {
 
     const parsed = JSON.parse(result.stdout.trim()) as Record<string, unknown>;
     assert.equal(parsed.command, "report");
-
     assert.equal(typeof parsed.runCount, "number");
     assert.ok(
       parsed.latestRunAt === null || typeof parsed.latestRunAt === "string",
@@ -159,14 +158,13 @@ test("CLI E2E - report --json is parseable and stable", async () => {
       parsed.latestRunFile === null || typeof parsed.latestRunFile === "string",
       "latestRunFile should be null|string",
     );
-
     assert.equal(typeof parsed.scanTotalBytes, "number");
     assert.equal(typeof parsed.scanMissingTargets, "number");
     assert.equal(typeof parsed.scanSkippedTargets, "number");
-
     assert.equal(typeof parsed.applyRuns, "number");
     assert.equal(typeof parsed.trashedCount, "number");
     assert.equal(typeof parsed.failedCount, "number");
+    assert.ok(typeof parsed.configPath === "string" && parsed.configPath.endsWith("rules.json"), "configPath should be present in report --json output");
   });
 });
 
@@ -201,6 +199,30 @@ test("CLI E2E - scan --json is parseable and stable", async () => {
     assert.equal(parsed.command, "scan");
     assert.equal(typeof parsed.dryRun, "boolean");
     assert.ok(Array.isArray(parsed.targets));
+    assert.ok(typeof parsed.configPath === "string" && parsed.configPath.endsWith("rules.json"), "configPath should be present in scan --json output");
+  });
+});
+
+test("CLI E2E - clean --json includes configPath", async () => {
+  await withTempDir(async (cwd) => {
+    const configPath = path.resolve(cwd, "config", "rules.json");
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.writeFile(
+      configPath,
+      JSON.stringify({ rules: [], defaults: { risk: "caution", safeAfterDays: 30 } }, null, 2),
+      "utf8",
+    );
+
+    const result = await runCli(["clean", "--json"], { cwd });
+
+    assert.equal(result.exitCode, 0);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(result.stdout);
+    } catch (e) {
+      assert.fail(`Could not parse stdout as JSON. Output:\n${result.stdout}`);
+    }
+    assert.ok(typeof parsed.configPath === "string" && parsed.configPath.endsWith("rules.json"), "configPath should be present in clean --json output");
   });
 });
 

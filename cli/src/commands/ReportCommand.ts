@@ -42,11 +42,12 @@ export class ReportCommand extends BaseCommand {
     const summary = await deps.summarize(context);
 
     if (options.asJson) {
-      context.output.info(JSON.stringify({ command: "report", ...summary }, null, 2));
+      context.output.info(JSON.stringify({ command: "report", ...summary, configPath: context.configPath }, null, 2));
       return;
     }
 
     context.output.info("report");
+    context.output.info(`configPath: ${context.configPath}`);
     context.output.info(`  runs:                 ${summary.runCount}`);
     context.output.info(`  latest:               ${summary.latestRunAt ?? "-"}`);
     context.output.info("");

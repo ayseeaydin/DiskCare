@@ -71,14 +71,18 @@ export class ScanCommand extends BaseCommand {
     );
 
     if (options.asJson) {
-      // JSON output intentionally stays stable; we don't add logPath yet.
       context.output.info(
-        JSON.stringify({ command: "scan", dryRun: options.dryRun, targets }, null, 2),
+        JSON.stringify({
+          command: "scan",
+          dryRun: options.dryRun,
+          configPath: context.configPath,
+          targets
+        }, null, 2),
       );
       return;
     }
 
-    this.printReport(context, { dryRun: options.dryRun, targets, rulesEngine, logPath });
+    this.printReport(context, { dryRun: options.dryRun, targets, rulesEngine, logPath, configPath: context.configPath });
   }
 
   private resolveDeps(context: CommandContext): ScanCommandDeps {
@@ -151,9 +155,12 @@ export class ScanCommand extends BaseCommand {
       targets: ScanTarget[];
       rulesEngine: RulesEngine | null;
       logPath: string;
+      configPath: string;
     },
   ): void {
     context.output.info(`scan report (dryRun=${input.dryRun})`);
+    context.output.info("");
+    context.output.info(`configPath: ${input.configPath}`);
     context.output.info("");
 
     for (const t of input.targets) {
