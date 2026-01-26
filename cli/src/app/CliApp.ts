@@ -54,8 +54,8 @@ export class CliApp {
           "",
           "Komutlar: scan, clean, report, config, init, schedule",
           "",
-          "Daha fazla bilgi için: diskcare <komut> --help"
-        ].join("\n")
+          "Daha fazla bilgi için: diskcare <komut> --help",
+        ].join("\n"),
       )
       .version(APP_VERSION)
       .option("--verbose", "Print stack traces and error causes")
@@ -68,6 +68,31 @@ export class CliApp {
         this.context.configPath = path.resolve(this.context.cwd, opts.config);
       }
     });
+
+    // Onboarding mesajı: sadece config gerektiren komutlarda, --json yoksa ve config dosyası yoksa göster
+    const userArgs = argv.slice(2).map((a) => a.toLowerCase());
+    const onboardingCommands = ["scan", "clean", "report"];
+    const isOnboardingCommand = onboardingCommands.some((cmd) => userArgs.includes(cmd));
+    const isJson = userArgs.includes("--json");
+    if (
+      isOnboardingCommand &&
+      !isJson &&
+      !fs.existsSync(this.context.configPath)
+    ) {
+      this.context.output.info(
+        [
+          "\u001b[1mWelcome to diskcare!\u001b[0m",
+          "",
+          "It looks like you don't have a rules config yet.",
+          "",
+          "To get started:",
+          "  1. Run \u001b[32mdiskcare init\u001b[0m to create a config file.",
+          "  2. Then try \u001b[32mdiskcare scan\u001b[0m or \u001b[32mdiskcare clean\u001b[0m.",
+          "",
+          "For help: diskcare --help",
+        ].join("\n")
+      );
+    }
 
     for (const cmd of this.commands) {
       cmd.register(this.program, this.context);
