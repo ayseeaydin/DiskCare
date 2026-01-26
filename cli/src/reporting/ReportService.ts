@@ -1,3 +1,31 @@
+// Migration helpers for log versioning
+function migrateLogV1toV2(log: ParsedLog): ParsedLog {
+  // Örnek: V1'de applySummary yoksa, applyResults'tan derive et
+  if (log.version >= 2) return log;
+  let applySummary = log.applySummary;
+  if (!applySummary && Array.isArray(log.applyResults)) {
+    const trashed = log.applyResults.filter((r: any) => r.status === "trashed").length;
+    const failed = log.applyResults.filter((r: any) => r.status === "failed").length;
+    const trashedEstimatedBytes = log.applyResults.reduce((acc: number, r: any) => {
+      if (r.status !== "trashed") return acc;
+      return acc + (typeof r.estimatedBytes === "number" ? r.estimatedBytes : 0);
+    }, 0);
+    applySummary = { trashed, failed, trashedEstimatedBytes };
+  }
+  return { ...log, applySummary, version: 2 };
+}
+
+function migrateLogToLatest(log: ParsedLog): ParsedLog {
+  let migrated = log;
+  if (migrated.version < 2) migrated = migrateLogV1toV2(migrated);
+  // Gelecekte başka migration fonksiyonları da zincire eklenebilir
+  return migrated;
+}
+
+function normalizeLogForReporting(log: ParsedLog): ParsedLog {
+  // Tüm logları en güncel versiyona migrate et
+  return migrateLogToLatest(log);
+}
 import path from "node:path";
 
 import fs from "node:fs/promises";
@@ -89,6 +117,7 @@ type ParsedLog = {
   plan: unknown;
   applyResults: unknown;
   applySummary: unknown;
+  version: number;
 };
 
 export class ReportService {
@@ -237,7 +266,7 @@ export class ReportService {
     failedCount: number;
     trashedEstimatedBytes: number;
   } {
-    // 1) Preferred: applySummary (stable contract)
+    // Migration pipeline sayesinde burada sadece güncel format beklenir
     if (isObject(log.applySummary)) {
       const s = log.applySummary as LoggedApplySummary;
       return {
@@ -246,53 +275,7 @@ export class ReportService {
         trashedEstimatedBytes: asNumber(s.trashedEstimatedBytes) ?? 0,
       };
     }
-
-    // 2) Fallback: applyResults array (derive counts)
-    const results = asArray<LoggedApplyResult>(log.applyResults);
-    if (results) {
-      const trashedCount = results.filter((r) => r.status === "trashed").length;
-      const failedCount = results.filter((r) => r.status === "failed").length;
-
-      // Prefer per-item estimatedBytes from apply results
-      const bytesFromResults = results.reduce((acc, r) => {
-        if (r.status !== "trashed") return acc;
-        return acc + (asNumber(r.estimatedBytes) ?? 0);
-      }, 0);
-
-      if (bytesFromResults > 0) {
-        return { trashedCount, failedCount, trashedEstimatedBytes: bytesFromResults };
-      }
-
-      // Fallback: if no per-item bytes exist, fall back to plan.summary.estimatedBytesTotal
-      // ONLY when it was a real apply (dryRun=false).
-      let bytesFromPlan = 0;
-      if (
-        log.dryRun === false &&
-        isObject(log.plan) &&
-        isObject((log.plan as JsonObject).summary)
-      ) {
-        const sum = (log.plan as JsonObject).summary as JsonObject;
-        bytesFromPlan = asNumber(sum.estimatedBytesTotal) ?? 0;
-      }
-
-      return { trashedCount, failedCount, trashedEstimatedBytes: bytesFromPlan };
-    }
-
-    // 3) Legacy fallback: infer from plan.items (less reliable)
-    if (isObject(log.plan)) {
-      const items = asArray<JsonObject>((log.plan as JsonObject).items) ?? [];
-      const trashedCount =
-        log.dryRun === false
-          ? items.filter((it) => (it.status as unknown) === "eligible").length
-          : 0;
-      const trashedEstimatedBytes = items.reduce((acc, it) => {
-        const est = asNumber(it.estimatedBytes) ?? 0;
-        return acc + est;
-      }, 0);
-
-      return { trashedCount, failedCount: 0, trashedEstimatedBytes };
-    }
-
+    // Eğer migration eksikse, sıfır döndür
     return { trashedCount: 0, failedCount: 0, trashedEstimatedBytes: 0 };
   }
 
@@ -323,7 +306,7 @@ export class ReportService {
 
       if (!command || !timestamp) continue;
 
-      out.push({
+      let log: ParsedLog = {
         file,
         command,
         timestamp,
@@ -333,7 +316,10 @@ export class ReportService {
         plan: (parsed as JsonObject).plan,
         applyResults: (parsed as JsonObject).applyResults,
         applySummary: (parsed as JsonObject).applySummary,
-      });
+        version: asNumber((parsed as JsonObject).version) ?? 1,
+      };
+      log = normalizeLogForReporting(log);
+      out.push(log);
     }
 
     return out;
