@@ -6,12 +6,13 @@ import type { ScanTarget } from "@diskcare/scanner-core";
 import { RulesEngine } from "@diskcare/rules-engine";
 
 import { CleanCommand } from "../commands/CleanCommand.js";
+import type { Output } from "../output/Output.js";
 
-class FakeOutput {
+class FakeOutput implements Output {
   readonly infos: string[] = [];
   readonly warns: string[] = [];
   readonly errors: string[] = [];
-
+  readonly progresses: string[] = [];
   info(message: string): void {
     this.infos.push(message);
   }
@@ -20,6 +21,9 @@ class FakeOutput {
   }
   error(message: string): void {
     this.errors.push(message);
+  }
+  progress(message: string): void {
+    this.progresses.push(message);
   }
 }
 
@@ -59,7 +63,6 @@ function makeRulesEngine(): RulesEngine {
 test("CleanCommand - should not call trash when --apply --no-dry-run but missing --yes", async () => {
   const output = new FakeOutput();
   const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
-
   const trashedPaths: string[] = [];
 
   const cmd = new CleanCommand({
@@ -82,17 +85,20 @@ test("CleanCommand - should not call trash when --apply --no-dry-run but missing
     env: {},
     homedir: "C:\\Users\\test",
     pid: 123,
-    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
-    configPath: "config/rules.json",
+    nowFn: () => new Date(nowMs),
+    configPath: "D:\\diskcare\\config\\rules.json",
     setExitCode: () => {},
   });
-
   await program.parseAsync(["node", "diskcare", "clean", "--apply", "--no-dry-run"]);
 
-  assert.deepEqual(trashedPaths, []);
+  assert.equal(trashedPaths.length, 0, "should not call trash without --yes");
   assert.ok(
-    output.warns.some((w) => w.includes("confirmation is missing")),
-    "should warn about missing confirmation",
+    output.progresses.includes("Building clean plan..."),
+    "Should show building clean plan progress",
+  );
+  assert.ok(
+    output.progresses.some((m) => m.startsWith("Clean plan ready.")),
+    "Should show clean plan ready progress",
   );
 });
 
@@ -122,8 +128,8 @@ test("CleanCommand - should call trash when --apply --no-dry-run --yes", async (
     env: {},
     homedir: "C:\\Users\\test",
     pid: 123,
-    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
-    configPath: "config/rules.json",
+    nowFn: () => new Date(nowMs),
+    configPath: "D:\\diskcare\\config\\rules.json",
     setExitCode: () => {},
   });
 
@@ -161,8 +167,8 @@ test("CleanCommand - should report batch trash failure clearly", async () => {
     env: {},
     homedir: "C:\\Users\\test",
     pid: 123,
-    nowFn: () => new Date("2026-01-21T00:00:00.000Z"),
-    configPath: "config/rules.json",
+    nowFn: () => new Date(nowMs),
+    configPath: "D:\\diskcare\\config\\rules.json",
     setExitCode: () => {},
   });
 

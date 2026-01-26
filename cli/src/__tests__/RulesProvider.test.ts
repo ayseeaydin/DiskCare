@@ -6,6 +6,10 @@ import { RulesConfigError } from "@diskcare/rules-engine";
 import { RulesProvider } from "../rules/RulesProvider.js";
 
 class FakeOutput {
+  readonly progresses: string[] = [];
+  progress(message: string): void {
+    this.progresses.push(message);
+  }
   readonly warns: string[] = [];
   readonly infos: string[] = [];
   readonly errors: string[] = [];

@@ -7,6 +7,10 @@ import { handleCommandError } from "../utils/commandErrors.js";
 import { DiskcareError } from "../errors/DiskcareError.js";
 
 class FakeOutput implements Output {
+  progresses: string[] = [];
+  progress(message: string): void {
+    this.progresses.push(message);
+  }
   infos: string[] = [];
   warns: string[] = [];
   errors: string[] = [];

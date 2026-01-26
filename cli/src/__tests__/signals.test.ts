@@ -4,6 +4,10 @@ import assert from "node:assert/strict";
 import { installSignalHandlers } from "../utils/signals.js";
 
 class FakeOutput {
+  readonly progresses: string[] = [];
+  progress(message: string): void {
+    this.progresses.push(message);
+  }
   readonly infos: string[] = [];
   readonly warns: string[] = [];
   readonly errors: string[] = [];

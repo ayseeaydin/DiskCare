@@ -54,7 +54,9 @@ export class ScanCommand extends BaseCommand {
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
     const options = this.parseOptions(args);
     const deps = this.resolveDeps(context);
+    context.output.progress("Scanning targets...");
     const targets = await deps.scanAll(context);
+    context.output.progress(`Scan completed. Found ${targets.length} targets.`);
 
     // Load rules config (do not crash CLI if missing; stay explainable)
     const rulesEngine = await deps.loadRules(context);

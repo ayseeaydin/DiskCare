@@ -7,6 +7,10 @@ import { InitCommand } from "../commands/InitCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 
 class FakeOutput {
+  readonly progresses: string[] = [];
+  progress(message: string): void {
+    this.progresses.push(message);
+  }
   readonly infos: string[] = [];
   readonly warns: string[] = [];
   readonly errors: string[] = [];

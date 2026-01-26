@@ -1,16 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-
 import { Command } from "commander";
-
 import { ScanCommand } from "../commands/ScanCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
+import type { Output } from "../output/Output.js";
 
-class FakeOutput {
+class FakeOutput implements Output {
   readonly infos: string[] = [];
   readonly warns: string[] = [];
   readonly errors: string[] = [];
-
+  readonly progresses: string[] = [];
   info(message: string): void {
     this.infos.push(message);
   }
@@ -20,12 +19,14 @@ class FakeOutput {
   error(message: string): void {
     this.errors.push(message);
   }
+  progress(message: string): void {
+    this.progresses.push(message);
+  }
 }
 
 test("ScanCommand - should use injected nowFn for payload timestamp", async () => {
   const output = new FakeOutput();
   const fixed = new Date("2026-01-21T12:34:56.000Z");
-
   let nowCalls = 0;
   let wrotePayload: any = null;
 
@@ -66,4 +67,9 @@ test("ScanCommand - should use injected nowFn for payload timestamp", async () =
 
   const raw = output.infos.find((l) => l.trim().startsWith("{"));
   assert.ok(raw, "should print JSON output");
+  assert.ok(output.progresses.includes("Scanning targets..."), "Should show scanning progress");
+  assert.ok(
+    output.progresses.some((m) => m.startsWith("Scan completed.")),
+    "Should show scan completed progress",
+  );
 });
