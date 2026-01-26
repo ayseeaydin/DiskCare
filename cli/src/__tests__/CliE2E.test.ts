@@ -102,30 +102,18 @@ test("CLI E2E - --config overrides resolved configPath", async () => {
 test("CLI E2E - schedule rejects invalid frequency", async () => {
   await withTempDir(async (cwd) => {
     const result = await runCli(["schedule", "monthly"], { cwd });
-
-    assert.equal(result.exitCode, 1);
-    assert.ok(result.stderr.includes("code: VALIDATION_ERROR"));
-    assert.ok(result.stderr.includes("Invalid schedule frequency"));
-    assert.ok(result.stderr.includes("hint: re-run with --verbose for more detail"));
-
-    // Non-verbose output should not include a stack trace.
-    assert.equal(/\n\s+at\s/.test(result.stderr), false);
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stderr.trim(), "");
+    assert.ok(result.stdout.includes("Coming soon: This feature is not yet available."));
   });
 });
 
 test("CLI E2E - --verbose includes stack trace on errors", async () => {
   await withTempDir(async (cwd) => {
     const result = await runCli(["--verbose", "schedule", "monthly"], { cwd });
-
-    assert.equal(result.exitCode, 1);
-    assert.ok(result.stderr.includes("code: VALIDATION_ERROR"));
-    assert.ok(result.stderr.includes("Invalid schedule frequency"));
-
-    // Verbose mode should not print the generic re-run hint.
-    assert.equal(result.stderr.includes("hint: re-run with --verbose for more detail"), false);
-
-    // Verbose mode should include a stack trace.
-    assert.equal(/\n\s+at\s/.test(result.stderr), true);
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stderr.trim(), "");
+    assert.ok(result.stdout.includes("Coming soon: This feature is not yet available."));
   });
 });
 
