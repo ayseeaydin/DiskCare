@@ -233,29 +233,28 @@ export class CleanCommand extends BaseCommand {
       }));
     }
 
-    const paths = eligible.map((i) => i.path);
-
-    const trashResult = await fromPromise(deps.trashFn(paths));
-    if (trashResult.ok) {
-      return eligible.map((item) => ({
-        id: item.id,
-        path: item.path,
-        status: "trashed" as const,
-        estimatedBytes: item.estimatedBytes,
-      }));
+    // Her dosya için ayrı ayrı trash dene, sonucu kaydet
+    const results: ApplyResult[] = [];
+    for (const item of eligible) {
+      try {
+        await deps.trashFn([item.path]);
+        results.push({
+          id: item.id,
+          path: item.path,
+          status: "trashed",
+          estimatedBytes: item.estimatedBytes,
+        });
+      } catch (err) {
+        results.push({
+          id: item.id,
+          path: item.path,
+          status: "failed",
+          estimatedBytes: item.estimatedBytes,
+          message: truncate(`trash failed: ${toOneLine(toErrorMessage(err))}`, 180),
+        });
+      }
     }
-
-    const message = truncate(
-      `batch trash failed: ${toOneLine(toErrorMessage(trashResult.error))}`,
-      180,
-    );
-    return eligible.map((item) => ({
-      id: item.id,
-      path: item.path,
-      status: "failed" as const,
-      estimatedBytes: item.estimatedBytes,
-      message,
-    }));
+    return results;
   }
 
   private computeApplySummary(
@@ -332,7 +331,7 @@ export class CleanCommand extends BaseCommand {
     // Cesur ve rehberli özet mesajı
     if (summary.eligibleCount > 0) {
       context.output.info(
-        `\u001b[1m${formatBytes(summary.estimatedBytesTotal)} can be freed.\u001b[0m To actually clean, run: diskcare clean --apply --no-dry-run --yes`
+        `\u001b[1m${formatBytes(summary.estimatedBytesTotal)} can be freed.\u001b[0m To actually clean, run: diskcare clean --apply --no-dry-run --yes`,
       );
     } else {
       context.output.info("No eligible items to clean.");

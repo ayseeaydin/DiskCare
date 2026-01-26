@@ -74,11 +74,7 @@ export class CliApp {
     const onboardingCommands = ["scan", "clean", "report"];
     const isOnboardingCommand = onboardingCommands.some((cmd) => userArgs.includes(cmd));
     const isJson = userArgs.includes("--json");
-    if (
-      isOnboardingCommand &&
-      !isJson &&
-      !fs.existsSync(this.context.configPath)
-    ) {
+    if (isOnboardingCommand && !isJson && !fs.existsSync(this.context.configPath)) {
       this.context.output.info(
         [
           "\u001b[1mWelcome to diskcare!\u001b[0m",
@@ -90,7 +86,7 @@ export class CliApp {
           "  2. Then try \u001b[32mdiskcare scan\u001b[0m or \u001b[32mdiskcare clean\u001b[0m.",
           "",
           "For help: diskcare --help",
-        ].join("\n")
+        ].join("\n"),
       );
     }
 

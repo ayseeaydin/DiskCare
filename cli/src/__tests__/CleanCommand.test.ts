@@ -176,5 +176,8 @@ test("CleanCommand - should report batch trash failure clearly", async () => {
 
   assert.ok(output.infos.some((l) => l.includes("apply results: trashed=0 failed=1")));
   assert.ok(output.warns.some((l) => l.includes("failed: sandbox-cache")));
-  assert.ok(output.warns.some((l) => l.includes("batch trash failed")));
+  assert.ok(
+    output.warns.some((l) => l.includes("trash failed")),
+    "Should report per-file trash failure",
+  );
 });
