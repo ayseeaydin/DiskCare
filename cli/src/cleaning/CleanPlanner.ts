@@ -3,6 +3,7 @@ import type { RulesEngine } from "@diskcare/rules-engine";
 import { truncate } from "../formatters/truncate.js";
 import { MS_PER_DAY } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
+import { MessageFormatter } from "../utils/MessageFormatter.js";
 
 export type PlanStatus = "eligible" | "caution" | "blocked";
 
@@ -162,8 +163,9 @@ function computeStatusAndReasons(input: {
   }
 
   if (ageDays < decision.safeAfterDays) {
+    // Standart mesaj formatı ile
     reasons.push(
-      `Too recent: last modified ${ageDays} day(s) ago (< safeAfterDays=${decision.safeAfterDays}).`,
+      MessageFormatter.tooRecent(ageDays, decision.safeAfterDays)
     );
     return { status: "caution", reasons };
   }
