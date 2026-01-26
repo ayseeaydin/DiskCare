@@ -292,4 +292,17 @@ Daha fazla bilgi için ilgili test dosyalarındaki açıklamalara bakınız.
 
 ---
 
+## Platform Support
+
+> **Important:** As of January 2026, DiskCare has only been developed and tested on Windows 10/11.
+> Linux and macOS have not been tested at all. There may be platform-specific path/behavior issues or compatibility gaps.
+
+- **Windows 10/11:** Fully supported and tested.
+- **macOS:** Theoretical support exists, but it has never been tested. Manual verification is needed for macOS-specific paths (e.g., `~/Library/Application Support`).
+- **Linux:** Theoretical support exists, but it has never been tested. Path and permission differences may occur across distributions.
+
+**Contributions are welcome!** If you test DiskCare on other platforms, please share your findings and help improve cross-platform support.
+
+---
+
 If you use DiskCare and it saved you from manual cleanup hell — the product did its job.
