@@ -42,7 +42,9 @@ export class ReportCommand extends BaseCommand {
     const summary = await deps.summarize(context);
 
     if (options.asJson) {
-      context.output.info(JSON.stringify({ command: "report", ...summary, configPath: context.configPath }, null, 2));
+      context.output.info(
+        JSON.stringify({ command: "report", ...summary, configPath: context.configPath }, null, 2),
+      );
       return;
     }
 

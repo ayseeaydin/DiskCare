@@ -84,7 +84,14 @@ export class CleanCommand extends BaseCommand {
       timestampMs,
     });
 
-    this.printOutput(context, { options, plan, canApply, applyResults, logPath, configPath: context.configPath });
+    this.printOutput(context, {
+      options,
+      plan,
+      canApply,
+      applyResults,
+      logPath,
+      configPath: context.configPath,
+    });
   }
 
   private async buildPlan(

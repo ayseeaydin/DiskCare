@@ -72,17 +72,27 @@ export class ScanCommand extends BaseCommand {
 
     if (options.asJson) {
       context.output.info(
-        JSON.stringify({
-          command: "scan",
-          dryRun: options.dryRun,
-          configPath: context.configPath,
-          targets
-        }, null, 2),
+        JSON.stringify(
+          {
+            command: "scan",
+            dryRun: options.dryRun,
+            configPath: context.configPath,
+            targets,
+          },
+          null,
+          2,
+        ),
       );
       return;
     }
 
-    this.printReport(context, { dryRun: options.dryRun, targets, rulesEngine, logPath, configPath: context.configPath });
+    this.printReport(context, {
+      dryRun: options.dryRun,
+      targets,
+      rulesEngine,
+      logPath,
+      configPath: context.configPath,
+    });
   }
 
   private resolveDeps(context: CommandContext): ScanCommandDeps {

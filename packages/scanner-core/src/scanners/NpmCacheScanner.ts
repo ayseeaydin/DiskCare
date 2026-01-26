@@ -5,7 +5,6 @@ import type { CommandRunner } from "../utils/CommandRunner.js";
 import { NodeCommandRunner } from "../utils/CommandRunner.js";
 import type { DiscoveredTarget } from "../types/ScanTarget.js";
 import { toErrorMessageOneLine } from "../utils/errorMessage.js";
-import { MessageFormatter } from "../../../cli/src/utils/MessageFormatter.js";
 import { isNonEmptyString } from "../utils/typeGuards.js";
 import { err, ok, type Result, fromPromise } from "../utils/result.js";
 import type { Scanner } from "./BaseScanner.js";
@@ -50,11 +49,7 @@ export class NpmCacheScanner implements Scanner {
     const fromNpm = await this.tryGetNpmConfigCache();
     if (fromNpm.ok) return { path: fromNpm.value, diagnostics };
     diagnostics.push(
-      MessageFormatter.diagnostic(
-        "npm",
-        "config lookup failed",
-        { error: toErrorMessageOneLine(fromNpm.error), fallback: true }
-      )
+      `npm config lookup failed (${toErrorMessageOneLine(fromNpm.error)}); falling back.`,
     );
 
     // 2) Windows common defaults

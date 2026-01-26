@@ -164,9 +164,7 @@ function computeStatusAndReasons(input: {
 
   if (ageDays < decision.safeAfterDays) {
     // Standart mesaj formatı ile
-    reasons.push(
-      MessageFormatter.tooRecent(ageDays, decision.safeAfterDays)
-    );
+    reasons.push(MessageFormatter.tooRecent(ageDays, decision.safeAfterDays));
     return { status: "caution", reasons };
   }
 

@@ -152,7 +152,10 @@ test("CLI E2E - report --json is parseable and stable", async () => {
     assert.equal(typeof parsed.applyRuns, "number");
     assert.equal(typeof parsed.trashedCount, "number");
     assert.equal(typeof parsed.failedCount, "number");
-    assert.ok(typeof parsed.configPath === "string" && parsed.configPath.endsWith("rules.json"), "configPath should be present in report --json output");
+    assert.ok(
+      typeof parsed.configPath === "string" && parsed.configPath.endsWith("rules.json"),
+      "configPath should be present in report --json output",
+    );
   });
 });
 
@@ -187,7 +190,10 @@ test("CLI E2E - scan --json is parseable and stable", async () => {
     assert.equal(parsed.command, "scan");
     assert.equal(typeof parsed.dryRun, "boolean");
     assert.ok(Array.isArray(parsed.targets));
-    assert.ok(typeof parsed.configPath === "string" && parsed.configPath.endsWith("rules.json"), "configPath should be present in scan --json output");
+    assert.ok(
+      typeof parsed.configPath === "string" && parsed.configPath.endsWith("rules.json"),
+      "configPath should be present in scan --json output",
+    );
   });
 });
 
@@ -210,7 +216,10 @@ test("CLI E2E - clean --json includes configPath", async () => {
     } catch (e) {
       assert.fail(`Could not parse stdout as JSON. Output:\n${result.stdout}`);
     }
-    assert.ok(typeof parsed.configPath === "string" && parsed.configPath.endsWith("rules.json"), "configPath should be present in clean --json output");
+    assert.ok(
+      typeof parsed.configPath === "string" && parsed.configPath.endsWith("rules.json"),
+      "configPath should be present in clean --json output",
+    );
   });
 });
 
