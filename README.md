@@ -282,4 +282,14 @@ MIT
 
 ---
 
+## Test Coverage & Safety Notes
+
+- **SandboxCacheScanner**: Sadece test ortamında kullanılır, production'da gerçek .sandbox-cache hedefi yoktur.
+- **ScheduleCommand**: Komutun kendisi stub'dur ("coming soon"), testler sadece CLI'nın çökmediğini ve doğru mesajı verdiğini doğrular.
+- **NpmCacheScanner ve entegrasyon testleri**: Gerçek npm cache'e erişilmez, tüm yollar ve çıktılar izole/mocked olarak test edilir. Bu, güvenlik ve deterministik testler için zorunludur.
+
+Daha fazla bilgi için ilgili test dosyalarındaki açıklamalara bakınız.
+
+---
+
 If you use DiskCare and it saved you from manual cleanup hell — the product did its job.

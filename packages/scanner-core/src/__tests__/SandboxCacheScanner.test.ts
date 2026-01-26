@@ -1,3 +1,7 @@
+// NOTE: SandboxCacheScanner is only used for test coverage and is not a production target.
+// It simulates a cache directory for isolated test scenarios.
+// See README for details.
+
 import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";

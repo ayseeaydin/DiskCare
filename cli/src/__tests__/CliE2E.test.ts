@@ -99,6 +99,8 @@ test("CLI E2E - --config overrides resolved configPath", async () => {
   });
 });
 
+// NOTE: ScheduleCommand is a stub ("coming soon").
+// Test exists only to ensure CLI does not crash and user sees a clear message.
 test("CLI E2E - schedule rejects invalid frequency", async () => {
   await withTempDir(async (cwd) => {
     const result = await runCli(["schedule", "monthly"], { cwd });

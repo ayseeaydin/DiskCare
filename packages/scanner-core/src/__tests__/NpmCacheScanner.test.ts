@@ -73,3 +73,6 @@ test("NpmCacheScanner - falls back to homedir on posix when npm fails and no env
   assert.equal(t.path, path.posix.join("/home/testuser", ".npm"));
   assert.ok(t.diagnostics!.some((d) => d.includes("homedir fallback")));
 });
+
+// NOTE: These tests do NOT access the real npm cache for safety and reproducibility.
+// All npm cache paths are simulated/mocked. See README for rationale.
