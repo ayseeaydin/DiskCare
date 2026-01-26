@@ -5,6 +5,7 @@ import { formatBytes } from "../formatters/formatBytes.js";
 import { formatDate } from "../formatters/formatDate.js";
 import { truncate } from "../formatters/truncate.js";
 import { TRUNCATE_SUFFIX } from "../utils/constants.js";
+import { TRUNCATE_SUFFIX_LENGTH } from "../utils/constants.js";
 
 test("formatBytes - formats common sizes", () => {
   assert.equal(formatBytes(0), "0 B");
@@ -39,4 +40,14 @@ test("truncate - truncates and adds suffix", () => {
 test("truncate - when maxLen too small, returns suffix only", () => {
   assert.equal(truncate("abcdef", 0), TRUNCATE_SUFFIX);
   assert.equal(truncate("abcdef", 1), TRUNCATE_SUFFIX);
+});
+
+test("truncate - returns only suffix when maxLen equals suffix length", () => {
+  assert.equal(truncate("abcdef", TRUNCATE_SUFFIX_LENGTH), TRUNCATE_SUFFIX);
+});
+
+test("truncate - property: for all maxLen <= suffix length, returns only suffix", () => {
+  for (let n = 0; n <= TRUNCATE_SUFFIX_LENGTH; ++n) {
+    assert.equal(truncate("abcdef", n), TRUNCATE_SUFFIX, `maxLen=${n}`);
+  }
 });
