@@ -208,6 +208,9 @@ test("CLI E2E - --help prints usage", async () => {
     assert.ok(result.stdout.includes("Developer-focused disk hygiene CLI"));
     assert.ok(result.stdout.includes("diskcare"));
     assert.ok(result.stdout.toLowerCase().includes("commands"));
+    assert.ok(result.stdout.includes("Safety gates"), "Help output should mention safety gates");
+    assert.ok(result.stdout.includes("planlanır"), "Help output should mention planning");
+    assert.ok(result.stdout.includes("--apply"), "Help output should mention --apply flag");
   });
 });
 

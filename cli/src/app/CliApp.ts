@@ -45,7 +45,18 @@ export class CliApp {
 
     this.program
       .name("diskcare")
-      .description("Developer-focused disk hygiene CLI (safe-by-default)")
+      .description(
+        [
+          "Developer-focused disk hygiene CLI (safe-by-default)",
+          "",
+          "Safety gates: Temizlik işlemleri risk ve güvenlik kurallarına göre planlanır. Varsayılan olarak dosyalar silinmez, sadece temizlik planı gösterilir.",
+          "Gerçek temizlik için --apply ve --yes bayraklarını kullanmalısınız.",
+          "",
+          "Komutlar: scan, clean, report, config, init, schedule",
+          "",
+          "Daha fazla bilgi için: diskcare <komut> --help"
+        ].join("\n")
+      )
       .version(APP_VERSION)
       .option("--verbose", "Print stack traces and error causes")
       .option("-c, --config <path>", "Path to rules config (rules.json)");
