@@ -1,3 +1,6 @@
+// NOTE: Log migration pipeline is version-aware. See LOG_SCHEMA.md for versioning and migration policy.
+// When log format changes, add a migration function and update the version field accordingly.
+
 // Migration helpers for log versioning
 function migrateLogV1toV2(log: ParsedLog): ParsedLog {
   // Örnek: V1'de applySummary yoksa, applyResults'tan derive et
