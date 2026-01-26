@@ -31,7 +31,7 @@ function formatDiskcareMeta(err: DiskcareError): string[] {
 function suggestionForCode(code: string): string | null {
   switch (code) {
     case "CONFIG_LOAD_ERROR":
-      return "Check config/rules.json exists and is valid JSON.";
+      return "Config file is corrupted or missing. Run 'diskcare init' to recreate.";
     case "CONFIG_WRITE_ERROR":
       return "Check the config path is writable (permissions, path, disk space).";
     case "LOG_WRITE_ERROR":

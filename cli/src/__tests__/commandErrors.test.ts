@@ -55,5 +55,5 @@ test("handleCommandError - prints code + hint and sets exitCode", () => {
   assert.equal(exitCode, 1);
   assert.ok(output.errors.some((l) => l.startsWith("error:")));
   assert.ok(output.errors.some((l) => l === "code: CONFIG_LOAD_ERROR"));
-  assert.ok(output.warns.some((l) => l.includes("Check config/rules.json")));
+  assert.ok(output.warns.some((l) => l.includes("diskcare init")), "Should suggest running diskcare init");
 });
