@@ -70,8 +70,11 @@ export class CleanCommand extends BaseCommand {
     const options = this.parseOptions(args);
     const deps = this.resolveDeps(context);
 
+    context.output.progress("Building clean plan...");
     const timestampMs = deps.nowMs();
     const plan = await this.buildPlan(context, deps, options, timestampMs);
+    context.output.progress(`Clean plan ready. ${plan.items.length} items in plan.`);
+
     const { canApply, applyResults, applySummary } = await this.applyIfNeeded(plan, options, deps);
     const logPath = await this.writeRunLog(context, deps, {
       options,
@@ -325,6 +328,16 @@ export class CleanCommand extends BaseCommand {
 
       context.output.info("");
     }
+
+    // Cesur ve rehberli özet mesajı
+    if (summary.eligibleCount > 0) {
+      context.output.info(
+        `\u001b[1m${formatBytes(summary.estimatedBytesTotal)} can be freed.\u001b[0m To actually clean, run: diskcare clean --apply --no-dry-run --yes`
+      );
+    } else {
+      context.output.info("No eligible items to clean.");
+    }
+    context.output.info("");
   }
 
   private printApplySection(
