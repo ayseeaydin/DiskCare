@@ -5,7 +5,7 @@ import { CleanCommand } from "./commands/CleanCommand.js";
 import { ReportCommand } from "./commands/ReportCommand.js";
 import { ScheduleCommand } from "./commands/ScheduleCommand.js";
 import { InitCommand } from "./commands/InitCommand.js";
-
+import type { BaseCommand } from "./commands/BaseCommand.js";
 
 // Feature flags for incomplete/experimental features
 const FEATURES = {
@@ -13,7 +13,7 @@ const FEATURES = {
   DOCKER_CACHE: false, // v3
 };
 
-const commands = [
+const commands: BaseCommand[] = [
   new ConfigCommand(),
   new InitCommand(),
   new ScanCommand(),

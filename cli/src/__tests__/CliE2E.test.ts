@@ -99,25 +99,7 @@ test("CLI E2E - --config overrides resolved configPath", async () => {
   });
 });
 
-// NOTE: ScheduleCommand is a stub ("coming soon").
-// Test exists only to ensure CLI does not crash and user sees a clear message.
-test("CLI E2E - schedule rejects invalid frequency", async () => {
-  await withTempDir(async (cwd) => {
-    const result = await runCli(["schedule", "monthly"], { cwd });
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stderr.trim(), "");
-    assert.ok(result.stdout.includes("Coming soon: This feature is not yet available."));
-  });
-});
-
-test("CLI E2E - --verbose includes stack trace on errors", async () => {
-  await withTempDir(async (cwd) => {
-    const result = await runCli(["--verbose", "schedule", "monthly"], { cwd });
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stderr.trim(), "");
-    assert.ok(result.stdout.includes("Coming soon: This feature is not yet available."));
-  });
-});
+// v1: Incomplete feature (ScheduleCommand) testleri publish'de devre dışı
 
 test("CLI E2E - init --list-policies exits cleanly", async () => {
   await withTempDir(async (cwd) => {
