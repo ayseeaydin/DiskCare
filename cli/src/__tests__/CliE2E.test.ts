@@ -214,12 +214,27 @@ test("CLI E2E - --help prints usage", async () => {
     assert.equal(result.exitCode, 0);
     assert.equal(result.stderr.trim(), "");
 
-    assert.ok(result.stdout.includes("Developer-focused disk hygiene CLI"));
-    assert.ok(result.stdout.includes("diskcare"));
-    assert.ok(result.stdout.toLowerCase().includes("commands"));
-    assert.ok(result.stdout.includes("Safety gates"), "Help output should mention safety gates");
-    assert.ok(result.stdout.includes("planlanır"), "Help output should mention planning");
+    // Yeni help çıktısına uygun anahtar kelimeler
+    assert.ok(
+      result.stdout.includes("Disk bakımı ve temizlik için güvenli CLI") ||
+        result.stdout.includes("safe by default"),
+      "Help output should mention diskcare and safe by default",
+    );
+    assert.ok(result.stdout.includes("diskcare"), "Help output should mention diskcare");
+    assert.ok(
+      result.stdout.includes("Komutlar") || result.stdout.toLowerCase().includes("commands"),
+      "Help output should mention commands",
+    );
+    assert.ok(
+      result.stdout.includes("Varsayılan olarak hiçbir dosya silinmez") ||
+        result.stdout.includes("dry-run"),
+      "Help output should mention non-destructive/dry-run",
+    );
     assert.ok(result.stdout.includes("--apply"), "Help output should mention --apply flag");
+    assert.ok(
+      result.stdout.includes("For help / yardım"),
+      "Help output should mention help/yardım",
+    );
   });
 });
 

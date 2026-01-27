@@ -49,7 +49,8 @@ export type CleanCommandDeps = {
 
 export class CleanCommand extends BaseCommand {
   readonly name = "clean";
-  readonly description = "Clean targets that match safe rules (dry-run by default)";
+  readonly description =
+    "Güvenli kurallara uyan hedefleri temizler (dry-run varsayılan) / Clean safe targets (dry-run by default)";
 
   constructor(private readonly deps?: CleanCommandDeps) {
     super();

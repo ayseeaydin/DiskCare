@@ -19,7 +19,7 @@ const ScheduleOptionsSchema = z
 
 export class ScheduleCommand extends BaseCommand {
   readonly name = "schedule";
-  readonly description = "Set up a scheduled run (weekly/daily)";
+  readonly description = "Zamanlanmış çalıştırma kur (v2 özelliği) / Set up scheduled run (v2)";
 
   protected configure(cmd: Command): void {
     // Argüman zorunluluğu kaldırıldı, stub komut

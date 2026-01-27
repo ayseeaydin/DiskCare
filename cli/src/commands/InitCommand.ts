@@ -40,7 +40,8 @@ type PolicyName = "conservative" | "aggressive" | "custom";
 
 export class InitCommand extends BaseCommand {
   readonly name = "init";
-  readonly description = "Create a starter rules.json (safe defaults)";
+  readonly description =
+    "Başlangıç rules.json dosyası oluşturur (safe defaults) / Create starter rules.json";
 
   constructor(private readonly deps?: InitCommandDeps) {
     super();

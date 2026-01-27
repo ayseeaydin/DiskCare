@@ -47,14 +47,14 @@ export class CliApp {
       .name("diskcare")
       .description(
         [
-          "Developer-focused disk hygiene CLI (safe-by-default)",
+          "Disk bakımı ve temizlik için güvenli CLI. (Safe by default)",
           "",
-          "Safety gates: Temizlik işlemleri risk ve güvenlik kurallarına göre planlanır. Varsayılan olarak dosyalar silinmez, sadece temizlik planı gösterilir.",
-          "Gerçek temizlik için --apply ve --yes bayraklarını kullanmalısınız.",
+          "Varsayılan olarak hiçbir dosya silinmez, sadece temizlik planı gösterilir.",
+          "Gerçek temizlik için --apply --no-dry-run --yes bayraklarını kullanın.",
           "",
-          "Komutlar: scan, clean, report, config, init, schedule",
+          "Komutlar: scan (tara), clean (temizle), report (rapor), config (yapılandırma), init (başlat)",
           "",
-          "Daha fazla bilgi için: diskcare <komut> --help",
+          "For help / yardım: diskcare <komut> --help",
         ].join("\n"),
       )
       .version(APP_VERSION)
@@ -77,15 +77,15 @@ export class CliApp {
     if (isOnboardingCommand && !isJson && !fs.existsSync(this.context.configPath)) {
       this.context.output.info(
         [
-          "\u001b[1mWelcome to diskcare!\u001b[0m",
+          "\u001b[1mDiskcare'a hoş geldiniz!\u001b[0m / Welcome to diskcare!",
           "",
-          "It looks like you don't have a rules config yet.",
+          "Henüz bir rules.json yapılandırmanız yok gibi görünüyor.",
           "",
-          "To get started:",
-          "  1. Run \u001b[32mdiskcare init\u001b[0m to create a config file.",
-          "  2. Then try \u001b[32mdiskcare scan\u001b[0m or \u001b[32mdiskcare clean\u001b[0m.",
+          "Başlamak için:",
+          "  1. \u001b[32mdiskcare init\u001b[0m komutunu çalıştırarak bir config oluşturun.",
+          "  2. Ardından \u001b[32mdiskcare scan\u001b[0m veya \u001b[32mdiskcare clean\u001b[0m deneyin.",
           "",
-          "For help: diskcare --help",
+          "For help / yardım: diskcare --help",
         ].join("\n"),
       );
     }

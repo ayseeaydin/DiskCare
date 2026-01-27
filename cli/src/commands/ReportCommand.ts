@@ -25,7 +25,7 @@ export type ReportCommandDeps = {
 
 export class ReportCommand extends BaseCommand {
   readonly name = "report";
-  readonly description = "Summarize past runs from logs";
+  readonly description = "Geçmiş çalışmaları özetler (Summarize past runs)";
 
   constructor(private readonly deps?: Partial<ReportCommandDeps>) {
     super();

@@ -40,7 +40,8 @@ export type ScanCommandDeps = {
 
 export class ScanCommand extends BaseCommand {
   readonly name = "scan";
-  readonly description = "Analyze known cache/temp locations and print a report";
+  readonly description =
+    "Bilinen önbellek/temp klasörlerini analiz eder ve raporlar (Analyze known cache/temp locations)";
 
   constructor(private readonly deps?: Partial<ScanCommandDeps>) {
     super();

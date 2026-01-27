@@ -1,0 +1,12 @@
+# Ignore build outputs and logs
+/dist
+logs/
+cli/dist
+cli/logs
+packages/*/dist
+packages/*/logs
+*.log
+*.tsbuildinfo
+node_modules/
+coverage/
+.env
