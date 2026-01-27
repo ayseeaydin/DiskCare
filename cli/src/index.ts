@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { CliApp } from "./app/CliApp.js";
 import { ConfigCommand } from "./commands/ConfigCommand.js";
 import { ScanCommand } from "./commands/ScanCommand.js";
@@ -6,7 +7,6 @@ import { ReportCommand } from "./commands/ReportCommand.js";
 import { ScheduleCommand } from "./commands/ScheduleCommand.js";
 import { InitCommand } from "./commands/InitCommand.js";
 import type { BaseCommand } from "./commands/BaseCommand.js";
-
 // Feature flags for incomplete/experimental features
 const FEATURES = {
   SCHEDULE: false, // v2

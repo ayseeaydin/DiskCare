@@ -8,7 +8,7 @@
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true});\"",
-    "build": "npm run clean && tsc -p tsconfig.json",
+    "build": "npm run clean && tsc -p tsconfig.json && node ./scripts/add-shebang.cjs",
     "dev": "node --enable-source-maps dist/index.js --help",
     "lint": "eslint .",
     "test": "npm run build && node --test dist/**/__tests__/**/*.test.js"
