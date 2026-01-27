@@ -4,4 +4,9 @@ export const MIN_SAFE_AFTER_DAYS = 0;
  * 9999 is a practical upper bound to prevent accidental huge values and keep config validation simple.
  * If you need 'never safe', use a very high value (e.g. 9999) instead of Infinity.
  */
+/**
+ * Maximum allowed safeAfterDays in rules.
+ * Rationale: ~27 years. Prevents accidental "never delete" configs.
+ * Beyond this, use risk="do-not-touch" explicitly.
+ */
 export const MAX_SAFE_AFTER_DAYS = 9999;
