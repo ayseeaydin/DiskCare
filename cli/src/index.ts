@@ -6,13 +6,25 @@ import { ReportCommand } from "./commands/ReportCommand.js";
 import { ScheduleCommand } from "./commands/ScheduleCommand.js";
 import { InitCommand } from "./commands/InitCommand.js";
 
-const app = new CliApp([
+
+// Feature flags for incomplete/experimental features
+const FEATURES = {
+  SCHEDULE: false, // v2
+  DOCKER_CACHE: false, // v3
+};
+
+const commands = [
   new ConfigCommand(),
   new InitCommand(),
   new ScanCommand(),
   new CleanCommand(),
   new ReportCommand(),
-  new ScheduleCommand(),
-]);
+];
+
+if (FEATURES.SCHEDULE) {
+  commands.push(new ScheduleCommand());
+}
+
+const app = new CliApp(commands);
 
 await app.run(process.argv);
