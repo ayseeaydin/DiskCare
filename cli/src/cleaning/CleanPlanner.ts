@@ -63,6 +63,12 @@ export function buildCleanPlan(input: PlanInput): CleanPlan {
     estimatedBytesTotal: items.reduce((acc, i) => acc + i.estimatedBytes, 0),
   };
 
+  // Post-condition invariant: estimatedBytes should never be negative
+  console.assert(
+    items.every((i) => i.estimatedBytes >= 0),
+    "Invariant violated: negative estimatedBytes in CleanPlan. This indicates a bug in plan calculation logic.",
+  );
+
   return {
     command: "clean",
     dryRun,
