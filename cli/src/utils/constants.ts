@@ -1,8 +1,13 @@
+﻿import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const pkg = require("../../package.json") as { version?: string };
+
 /**
  * Application version.
- * TODO: sync with package.json or use dynamic import
+ * Single source of truth: cli/package.json
  */
-export const APP_VERSION = "0.0.1";
+export const APP_VERSION = typeof pkg.version === "string" ? pkg.version : "0.0.0";
 
 /**
  * Milliseconds in a day (for date calculations)

@@ -1,4 +1,4 @@
-import type { Command } from "commander";
+﻿import type { Command } from "commander";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { z } from "zod";
@@ -41,7 +41,7 @@ type PolicyName = "conservative" | "aggressive" | "custom";
 export class InitCommand extends BaseCommand {
   readonly name = "init";
   readonly description =
-    "Başlangıç rules.json dosyası oluşturur (safe defaults) / Create starter rules.json";
+    "BaÅŸlangÄ±Ã§ rules.json dosyasÄ± oluÅŸturur (safe defaults) / Create starter rules.json";
 
   constructor(private readonly deps?: InitCommandDeps) {
     super();
@@ -202,12 +202,6 @@ const AGGRESSIVE_POLICY_CONFIG: unknown = {
       description: "npm cache is reproducible; safe to clean when old.",
     },
     {
-      id: "sandbox-cache",
-      risk: "safe",
-      safeAfterDays: 1,
-      description: "sandbox cache is safe to remove; keep at least a day.",
-    },
-    {
       id: "os-temp",
       risk: "caution",
       safeAfterDays: 14,
@@ -227,12 +221,6 @@ const CONSERVATIVE_POLICY_CONFIG: unknown = {
       risk: "safe",
       safeAfterDays: 30,
       description: "npm cache is reproducible; safe to clean when old.",
-    },
-    {
-      id: "sandbox-cache",
-      risk: "safe",
-      safeAfterDays: 14,
-      description: "sandbox cache is safe to remove when old.",
     },
     {
       id: "os-temp",

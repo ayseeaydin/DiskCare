@@ -5,9 +5,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
+const cliPackage = require("../../package.json") as { version?: string };
 
 async function withTempDir(fn: (dir: string) => Promise<void>): Promise<void> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "diskcare-e2e-"));
@@ -245,6 +248,7 @@ test("CLI E2E - --version prints version", async () => {
     assert.equal(result.exitCode, 0);
     assert.equal(result.stderr.trim(), "");
 
-    assert.ok(/^0\.0\.1\b/.test(result.stdout.trim()));
+    const expected = cliPackage.version ?? "0.0.0";
+    assert.ok(new RegExp(`^${expected.replace(/\./g, "\\.")}\\b`).test(result.stdout.trim()));
   });
 });

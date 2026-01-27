@@ -1,4 +1,4 @@
-import type { ScanTarget } from "@diskcare/scanner-core";
+﻿import type { ScanTarget } from "@diskcare/scanner-core";
 import {
   ScannerService,
   OsTempScanner,
@@ -23,7 +23,6 @@ export async function defaultScanAll(context: CommandContext): Promise<ScanTarge
             env: context.env,
             homedir: context.homedir,
           }),
-          new SandboxCacheScanner({ cwd: context.cwd }),
         ];
 
   const scannerService = new ScannerService(scanners);

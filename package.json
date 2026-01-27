@@ -1,6 +1,6 @@
 {
-  "name": "diskcare",
-  "private": false,
+  "name": "diskcare-workspace",
+  "private": true,
   "version": "1.0.0",
   "description": "Disk bakımı ve temizlik için güvenli, açıklanabilir ve testli CLI.",
   "author": "DiskCare Contributors",
@@ -20,13 +20,13 @@
   "scripts": {
     "build": "npm run build:packages && npm run build:cli",
     "build:packages": "npm -w @diskcare/scanner-core run build && npm -w @diskcare/rules-engine run build",
-    "build:cli": "npm -w @diskcare/cli run build",
-    "dev": "npm run -w @diskcare/cli dev",
-    "lint": "npm run -w @diskcare/cli lint",
+    "build:cli": "npm -w diskcare run build",
+    "dev": "npm run -w diskcare dev",
+    "lint": "npm run -w diskcare lint",
     "format": "prettier -w .",
     "format:check": "prettier -c .",
     "test:packages": "npm -w @diskcare/scanner-core run test && npm -w @diskcare/rules-engine run test",
-    "test:cli": "npm -w @diskcare/cli run test",
+    "test:cli": "npm -w diskcare run test",
     "test": "npm run test:packages && npm run test:cli",
     "ci": "npm run format:check && npm run build && npm run test"
   },

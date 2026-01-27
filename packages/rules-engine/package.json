@@ -1,7 +1,7 @@
 {
   "name": "@diskcare/rules-engine",
-  "version": "0.0.1",
-  "private": true,
+  "version": "1.0.0",
+  "private": false,
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,5 +9,12 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true});\"",
     "build": "npm run clean && tsc -p tsconfig.json",
     "test": "npm run build && node --test dist/**/__tests__/**/*.test.js"
+  },
+  "description": "DiskCare rules engine (risk + safeAfterDays decisions).",
+  "author": "DiskCare Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/diskcare/diskcare.git"
   }
 }
