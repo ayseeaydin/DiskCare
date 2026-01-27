@@ -191,8 +191,9 @@ export class CleanCommand extends BaseCommand {
   } {
     const parsed = CleanOptionsSchema.safeParse(args[0] ?? {});
     if (!parsed.success) {
-      throw new ValidationError("Invalid clean command options", {
+      throw new ValidationError("Invalid clean command options. Check arguments and try again.", {
         issues: parsed.error.issues,
+        hint: "Run 'diskcare clean --help' for usage examples.",
       });
     }
 

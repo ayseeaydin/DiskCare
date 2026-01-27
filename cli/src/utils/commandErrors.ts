@@ -31,17 +31,17 @@ function formatDiskcareMeta(err: DiskcareError): string[] {
 function suggestionForCode(code: string): string | null {
   switch (code) {
     case "CONFIG_LOAD_ERROR":
-      return "Config file is corrupted or missing. Run 'diskcare init' to recreate.";
+      return "Config file is corrupted or missing. Fix it manually or run 'diskcare init --force' to recreate.";
     case "CONFIG_WRITE_ERROR":
-      return "Check the config path is writable (permissions, path, disk space).";
+      return "Could not write config file. Check the path, permissions, and disk space. Try running as administrator or choose a different location.";
     case "LOG_WRITE_ERROR":
-      return "Check the logs directory is writable (permissions, path, disk space).";
+      return "Could not write to logs directory. Check permissions, disk space, or try a different location.";
     case "SCAN_ERROR":
-      return "Re-run with --verbose; check permissions and paths.";
+      return "Scan failed. Check that you have access to all target folders. Re-run with --verbose for details.";
     case "APPLY_ERROR":
-      return "Re-run in dry-run first; apply requires --apply --no-dry-run --yes.";
+      return "Cleanup could not be applied. Try running in dry-run mode first. To actually clean, use: --apply --no-dry-run --yes.";
     case "VALIDATION_ERROR":
-      return "Check CLI arguments and configuration values.";
+      return "Invalid input. Check CLI arguments and configuration values. Run 'diskcare <command> --help' for usage examples.";
     default:
       return null;
   }

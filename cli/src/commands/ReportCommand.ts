@@ -78,8 +78,9 @@ export class ReportCommand extends BaseCommand {
   private parseOptions(args: unknown[]): { asJson: boolean } {
     const parsed = ReportOptionsSchema.safeParse(args[0] ?? {});
     if (!parsed.success) {
-      throw new ValidationError("Invalid report command options", {
+      throw new ValidationError("Invalid report command options. Check arguments and try again.", {
         issues: parsed.error.issues,
+        hint: "Run 'diskcare report --help' for usage examples.",
       });
     }
 

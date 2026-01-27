@@ -86,13 +86,17 @@ export class InitCommand extends BaseCommand {
     const existing = await this.getExistingConfigEntry(configPath);
     if (existing.exists) {
       if (!options.force) {
-        throw new ValidationError("Config path already exists (use --force to overwrite)", {
-          configPath,
-        });
+        throw new ValidationError(
+          "Config file already exists. Use --force to overwrite, or choose a different path.",
+          { configPath, hint: "Run 'diskcare init --force' to overwrite the existing config." },
+        );
       }
 
       if (!existing.isFile) {
-        throw new ValidationError("Config path exists and is not a file", { configPath });
+        throw new ValidationError(
+          "Config path exists but is not a file. Please choose a different path.",
+          { configPath },
+        );
       }
     }
 

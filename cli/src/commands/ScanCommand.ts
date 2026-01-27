@@ -107,8 +107,9 @@ export class ScanCommand extends BaseCommand {
   private parseOptions(args: unknown[]): { dryRun: boolean; asJson: boolean } {
     const parsed = ScanOptionsSchema.safeParse(args[0] ?? {});
     if (!parsed.success) {
-      throw new ValidationError("Invalid scan command options", {
+      throw new ValidationError("Invalid scan command options. Check arguments and try again.", {
         issues: parsed.error.issues,
+        hint: "Run 'diskcare scan --help' for usage examples.",
       });
     }
 
