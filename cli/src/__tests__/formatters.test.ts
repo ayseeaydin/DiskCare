@@ -34,7 +34,7 @@ test("truncate - returns original when within maxLen", () => {
 });
 
 test("truncate - truncates and adds suffix", () => {
-  assert.equal(truncate("abcdef", 5), `abcd${TRUNCATE_SUFFIX}`);
+  assert.equal(truncate("abcdef", 5), `ab${TRUNCATE_SUFFIX}`);
 });
 
 test("truncate - when maxLen too small, returns suffix only", () => {

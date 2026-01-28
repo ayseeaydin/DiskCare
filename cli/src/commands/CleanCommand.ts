@@ -55,8 +55,7 @@ export type CleanCommandDeps = {
 
 export class CleanCommand extends BaseCommand {
   readonly name = "clean";
-  readonly description =
-    "Clean safe targets (dry-run by default).";
+  readonly description = "Clean safe targets (dry-run by default).";
 
   constructor(private readonly deps?: CleanCommandDeps) {
     super();
@@ -450,4 +449,3 @@ export class CleanCommand extends BaseCommand {
     return logWriter.writeRunLog(payload);
   }
 }
-

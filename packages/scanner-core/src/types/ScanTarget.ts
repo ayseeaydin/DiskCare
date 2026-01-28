@@ -1,6 +1,6 @@
 import type { ScanMetrics } from "./ScanMetrics.js";
 
-export type ScanTargetKind = "os-temp" | "npm-cache" | "sandbox-cache";
+export type ScanTargetKind = "os-temp" | "npm-cache" | "sandbox-cache" | "custom-path";
 
 /**
  * Target discovered by scanners (no filesystem info yet).
@@ -20,6 +20,12 @@ export type DiscoveredTarget = {
    * A normalized kind to group targets.
    */
   kind: ScanTargetKind;
+
+  /**
+   * Optional rule id to use for policy decisions.
+   * Useful when a target id must be unique per path.
+   */
+  ruleId?: string;
 
   /**
    * Human-friendly label for CLI output.

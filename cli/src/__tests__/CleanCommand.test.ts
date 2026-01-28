@@ -174,9 +174,7 @@ test("CleanCommand - should report batch trash failure clearly", async () => {
 
   await program.parseAsync(["node", "diskcare", "clean", "--apply", "--no-dry-run", "--yes"]);
 
-  assert.ok(
-    output.infos.some((l) => l.includes("apply results: trashed=0 failed=1 skipped=0")),
-  );
+  assert.ok(output.infos.some((l) => l.includes("apply results: trashed=0 failed=1 skipped=0")));
   assert.ok(output.warns.some((l) => l.includes("failed: sandbox-cache")));
   assert.ok(
     output.warns.some((l) => l.includes("trash failed")),

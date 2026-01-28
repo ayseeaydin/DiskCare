@@ -27,7 +27,15 @@ export class FileSystemAnalyzer {
     }
     const rootStat = rootStatRes.value;
     if (!rootStat.isDirectory()) {
-      return emptyMetrics(`Path is not a directory: ${rootPath}`);
+      return {
+        totalBytes: rootStat.size,
+        fileCount: 1,
+        lastModifiedAt: rootStat.mtimeMs,
+        lastAccessedAt: rootStat.atimeMs,
+        skipped: false,
+        partial: false,
+        skippedEntries: 0,
+      };
     }
 
     let totalBytes = 0;

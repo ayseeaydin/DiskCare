@@ -96,4 +96,3 @@ export class ReportCommand extends BaseCommand {
     return service.summarize();
   }
 }
-

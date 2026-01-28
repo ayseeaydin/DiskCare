@@ -5,6 +5,7 @@ export type Rule = {
   risk: RiskLevel;
   safeAfterDays: number;
   description: string;
+  paths?: string[];
 };
 
 export type RuleDefaults = {

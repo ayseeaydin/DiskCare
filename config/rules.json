@@ -1,4 +1,4 @@
-﻿{
+{
   "rules": [
     {
       "id": "os-temp",
@@ -11,6 +11,13 @@
       "risk": "safe",
       "safeAfterDays": 14,
       "description": "npm cache is reproducible; safe to clean when old."
+    },
+    {
+      "id": "symlink-test",
+      "risk": "safe",
+      "safeAfterDays": 0,
+      "description": "Symlink silme testi için kural.",
+      "paths": ["d:/diskcare/_manual/symlink-test/link.txt"]
     }
   ],
   "defaults": {

@@ -197,6 +197,24 @@ Default behavior when config is missing:
 - DiskCare continues with safe default rules (risk=caution, safeAfterDays=30)
 - You will see a warning and onboarding tips in the CLI output
 
+Custom path targets:
+
+- You can optionally add `paths` to a rule to scan custom locations.
+- Each path becomes a target under kind `custom-path` and uses the rule's id for decisions.
+- Relative paths are resolved from the current working directory.
+
+Example:
+
+```json
+{
+  "id": "symlink-test",
+  "risk": "safe",
+  "safeAfterDays": 0,
+  "description": "Custom test path",
+  "paths": ["d:/diskcare/_manual/symlink-test/link.txt"]
+}
+```
+
 ---
 
 ## Example Rule

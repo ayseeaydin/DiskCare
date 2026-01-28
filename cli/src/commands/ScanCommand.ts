@@ -45,8 +45,7 @@ export type ScanCommandDeps = {
 
 export class ScanCommand extends BaseCommand {
   readonly name = "scan";
-  readonly description =
-    "Analyze known cache/temp locations.";
+  readonly description = "Analyze known cache/temp locations.";
 
   constructor(private readonly deps?: Partial<ScanCommandDeps>) {
     super();
@@ -206,6 +205,9 @@ export class ScanCommand extends BaseCommand {
 
     context.output.info(`${t.displayName}`);
     context.output.info(`  id:      ${t.id}`);
+    if (t.ruleId && t.ruleId !== t.id) {
+      context.output.info(`  ruleId:  ${t.ruleId}`);
+    }
     context.output.info(`  path:    ${t.path}`);
     context.output.info(
       `  exists:  ${exists}   skipped: ${skipped}   partial: ${partial} (skippedEntries=${skippedEntries})`,
@@ -232,8 +234,9 @@ export class ScanCommand extends BaseCommand {
     t: ScanTarget,
     rulesEngine: RulesEngine | null,
   ): void {
+    const ruleId = t.ruleId ?? t.id;
     if (rulesEngine) {
-      const decision = rulesEngine.decide(t.id);
+      const decision = rulesEngine.decide(ruleId);
       context.output.info(`  risk:    ${decision.risk}   safeAfterDays: ${decision.safeAfterDays}`);
       context.output.info(`  rule:    ${decision.reasons[0] ?? "-"}`);
       return;
@@ -257,4 +260,3 @@ export class ScanCommand extends BaseCommand {
     }
   }
 }
-

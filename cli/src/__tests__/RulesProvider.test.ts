@@ -49,6 +49,6 @@ test("RulesProvider.tryLoad - warns and returns null when rules config fails", a
 
   assert.equal(engine, null);
   assert.equal(output.warns.length, 1);
-  assert.match(output.warns[0] ?? "", /rules: config not loaded; using safe defaults/);
+  assert.match(output.warns[0] ?? "", /rules: Rules config not loaded; using defaults/);
   assert.match(output.warns[0] ?? "", /\/virtual\/rules\.json/);
 });

@@ -35,6 +35,7 @@ export type ScanLog = BaseRunLog & {
     kind?: string;
     path?: string;
     displayName?: string;
+    ruleId?: string;
     exists?: boolean;
     metrics?: {
       totalBytes?: number;

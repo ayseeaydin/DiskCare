@@ -232,10 +232,7 @@ test("CLI E2E - --help prints usage", async () => {
       "Help output should mention non-destructive/dry-run behavior",
     );
     assert.ok(result.stdout.includes("--apply"), "Help output should mention --apply flag");
-    assert.ok(
-      result.stdout.includes("Help: diskcare"),
-      "Help output should mention help usage",
-    );
+    assert.ok(result.stdout.includes("Help: diskcare"), "Help output should mention help usage");
   });
 });
 

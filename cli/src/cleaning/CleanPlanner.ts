@@ -85,7 +85,7 @@ function buildPlanItem(input: {
 }): CleanPlanItem {
   const { target, rulesEngine, nowMs } = input;
 
-  const decision = getDecision(target.id, rulesEngine);
+  const decision = getDecision(getDecisionId(target), rulesEngine);
   const exists = target.exists === true;
 
   const statusInfo = computeStatusAndReasons({ target, decision, nowMs, exists });
@@ -105,6 +105,10 @@ function buildPlanItem(input: {
     estimatedBytes,
     reasons,
   };
+}
+
+function getDecisionId(target: ScanTarget): string {
+  return target.ruleId ?? target.id;
 }
 
 function getDecision(id: string, rulesEngine: RulesEngine | null): Decision {

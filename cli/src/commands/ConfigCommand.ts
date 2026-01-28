@@ -106,5 +106,3 @@ export class ConfigCommand extends BaseCommand {
     return { exists: null, error: msg };
   }
 }
-
-

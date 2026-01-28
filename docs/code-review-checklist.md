@@ -34,4 +34,3 @@ Use this checklist for every PR or major commit:
 ---
 
 Ask: "Six months from now, what questions will someone have when reading this code?" Document the answers.
-

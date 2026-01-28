@@ -61,7 +61,7 @@ test("FileSystemAnalyzer.analyze - returns metrics for nested files (bytes + cou
   assert.ok(metrics.lastModifiedAt! >= t2, "lastModifiedAt should be >= newest mtime");
 });
 
-test("FileSystemAnalyzer.analyze - when path is not a directory, returns skipped=true with explainable error", async () => {
+test("FileSystemAnalyzer.analyze - when path is a file, returns file metrics", async () => {
   const fsLike: FsLike = {
     async stat(p: string) {
       if (p === "/not-a-dir") {
@@ -77,15 +77,11 @@ test("FileSystemAnalyzer.analyze - when path is not a directory, returns skipped
   const analyzer = new FileSystemAnalyzer(fsLike);
   const metrics = await analyzer.analyze("/not-a-dir");
 
-  assert.equal(metrics.skipped, true);
-  assert.equal(metrics.totalBytes, 0);
-  assert.equal(metrics.fileCount, 0);
-  assert.equal(metrics.lastModifiedAt, null);
-  assert.equal(metrics.lastAccessedAt, null);
-  assert.ok(
-    metrics.error?.includes("Path is not a directory"),
-    "error should explain non-directory",
-  );
+  assert.equal(metrics.skipped, false);
+  assert.equal(metrics.totalBytes, 1);
+  assert.equal(metrics.fileCount, 1);
+  assert.equal(metrics.lastModifiedAt, 1);
+  assert.equal(metrics.lastAccessedAt, 1);
 });
 
 test("FileSystemAnalyzer.analyze - when path is missing/inaccessible, returns skipped=true with explainable error", async () => {

@@ -92,5 +92,5 @@ If a function breaks the budget:
 
 ## Post-v1 Technical Debt
 
-- Consolidate Result<T, E> utilities across cli and packages/*.
+- Consolidate Result<T, E> utilities across cli and packages/\*.
 - Deduplicate toErrorMessage helpers in scanner-core and cli.

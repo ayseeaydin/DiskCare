@@ -12,4 +12,3 @@ if (!orig.startsWith(shebang)) {
 } else {
   console.log("Shebang zaten var: " + distPath);
 }
-
