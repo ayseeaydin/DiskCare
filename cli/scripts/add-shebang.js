@@ -1,4 +1,4 @@
-// Bu script, dist/index.js dosyasının başına shebang ekler
+// Adds a shebang to dist/index.js for CLI execution.
 const fs = require("fs");
 const path = require("path");
 
@@ -12,3 +12,4 @@ if (!orig.startsWith(shebang)) {
 } else {
   console.log("Shebang zaten var: " + distPath);
 }
+

@@ -1,8 +1,11 @@
 import path from "node:path";
 
-import type { DiscoveredTarget } from "../types/ScanTarget.js";
-import type { Scanner } from "./BaseScanner.js";
+import type { DiscoveredTarget } from "../../types/ScanTarget.js";
+import type { Scanner } from "../../scanners/BaseScanner.js";
 
+/**
+ * Test-only scanner used to keep fixtures deterministic.
+ */
 export class SandboxCacheScanner implements Scanner {
   private readonly cwd: string;
 

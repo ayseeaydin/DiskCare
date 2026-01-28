@@ -22,4 +22,40 @@ export class MessageFormatter {
   static tooRecent(days: number, safeAfter: number): string {
     return `Too recent: last modified ${days} day(s) ago (must be >= ${safeAfter}).`;
   }
+
+  static rulesConfigNotLoaded(): string {
+    return "Rules config not loaded; using defaults.";
+  }
+
+  static targetMissing(): string {
+    return "Target path does not exist.";
+  }
+
+  static analysisSkipped(message: string): string {
+    return `Target analysis skipped: ${message}`;
+  }
+
+  static partialAnalysis(skippedEntries: number): string {
+    return `Partial analysis: ${skippedEntries} subpath(s) could not be read; not eligible for apply.`;
+  }
+
+  static partialEstimatedBytes(): string {
+    return "Estimated size may be inaccurate due to partial analysis.";
+  }
+
+  static doNotTouch(): string {
+    return "Rule risk is do-not-touch.";
+  }
+
+  static missingMtime(): string {
+    return "Cannot determine lastModifiedAt; not eligible for apply.";
+  }
+
+  static applyDryRun(): string {
+    return "Dry-run is enabled; no changes were made.";
+  }
+
+  static applyConfirmationRequired(): string {
+    return "Confirmation required: pass --yes to apply.";
+  }
 }

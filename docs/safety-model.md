@@ -12,6 +12,7 @@ DiskCare never deletes files without passing three safety gates:
 - The clean plan reports exactly what will happen, with reasons and risk levels.
 - User must explicitly confirm before any destructive action.
 - Edge cases (missing metrics, partial analysis, config errors) always default to caution or blocked.
+- Apply is per-target and not atomic; interruptions can leave partial results.
 
 ## Example
 

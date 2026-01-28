@@ -1,10 +1,10 @@
 # DiskCare Telemetry & Analytics
 
-## Privacy-First Local Analytics
+## Privacy-first local analytics
 
-DiskCare topladığı verileri sadece yerel olarak saklar, hiçbir şekilde dışarıya göndermez.
+DiskCare stores analytics locally only. Nothing is sent off the machine.
 
-### Example Local Analytics (stats)
+### Example local analytics (stats)
 
 ```json
 {
@@ -15,16 +15,16 @@ DiskCare topladığı verileri sadece yerel olarak saklar, hiçbir şekilde dı�
 }
 ```
 
-## How to View Stats
+## How to view stats
 
-- Kullanıcı `diskcare stats` komutunu çalıştırarak özet verileri görebilir.
-- Tüm veriler local, privacy-safe ve product kararları için kullanılabilir.
+- If/when implemented, users can run `diskcare stats` to see summary data.
+- All data is local, privacy-safe, and can inform product decisions.
 
-## Product Roadmap Feedback
+## Product roadmap feedback
 
-- Aggregated stats, hangi hedeflerin en çok temizlendiği, ortalama freed space ve hata oranı gibi metriklerle ürün kararlarını destekler.
-- Hiçbir kişisel veri toplanmaz veya paylaşılmaz.
+- Aggregated stats (most cleaned target, average freed space, error rate) help guide product decisions.
+- No personal data is collected or shared.
 
 ---
 
-Daha fazla bilgi için docs/architecture.md ve docs/safety-model.md'ye bak.
+See docs/architecture.md and docs/safety-model.md for more details.

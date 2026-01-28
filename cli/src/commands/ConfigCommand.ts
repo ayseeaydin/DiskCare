@@ -29,7 +29,7 @@ export type ConfigCommandDeps = {
 
 export class ConfigCommand extends BaseCommand {
   readonly name = "config";
-  readonly description = "Yüklenen yapılandırmayı gösterir (Show resolved config)";
+  readonly description = "Show the resolved config.";
 
   constructor(private readonly deps?: ConfigCommandDeps) {
     super();
@@ -106,3 +106,5 @@ export class ConfigCommand extends BaseCommand {
     return { exists: null, error: msg };
   }
 }
+
+

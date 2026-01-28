@@ -12,10 +12,15 @@ import { formatDate } from "../formatters/formatDate.js";
 import { truncate } from "../formatters/truncate.js";
 import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
-import { APP_VERSION } from "../utils/constants.js";
+import {
+  ANALYZER_ERROR_TRUNCATE_LIMIT,
+  APP_VERSION,
+  DIAGNOSTIC_TRUNCATE_LIMIT,
+} from "../utils/constants.js";
 import { toOneLine } from "../utils/errors.js";
 import { defaultScanAll } from "../scanning/defaultScanAll.js";
 import { ValidationError } from "../errors/DiskcareError.js";
+import { MessageFormatter } from "../utils/MessageFormatter.js";
 
 type ScanOptions = {
   json?: boolean;
@@ -41,7 +46,7 @@ export type ScanCommandDeps = {
 export class ScanCommand extends BaseCommand {
   readonly name = "scan";
   readonly description =
-    "Bilinen önbellek/temp klasörlerini analiz eder ve raporlar (Analyze known cache/temp locations)";
+    "Analyze known cache/temp locations.";
 
   constructor(private readonly deps?: Partial<ScanCommandDeps>) {
     super();
@@ -212,12 +217,13 @@ export class ScanCommand extends BaseCommand {
     this.printDiagnostics(context, t);
     this.printRuleDecision(context, t, rulesEngine);
     this.printAnalyzerError(context, t);
+    this.printPartialNote(context, t);
   }
 
   private printDiagnostics(context: CommandContext, t: ScanTarget): void {
     if (!t.diagnostics || t.diagnostics.length === 0) return;
     for (const d of t.diagnostics.slice(0, 3)) {
-      context.output.warn(`  note:    ${truncate(d, 160)}`);
+      context.output.warn(`  note:    ${truncate(d, DIAGNOSTIC_TRUNCATE_LIMIT)}`);
     }
   }
 
@@ -234,12 +240,21 @@ export class ScanCommand extends BaseCommand {
     }
 
     context.output.info(`  risk:    -   safeAfterDays: -`);
-    context.output.info(`  rule:    Rules config not loaded`);
+    context.output.info(`  rule:    ${MessageFormatter.rulesConfigNotLoaded()}`);
   }
 
   private printAnalyzerError(context: CommandContext, t: ScanTarget): void {
     if (t.metrics?.skipped && t.metrics.error) {
-      context.output.warn(`  error:   ${truncate(toOneLine(t.metrics.error), 140)}`);
+      context.output.warn(
+        `  error:   ${truncate(toOneLine(t.metrics.error), ANALYZER_ERROR_TRUNCATE_LIMIT)}`,
+      );
+    }
+  }
+
+  private printPartialNote(context: CommandContext, t: ScanTarget): void {
+    if (t.metrics?.partial === true) {
+      context.output.warn(`  note:    ${MessageFormatter.partialEstimatedBytes()}`);
     }
   }
 }
+

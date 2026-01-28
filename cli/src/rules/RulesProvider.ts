@@ -7,6 +7,8 @@ import type { CommandContext } from "../types/CommandContext.js";
 import { truncate } from "../formatters/truncate.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
 import { fromPromise } from "../utils/result.js";
+import { MessageFormatter } from "../utils/MessageFormatter.js";
+import { ANALYZER_ERROR_TRUNCATE_LIMIT } from "../utils/constants.js";
 
 type RulesConfigLoaderLike = {
   loadFromFile: (filePath: string) => Promise<RuleConfig>;
@@ -34,7 +36,10 @@ export class RulesProvider {
 
     const filePath = err instanceof RulesConfigError ? err.filePath : this.rulesPath;
     context.output.warn(
-      `rules: config not loaded; using safe defaults (${filePath}: ${truncate(msg, 140)})`,
+      `rules: ${MessageFormatter.rulesConfigNotLoaded()} (${filePath}: ${truncate(
+        msg,
+        ANALYZER_ERROR_TRUNCATE_LIMIT,
+      )})`,
     );
     return null;
   }

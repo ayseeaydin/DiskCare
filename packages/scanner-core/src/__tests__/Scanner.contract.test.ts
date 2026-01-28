@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { NpmCacheScanner } from "../scanners/NpmCacheScanner.js";
 import { OsTempScanner } from "../scanners/OsTempScanner.js";
-import { SandboxCacheScanner } from "../scanners/SandboxCacheScanner.js";
+import { SandboxCacheScanner } from "./fixtures/SandboxCacheScanner.js";
 
 function assertNonEmptyString(value: unknown, label: string): void {
   assert.equal(typeof value, "string", `${label} should be a string`);

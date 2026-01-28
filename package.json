@@ -2,7 +2,7 @@
   "name": "diskcare-workspace",
   "private": true,
   "version": "1.0.0",
-  "description": "Disk bakımı ve temizlik için güvenli, açıklanabilir ve testli CLI.",
+  "description": "Safe, explainable, tested disk cleanup CLI workspace.",
   "author": "DiskCare Contributors",
   "license": "MIT",
   "repository": {
@@ -34,3 +34,4 @@
     "node": ">=18"
   }
 }
+

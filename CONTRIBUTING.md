@@ -27,8 +27,8 @@ To ensure consistency and maintainability, DiskCare uses the following conventio
 
 ## 5. General Guidelines
 
-- Use `null` for “not available” or “not applicable” (especially for primitives).
-- Use `?` for “optional, may be omitted entirely” (especially for arrays/objects).
+- Use `null` for "not available" or "not applicable" (especially for primitives).
+- Use `?` for "optional, may be omitted entirely" (especially for arrays/objects).
 - Never use both `?` and `| null` for the same field unless there is a strong reason and it is documented.
 
 ## Examples
@@ -43,4 +43,4 @@ lastAccessedAt?: number | null; // (avoid unless you have a strong reason)
 diagnostics: string[] | null;    // (never use null for arrays)
 ```
 
-> **Note:** This convention should be followed in all new code and when refactoring existing code. If you need to break this rule, document the reason clearly in code comments.
+> Note: This convention should be followed in all new code and when refactoring existing code. If you need to break this rule, document the reason clearly in code comments.

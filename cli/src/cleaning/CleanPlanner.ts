@@ -1,7 +1,7 @@
 import type { ScanTarget } from "@diskcare/scanner-core";
 import type { RulesEngine } from "@diskcare/rules-engine";
 import { truncate } from "../formatters/truncate.js";
-import { MS_PER_DAY } from "../utils/constants.js";
+import { ANALYZER_ERROR_TRUNCATE_LIMIT, MS_PER_DAY } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
 import { MessageFormatter } from "../utils/MessageFormatter.js";
 
@@ -112,7 +112,7 @@ function getDecision(id: string, rulesEngine: RulesEngine | null): Decision {
     rulesEngine?.decide(id) ?? {
       risk: "caution" as const,
       safeAfterDays: 30,
-      reasons: ["Rules config not loaded; using defaults."],
+      reasons: [MessageFormatter.rulesConfigNotLoaded()],
     }
   );
 }
@@ -130,7 +130,7 @@ function computeStatusAndReasons(input: {
 
   if (!exists) {
     status = "blocked";
-    reasons.push("Target path does not exist.");
+    reasons.push(MessageFormatter.targetMissing());
   }
 
   // Only report analyzer errors when the path exists; otherwise redundant (ENOENT).
@@ -138,12 +138,12 @@ function computeStatusAndReasons(input: {
     status = "blocked";
     const raw = target.metrics.error ? target.metrics.error : "Unknown error";
     const msg = toOneLine(toErrorMessage(raw));
-    reasons.push(`Target analysis skipped: ${truncate(msg, 160)}`);
+    reasons.push(MessageFormatter.analysisSkipped(truncate(msg, ANALYZER_ERROR_TRUNCATE_LIMIT)));
   }
 
   if (decision.risk === "do-not-touch") {
     status = "blocked";
-    reasons.push("Rule risk is do-not-touch.");
+    reasons.push(MessageFormatter.doNotTouch());
   }
 
   if (status === "blocked") return { status, reasons };
@@ -153,10 +153,8 @@ function computeStatusAndReasons(input: {
   if (target.metrics.partial === true) {
     status = "caution";
     const skippedEntries = target.metrics.skippedEntries ?? 0;
-    reasons.push(
-      `Partial analysis: ${skippedEntries} subpath(s) could not be read; not eligible for apply.`,
-    );
-    reasons.push("Estimated size may be inaccurate due to partial analysis.");
+    reasons.push(MessageFormatter.partialAnalysis(skippedEntries));
+    reasons.push(MessageFormatter.partialEstimatedBytes());
   }
 
   if (status !== "eligible") return { status, reasons };
@@ -164,12 +162,12 @@ function computeStatusAndReasons(input: {
   const lastModifiedAt = target.metrics.lastModifiedAt;
   const ageDays = lastModifiedAt === null ? null : daysBetween(nowMs, lastModifiedAt);
   if (ageDays === null) {
-    reasons.push("Cannot determine lastModifiedAt; not eligible for apply.");
+    reasons.push(MessageFormatter.missingMtime());
     return { status: "caution", reasons };
   }
 
   if (ageDays < decision.safeAfterDays) {
-    // Standart mesaj formatı ile
+    // Use a consistent formatter for age-based gating.
     reasons.push(MessageFormatter.tooRecent(ageDays, decision.safeAfterDays));
     return { status: "caution", reasons };
   }

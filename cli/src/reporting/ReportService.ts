@@ -3,7 +3,7 @@
 
 // Migration helpers for log versioning
 function migrateLogV1toV2(log: ParsedLog): ParsedLog {
-  // Örnek: V1'de applySummary yoksa, applyResults'tan derive et
+  // Example: if v1 has no applySummary, derive it from applyResults.
   if (log.version >= 2) return log;
   let applySummary = log.applySummary;
   if (!applySummary && Array.isArray(log.applyResults)) {
@@ -21,12 +21,12 @@ function migrateLogV1toV2(log: ParsedLog): ParsedLog {
 function migrateLogToLatest(log: ParsedLog): ParsedLog {
   let migrated = log;
   if (migrated.version < 2) migrated = migrateLogV1toV2(migrated);
-  // Gelecekte başka migration fonksiyonları da zincire eklenebilir
+  // Future migration functions can be chained here.
   return migrated;
 }
 
 function normalizeLogForReporting(log: ParsedLog): ParsedLog {
-  // Tüm logları en güncel versiyona migrate et
+  // Normalize all logs to the latest version.
   return migrateLogToLatest(log);
 }
 import path from "node:path";
@@ -269,7 +269,7 @@ export class ReportService {
     failedCount: number;
     trashedEstimatedBytes: number;
   } {
-    // Migration pipeline sayesinde burada sadece güncel format beklenir
+    // With the migration pipeline, only the latest format is expected here.
     if (isObject(log.applySummary)) {
       const s = log.applySummary as LoggedApplySummary;
       return {
@@ -278,7 +278,7 @@ export class ReportService {
         trashedEstimatedBytes: asNumber(s.trashedEstimatedBytes) ?? 0,
       };
     }
-    // Eğer migration eksikse, sıfır döndür
+    // If migration is missing, return zeros.
     return { trashedCount: 0, failedCount: 0, trashedEstimatedBytes: 0 };
   }
 
@@ -371,3 +371,4 @@ export class ReportService {
     });
   }
 }
+

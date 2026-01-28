@@ -25,9 +25,9 @@ export const MAX_DISPLAYED_REASONS = 2;
 
 /**
  * Truncation suffix used by truncate().
- * Rationale: Unicode ellipsis is standard for indicating omitted content in CLI/UI.
+ * Rationale: Simple ASCII ellipsis for CLI output.
  */
-export const TRUNCATE_SUFFIX = "…";
+export const TRUNCATE_SUFFIX = "...";
 
 /**
  * Length of TRUNCATE_SUFFIX in JS string code units.
@@ -44,3 +44,18 @@ export const LOG_DIR_NAME = "logs";
  * Logs metadata directory name under logsDir.
  */
 export const LOG_META_DIR_NAME = "meta";
+
+/**
+ * Max length for diagnostic lines in CLI output.
+ */
+export const DIAGNOSTIC_TRUNCATE_LIMIT = 160;
+
+/**
+ * Max length for analyzer error messages in CLI output.
+ */
+export const ANALYZER_ERROR_TRUNCATE_LIMIT = 140;
+
+/**
+ * Max length for trash error messages in apply results.
+ */
+export const TRASH_ERROR_TRUNCATE_LIMIT = 180;

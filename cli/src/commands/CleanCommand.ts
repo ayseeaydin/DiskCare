@@ -15,10 +15,16 @@ import { ValidationError } from "../errors/DiskcareError.js";
 import { LogWriter } from "../logging/LogWriter.js";
 import { RulesProvider } from "../rules/RulesProvider.js";
 import { buildCleanPlan } from "../cleaning/CleanPlanner.js";
-import { APP_VERSION, MAX_DISPLAYED_REASONS } from "../utils/constants.js";
+import {
+  APP_VERSION,
+  MAX_DISPLAYED_REASONS,
+  DIAGNOSTIC_TRUNCATE_LIMIT,
+  TRASH_ERROR_TRUNCATE_LIMIT,
+} from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
-import { fromPromise } from "../utils/result.js";
+import { MessageFormatter } from "../utils/MessageFormatter.js";
 import { defaultScanAll } from "../scanning/defaultScanAll.js";
+import { getErrnoCode } from "../utils/errno.js";
 
 type CleanOptions = {
   json?: boolean;
@@ -50,7 +56,7 @@ export type CleanCommandDeps = {
 export class CleanCommand extends BaseCommand {
   readonly name = "clean";
   readonly description =
-    "Güvenli kurallara uyan hedefleri temizler (dry-run varsayılan) / Clean safe targets (dry-run by default)";
+    "Clean safe targets (dry-run by default).";
 
   constructor(private readonly deps?: CleanCommandDeps) {
     super();
@@ -246,12 +252,12 @@ export class CleanCommand extends BaseCommand {
         status: "skipped" as const,
         estimatedBytes: item.estimatedBytes,
         message: options.dryRun
-          ? "dry-run is enabled; no changes were made."
-          : "confirmation required: pass --yes to apply",
+          ? MessageFormatter.applyDryRun()
+          : MessageFormatter.applyConfirmationRequired(),
       }));
     }
 
-    // Her dosya için ayrı ayrı trash dene, sonucu kaydet
+    // Apply per path so failures do not block the whole apply.
     const results: ApplyResult[] = [];
     for (const item of eligible) {
       try {
@@ -263,12 +269,26 @@ export class CleanCommand extends BaseCommand {
           estimatedBytes: item.estimatedBytes,
         });
       } catch (err) {
+        const code = getErrnoCode(err);
+        if (code === "ENOENT" || code === "ENOTDIR") {
+          results.push({
+            id: item.id,
+            path: item.path,
+            status: "skipped",
+            estimatedBytes: item.estimatedBytes,
+            message: "Path missing at apply time; nothing was moved to Trash.",
+          });
+          continue;
+        }
         results.push({
           id: item.id,
           path: item.path,
           status: "failed",
           estimatedBytes: item.estimatedBytes,
-          message: truncate(`trash failed: ${toOneLine(toErrorMessage(err))}`, 180),
+          message: truncate(
+            `trash failed: ${toOneLine(toErrorMessage(err))}`,
+            TRASH_ERROR_TRUNCATE_LIMIT,
+          ),
         });
       }
     }
@@ -340,13 +360,19 @@ export class CleanCommand extends BaseCommand {
 
       const shown = item.reasons.slice(0, MAX_DISPLAYED_REASONS);
       for (const r of shown) {
-        context.output.info(`  why:     ${truncate(r, 160)}`);
+        context.output.info(`  why:     ${truncate(r, DIAGNOSTIC_TRUNCATE_LIMIT)}`);
       }
 
       context.output.info("");
     }
 
-    // Cesur ve rehberli özet mesajı
+    const hasPartial = items.some((i) =>
+      i.reasons.includes(MessageFormatter.partialEstimatedBytes()),
+    );
+    if (hasPartial) {
+      context.output.warn("Note: Estimated sizes may be inaccurate due to partial analysis.");
+    }
+
     if (summary.eligibleCount > 0) {
       context.output.info(
         `\u001b[1m${formatBytes(summary.estimatedBytesTotal)} can be freed.\u001b[0m To actually clean, run: diskcare clean --apply --no-dry-run --yes`,
@@ -372,11 +398,17 @@ export class CleanCommand extends BaseCommand {
 
     const trashedCount = applyResults.filter((r) => r.status === "trashed").length;
     const failedCount = applyResults.filter((r) => r.status === "failed").length;
+    const skippedCount = applyResults.filter((r) => r.status === "skipped").length;
 
-    context.output.info(`apply results: trashed=${trashedCount} failed=${failedCount}`);
+    context.output.info(
+      `apply results: trashed=${trashedCount} failed=${failedCount} skipped=${skippedCount}`,
+    );
     for (const r of applyResults) {
       if (r.status === "failed") {
         context.output.warn(`  failed: ${r.id} (${r.path}) - ${r.message ?? "unknown error"}`);
+      }
+      if (r.status === "skipped") {
+        context.output.warn(`  skipped: ${r.id} (${r.path}) - ${r.message ?? "skipped"}`);
       }
     }
     context.output.info("");
@@ -418,3 +450,4 @@ export class CleanCommand extends BaseCommand {
     return logWriter.writeRunLog(payload);
   }
 }
+

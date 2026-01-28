@@ -6,7 +6,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 
-import { SandboxCacheScanner } from "../scanners/SandboxCacheScanner.js";
+import { SandboxCacheScanner } from "./fixtures/SandboxCacheScanner.js";
 
 test("SandboxCacheScanner - uses injected cwd", async () => {
   const cwd = path.join(path.sep, "virtual", "project");

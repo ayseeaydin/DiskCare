@@ -47,14 +47,14 @@ export class CliApp {
       .name("diskcare")
       .description(
         [
-          "Disk bakımı ve temizlik için güvenli CLI. (Safe by default)",
+          "Safe, explainable disk hygiene CLI for developers (safe by default).",
           "",
-          "Varsayılan olarak hiçbir dosya silinmez, sadece temizlik planı gösterilir.",
-          "Gerçek temizlik için --apply --no-dry-run --yes bayraklarını kullanın.",
+          "By default, nothing is deleted - you only see a clean plan.",
+          "To actually move files to Trash/Recycle Bin: --apply --no-dry-run --yes",
           "",
-          "Komutlar: scan (tara), clean (temizle), report (rapor), config (yapılandırma), init (başlat)",
+          "Commands: scan, clean, report, config, init",
           "",
-          "For help / yardım: diskcare <komut> --help",
+          "Help: diskcare <command> --help",
         ].join("\n"),
       )
       .version(APP_VERSION)
@@ -69,7 +69,7 @@ export class CliApp {
       }
     });
 
-    // Onboarding mesajı: sadece config gerektiren komutlarda, --json yoksa ve config dosyası yoksa göster
+    // Onboarding message: only when config is required, --json is absent, and config is missing.
     const userArgs = argv.slice(2).map((a) => a.toLowerCase());
     const onboardingCommands = ["scan", "clean", "report"];
     const isOnboardingCommand = onboardingCommands.some((cmd) => userArgs.includes(cmd));
@@ -77,15 +77,16 @@ export class CliApp {
     if (isOnboardingCommand && !isJson && !fs.existsSync(this.context.configPath)) {
       this.context.output.info(
         [
-          "\u001b[1mDiskcare'a hoş geldiniz!\u001b[0m / Welcome to diskcare!",
+          "\u001b[1mWelcome to DiskCare!\u001b[0m",
           "",
-          "Henüz bir rules.json yapılandırmanız yok gibi görünüyor.",
+          "No rules.json config was found.",
           "",
-          "Başlamak için:",
-          "  1. \u001b[32mdiskcare init\u001b[0m komutunu çalıştırarak bir config oluşturun.",
-          "  2. Ardından \u001b[32mdiskcare scan\u001b[0m veya \u001b[32mdiskcare clean\u001b[0m deneyin.",
+          "To get started:",
+          "  1. Run \u001b[32mdiskcare init\u001b[0m to create a config.",
+          "  2. Then run \u001b[32mdiskcare scan\u001b[0m or \u001b[32mdiskcare clean\u001b[0m.",
           "",
-          "For help / yardım: diskcare --help",
+          "Tip: Without a config, DiskCare uses safe default rules.",
+          "Help: diskcare --help",
         ].join("\n"),
       );
     }
@@ -100,3 +101,5 @@ export class CliApp {
     }
   }
 }
+
+

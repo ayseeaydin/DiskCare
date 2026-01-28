@@ -2,18 +2,18 @@
 
 ## Versioning Policy
 
-- Her log dosyası bir `version` alanı içerir (ör: "0.0.1").
-- Log formatında geriye dönük uyumluluğu bozan bir değişiklik yapıldığında, version artırılır (ör: "0.0.2", "0.1.0", "1.0.0").
-- Her yeni format için bir migration fonksiyonu eklenir (ör: `migrateV1toV2`, `migrateV2toV3`).
-- Log okuyan servisler (ör: ReportService), logu okurken version’a bakar ve gerekirse migration pipeline’dan geçirir.
+- Each log file includes a `version` field (for example "0.0.1").
+- When a backward-incompatible log format change occurs, increment the version (for example "0.0.2", "0.1.0", "1.0.0").
+- For each new format, add a migration function (for example `migrateV1toV2`, `migrateV2toV3`).
+- Log-reading services (for example ReportService) check the version and run the migration pipeline if needed.
 
 ## Migration Pipeline
 
-- Migration fonksiyonları zincir halinde çalışır, eski loglar adım adım en güncel formata dönüştürülür.
-- Migration fonksiyonları `src/reporting/ReportService.ts` içinde veya ayrı bir dosyada tutulur.
-- Her migration fonksiyonu, bir önceki versiyondan bir sonrakine geçişi garanti eder.
+- Migration functions run in sequence so older logs are upgraded step by step to the latest format.
+- Migration functions live in `src/reporting/ReportService.ts` or a dedicated module.
+- Each migration guarantees a safe transition from the previous version to the next.
 
-## Örnek
+## Example
 
 ```js
 {
@@ -23,7 +23,7 @@
 }
 ```
 
-Bir sonraki formatta yeni alanlar eklenirse:
+If the next format adds new fields:
 
 ```js
 {
@@ -34,14 +34,14 @@ Bir sonraki formatta yeni alanlar eklenirse:
 }
 ```
 
-## Sürüm Değişikliği ve Migration Adımları
+## Version Change and Migration Steps
 
-1. Log formatında değişiklik yapıldığında, yeni bir migration fonksiyonu ekleyin.
-2. `version` alanını yeni sürüme yükseltin.
-3. Migration pipeline’a yeni fonksiyonu ekleyin.
-4. Gerekirse eski logları topluca migrate eden bir script yazın.
+1. When the log format changes, add a new migration function.
+2. Bump the `version` field to the new version.
+3. Add the migration function to the pipeline.
+4. If needed, write a script to migrate old logs in bulk.
 
-## Notlar
+## Notes
 
-- Migration fonksiyonları ve versioning, teknik borç birikmesini ve backward compatibility için karmaşık fallback zincirlerini önler.
-- Her schema değişikliği PR’ında bu dosya güncellenmelidir.
+- Migration functions and versioning prevent tech debt and complex fallback chains for backward compatibility.
+- Update this file in every PR that changes the log schema.

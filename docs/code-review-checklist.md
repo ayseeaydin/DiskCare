@@ -19,6 +19,7 @@ Use this checklist for every PR or major commit:
 - [ ] Are edge cases and worst-case scenarios covered by tests?
 - [ ] Are new features covered by property-based and E2E tests?
 - [ ] Is backward compatibility tested (old logs, config, etc.)?
+- [ ] Is the CLI binary tested via `npm link` or `npx diskcare --help`?
 
 ## Safety & Privacy
 
@@ -32,4 +33,5 @@ Use this checklist for every PR or major commit:
 
 ---
 
-Ask: "6 ay sonra başka biri bu kodu okursa hangi soruları sorar?" Cevapları dokümante et.
+Ask: "Six months from now, what questions will someone have when reading this code?" Document the answers.
+

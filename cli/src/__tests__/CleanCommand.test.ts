@@ -174,10 +174,49 @@ test("CleanCommand - should report batch trash failure clearly", async () => {
 
   await program.parseAsync(["node", "diskcare", "clean", "--apply", "--no-dry-run", "--yes"]);
 
-  assert.ok(output.infos.some((l) => l.includes("apply results: trashed=0 failed=1")));
+  assert.ok(
+    output.infos.some((l) => l.includes("apply results: trashed=0 failed=1 skipped=0")),
+  );
   assert.ok(output.warns.some((l) => l.includes("failed: sandbox-cache")));
   assert.ok(
     output.warns.some((l) => l.includes("trash failed")),
     "Should report per-file trash failure",
   );
+});
+
+test("CleanCommand - missing path at apply time is skipped", async () => {
+  const output = new FakeOutput();
+  const nowMs = Date.parse("2026-01-20T00:00:00.000Z");
+
+  const cmd = new CleanCommand({
+    nowMs: () => nowMs,
+    scanAll: async (_context) => [makeEligibleTarget(nowMs)],
+    loadRules: async () => makeRulesEngine(),
+    trashFn: async () => {
+      const err = new Error("missing") as NodeJS.ErrnoException;
+      err.code = "ENOENT";
+      throw err;
+    },
+    writeLog: async () => "logs/run-test.json",
+  });
+
+  const program = new Command();
+  program.exitOverride();
+  cmd.register(program, {
+    output,
+    verbose: false,
+    cwd: "D:\\diskcare",
+    platform: "win32",
+    env: {},
+    homedir: "C:\\Users\\test",
+    pid: 123,
+    nowFn: () => new Date(nowMs),
+    configPath: "D:\\diskcare\\config\\rules.json",
+    setExitCode: () => {},
+  });
+
+  await program.parseAsync(["node", "diskcare", "clean", "--apply", "--no-dry-run", "--yes"]);
+
+  assert.ok(output.infos.some((l) => l.includes("skipped=1")));
+  assert.ok(output.warns.some((l) => l.includes("skipped: sandbox-cache")));
 });

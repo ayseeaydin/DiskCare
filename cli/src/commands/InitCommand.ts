@@ -1,4 +1,4 @@
-﻿import type { Command } from "commander";
+import type { Command } from "commander";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { z } from "zod";
@@ -41,7 +41,7 @@ type PolicyName = "conservative" | "aggressive" | "custom";
 export class InitCommand extends BaseCommand {
   readonly name = "init";
   readonly description =
-    "BaÅŸlangÄ±Ã§ rules.json dosyasÄ± oluÅŸturur (safe defaults) / Create starter rules.json";
+    "Create starter rules.json (safe defaults).";
 
   constructor(private readonly deps?: InitCommandDeps) {
     super();
@@ -245,3 +245,5 @@ function buildPolicyConfig(policy: PolicyName): unknown {
       return CONSERVATIVE_POLICY_CONFIG;
   }
 }
+
+

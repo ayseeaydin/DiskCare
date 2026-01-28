@@ -11,6 +11,13 @@
     "!dist/__tests__",
     "!dist/**/__tests__"
   ],
+  "keywords": [
+    "disk-cleanup",
+    "cache",
+    "temp-files",
+    "cli",
+    "safe"
+  ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true});\"",
     "build": "npm run clean && tsc -p tsconfig.json && node ./scripts/add-shebang.cjs",
@@ -47,6 +54,9 @@
   "homepage": "https://github.com/diskcare/diskcare",
   "bugs": {
     "url": "https://github.com/diskcare/diskcare/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=18"

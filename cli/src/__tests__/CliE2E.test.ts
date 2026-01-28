@@ -102,7 +102,7 @@ test("CLI E2E - --config overrides resolved configPath", async () => {
   });
 });
 
-// v1: Incomplete feature (ScheduleCommand) testleri publish'de devre dışı
+// v1: ScheduleCommand is incomplete; E2E coverage is intentionally limited.
 
 test("CLI E2E - init --list-policies exits cleanly", async () => {
   await withTempDir(async (cwd) => {
@@ -159,8 +159,8 @@ test("CLI E2E - scan --json is parseable and stable", async () => {
     const result = await runCli(["scan", "--json"], {
       cwd,
       env: {
-        // Keep E2E fast and deterministic: only the sandbox target.
-        DISKCARE_SCAN_ONLY: "sandbox",
+        // Keep E2E fast and deterministic: only the OS temp target.
+        DISKCARE_SCAN_ONLY: "os-temp",
       },
     });
 
@@ -217,26 +217,24 @@ test("CLI E2E - --help prints usage", async () => {
     assert.equal(result.exitCode, 0);
     assert.equal(result.stderr.trim(), "");
 
-    // Yeni help çıktısına uygun anahtar kelimeler
+    // Assert key help strings from the CLI description.
     assert.ok(
-      result.stdout.includes("Disk bakımı ve temizlik için güvenli CLI") ||
-        result.stdout.includes("safe by default"),
-      "Help output should mention diskcare and safe by default",
+      result.stdout.includes("safe by default"),
+      "Help output should mention safe-by-default behavior",
     );
     assert.ok(result.stdout.includes("diskcare"), "Help output should mention diskcare");
     assert.ok(
-      result.stdout.includes("Komutlar") || result.stdout.toLowerCase().includes("commands"),
+      result.stdout.toLowerCase().includes("commands"),
       "Help output should mention commands",
     );
     assert.ok(
-      result.stdout.includes("Varsayılan olarak hiçbir dosya silinmez") ||
-        result.stdout.includes("dry-run"),
-      "Help output should mention non-destructive/dry-run",
+      result.stdout.includes("nothing is deleted") || result.stdout.includes("dry-run"),
+      "Help output should mention non-destructive/dry-run behavior",
     );
     assert.ok(result.stdout.includes("--apply"), "Help output should mention --apply flag");
     assert.ok(
-      result.stdout.includes("For help / yardım"),
-      "Help output should mention help/yardım",
+      result.stdout.includes("Help: diskcare"),
+      "Help output should mention help usage",
     );
   });
 });
