@@ -1,5 +1,5 @@
 {
-  "name": "@diskcare/rules-engine",
+  "name": "@diskcare/shared-utils",
   "version": "1.0.0",
   "private": false,
   "type": "module",
@@ -8,12 +8,9 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true});\"",
     "build": "npm run clean && tsc -p tsconfig.json",
-    "test": "npm run build && node --test dist/**/__tests__/**/*.test.js"
+    "test": "npm run build"
   },
-  "dependencies": {
-    "@diskcare/shared-utils": "1.0.0"
-  },
-  "description": "DiskCare rules engine (risk + safeAfterDays decisions).",
+  "description": "Shared utilities for DiskCare packages.",
   "author": "DiskCare Contributors",
   "license": "MIT",
   "repository": {

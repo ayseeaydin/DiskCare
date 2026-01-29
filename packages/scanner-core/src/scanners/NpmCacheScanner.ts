@@ -1,5 +1,5 @@
 import os from "node:os";
-import path from "node:path";
+import { PathResolver } from "@diskcare/shared-utils";
 
 import type { CommandRunner } from "../utils/CommandRunner.js";
 import { NodeCommandRunner } from "../utils/CommandRunner.js";
@@ -14,6 +14,7 @@ export class NpmCacheScanner implements Scanner {
   private readonly platform: NodeJS.Platform;
   private readonly env: NodeJS.ProcessEnv;
   private readonly homedir: string;
+  private readonly resolver: PathResolver;
 
   constructor(deps?: {
     runner?: CommandRunner;
@@ -25,6 +26,7 @@ export class NpmCacheScanner implements Scanner {
     this.platform = deps?.platform ?? process.platform;
     this.env = deps?.env ?? process.env;
     this.homedir = deps?.homedir ?? os.homedir();
+    this.resolver = new PathResolver(this.platform);
   }
 
   async scan(): Promise<DiscoveredTarget[]> {
@@ -43,8 +45,6 @@ export class NpmCacheScanner implements Scanner {
 
   private async resolveNpmCachePath(): Promise<{ path: string; diagnostics: string[] }> {
     const diagnostics: string[] = [];
-    const p = this.platform === "win32" ? path.win32 : path.posix;
-
     // 1) Source of truth: npm config get cache
     const fromNpm = await this.tryGetNpmConfigCache();
     if (fromNpm.ok) return { path: fromNpm.value, diagnostics };
@@ -57,19 +57,19 @@ export class NpmCacheScanner implements Scanner {
       const roaming = this.env.APPDATA;
       if (roaming) {
         diagnostics.push("npm cache path resolved via APPDATA fallback.");
-        return { path: p.join(roaming, "npm-cache"), diagnostics };
+        return { path: this.resolver.join(roaming, "npm-cache"), diagnostics };
       }
 
       const local = this.env.LOCALAPPDATA;
       if (local) {
         diagnostics.push("npm cache path resolved via LOCALAPPDATA fallback.");
-        return { path: p.join(local, "npm-cache"), diagnostics };
+        return { path: this.resolver.join(local, "npm-cache"), diagnostics };
       }
     }
 
     // 3) POSIX-ish fallback
     diagnostics.push("npm cache path resolved via homedir fallback.");
-    return { path: p.join(this.homedir, ".npm"), diagnostics };
+    return { path: this.resolver.join(this.homedir, ".npm"), diagnostics };
   }
 
   private async tryGetNpmConfigCache(): Promise<Result<string, unknown>> {
@@ -110,22 +110,19 @@ export function normalizeNpmCachePath(
 
   const homedir = deps?.homedir ?? os.homedir();
   const platform = deps?.platform ?? process.platform;
-  const p = platform === "win32" ? path.win32 : path.posix;
+  const resolver = new PathResolver(platform);
 
   if (unquoted === "~") return homedir;
   if (unquoted.startsWith("~/") || unquoted.startsWith("~\\")) {
     const rest = unquoted.slice(2);
-    return stripTrailingSeparators(p.normalize(p.join(homedir, rest)), p);
+    return stripTrailingSeparators(resolver.normalize(resolver.join(homedir, rest)), resolver);
   }
 
-  return stripTrailingSeparators(p.normalize(unquoted), p);
+  return stripTrailingSeparators(resolver.normalize(unquoted), resolver);
 }
 
-function stripTrailingSeparators(
-  normalized: string,
-  p: typeof path.posix | typeof path.win32,
-): string {
-  const root = p.parse(normalized).root;
+function stripTrailingSeparators(normalized: string, resolver: PathResolver): string {
+  const root = resolver.parse(normalized).root;
   let end = normalized.length;
 
   while (end > root.length) {

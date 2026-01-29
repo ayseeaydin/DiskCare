@@ -28,3 +28,8 @@ const decision = engine.decide("npm-cache");
 - Validation errors throw `RulesConfigError` with filePath and cause.
 - When no rule matches, defaults are used.
 - Rules may include optional `paths` for custom target discovery (handled by the CLI).
+
+## Standalone usage
+
+You can embed the rules engine in another tool by providing a `RuleConfig` object and
+calling `decide(targetId)` for each target you discover.

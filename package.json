@@ -15,17 +15,18 @@
   },
   "workspaces": [
     "cli",
+    "packages/shared-utils",
     "packages/*"
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:cli",
-    "build:packages": "npm -w @diskcare/scanner-core run build && npm -w @diskcare/rules-engine run build",
+    "build:packages": "npm -w @diskcare/shared-utils run build && npm -w @diskcare/scanner-core run build && npm -w @diskcare/rules-engine run build",
     "build:cli": "npm -w diskcare run build",
     "dev": "npm run -w diskcare dev",
     "lint": "npm run -w diskcare lint",
     "format": "prettier -w .",
     "format:check": "prettier -c .",
-    "test:packages": "npm -w @diskcare/scanner-core run test && npm -w @diskcare/rules-engine run test",
+    "test:packages": "npm -w @diskcare/shared-utils run test && npm -w @diskcare/scanner-core run test && npm -w @diskcare/rules-engine run test",
     "test:cli": "npm -w diskcare run test",
     "test": "npm run test:packages && npm run test:cli",
     "ci": "npm run format:check && npm run build && npm run test"

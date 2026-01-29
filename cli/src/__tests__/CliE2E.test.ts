@@ -210,6 +210,69 @@ test("CLI E2E - clean --json includes configPath", async () => {
   });
 });
 
+test("CLI E2E - clean apply surfaces trash failure", async () => {
+  await withTempDir(async (cwd) => {
+    const configPath = path.resolve(cwd, "config", "rules.json");
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+
+    const customPath = path.resolve(cwd, "custom-target.txt");
+    await fs.writeFile(customPath, "test", "utf8");
+
+    await fs.writeFile(
+      configPath,
+      JSON.stringify(
+        {
+          rules: [
+            {
+              id: "custom-target",
+              risk: "safe",
+              safeAfterDays: 0,
+              description: "custom target",
+              paths: [customPath],
+            },
+          ],
+          defaults: { risk: "caution", safeAfterDays: 30 },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const result = await runCli(["clean", "--apply", "--no-dry-run", "--yes"], {
+      cwd,
+      env: {
+        DISKCARE_TEST_TRASH_ERROR: "EPERM",
+      },
+    });
+
+    assert.equal(result.exitCode, 0);
+    assert.ok(result.stdout.includes("failed=1"), "Should report a failed apply");
+  });
+});
+
+test("CLI E2E - log write failure returns non-zero exit code", async () => {
+  await withTempDir(async (cwd) => {
+    const configPath = path.resolve(cwd, "config", "rules.json");
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.writeFile(
+      configPath,
+      JSON.stringify({ rules: [], defaults: { risk: "caution", safeAfterDays: 30 } }, null, 2),
+      "utf8",
+    );
+
+    const result = await runCli(["clean"], {
+      cwd,
+      env: {
+        DISKCARE_TEST_LOG_WRITE_ERROR: "ENOSPC",
+      },
+    });
+
+    assert.equal(result.exitCode, 1);
+    assert.ok(result.stderr.includes("LOG_WRITE_ERROR"), "Should report log write error code");
+  });
+});
+
 test("CLI E2E - --help prints usage", async () => {
   await withTempDir(async (cwd) => {
     const result = await runCli(["--help"], { cwd });

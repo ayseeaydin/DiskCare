@@ -16,6 +16,9 @@ import {
   ANALYZER_ERROR_TRUNCATE_LIMIT,
   APP_VERSION,
   DIAGNOSTIC_TRUNCATE_LIMIT,
+  FILE_COUNT_PAD_WIDTH,
+  JSON_INDENT,
+  MAX_DIAGNOSTIC_LINES,
 } from "../utils/constants.js";
 import { toOneLine } from "../utils/errors.js";
 import { defaultScanAll } from "../scanning/defaultScanAll.js";
@@ -59,9 +62,9 @@ export class ScanCommand extends BaseCommand {
   protected async execute(args: unknown[], context: CommandContext): Promise<void> {
     const options = this.parseOptions(args);
     const deps = this.resolveDeps(context);
-    context.output.progress("Scanning targets...");
+    context.output.progress(MessageFormatter.progressScanningTargets());
     const targets = await deps.scanAll(context);
-    context.output.progress(`Scan completed. Found ${targets.length} targets.`);
+    context.output.progress(MessageFormatter.progressScanCompleted(targets.length));
 
     // Load rules config (do not crash CLI if missing; stay explainable)
     const rulesEngine = await deps.loadRules(context);
@@ -85,7 +88,7 @@ export class ScanCommand extends BaseCommand {
             targets,
           },
           null,
-          2,
+          JSON_INDENT,
         ),
       );
       return;
@@ -174,9 +177,9 @@ export class ScanCommand extends BaseCommand {
       configPath: string;
     },
   ): void {
-    context.output.info(`scan report (dryRun=${input.dryRun})`);
+    context.output.info(MessageFormatter.scanReportHeader(input.dryRun));
     context.output.info("");
-    context.output.info(`configPath: ${input.configPath}`);
+    context.output.info(MessageFormatter.configPathLine(input.configPath));
     context.output.info("");
 
     for (const t of input.targets) {
@@ -184,7 +187,7 @@ export class ScanCommand extends BaseCommand {
       context.output.info("");
     }
 
-    context.output.info(`Saved log: ${input.logPath}`);
+    context.output.info(MessageFormatter.savedLog(input.logPath));
   }
 
   private printTarget(
@@ -199,22 +202,22 @@ export class ScanCommand extends BaseCommand {
     const skippedEntries = t.metrics?.skippedEntries ?? 0;
 
     const size = formatBytes(t.metrics?.totalBytes ?? 0);
-    const files = String(t.metrics?.fileCount ?? 0).padStart(6, " ");
+    const files = String(t.metrics?.fileCount ?? 0).padStart(FILE_COUNT_PAD_WIDTH, " ");
     const modified = formatDate(t.metrics?.lastModifiedAt);
     const accessed = formatDate(t.metrics?.lastAccessedAt);
 
     context.output.info(`${t.displayName}`);
-    context.output.info(`  id:      ${t.id}`);
+    context.output.info(MessageFormatter.targetIdLine(t.id));
     if (t.ruleId && t.ruleId !== t.id) {
-      context.output.info(`  ruleId:  ${t.ruleId}`);
+      context.output.info(MessageFormatter.targetRuleIdLine(t.ruleId));
     }
-    context.output.info(`  path:    ${t.path}`);
+    context.output.info(MessageFormatter.targetPathLine(t.path));
     context.output.info(
-      `  exists:  ${exists}   skipped: ${skipped}   partial: ${partial} (skippedEntries=${skippedEntries})`,
+      MessageFormatter.targetExistsLine(exists, skipped, partial, skippedEntries),
     );
-    context.output.info(`  size:    ${size}   files: ${files}`);
-    context.output.info(`  mtime:   ${modified}`);
-    context.output.info(`  atime:   ${accessed}`);
+    context.output.info(MessageFormatter.targetSizeLine(size, files));
+    context.output.info(MessageFormatter.targetMtimeLine(modified));
+    context.output.info(MessageFormatter.targetAtimeLine(accessed));
 
     this.printDiagnostics(context, t);
     this.printRuleDecision(context, t, rulesEngine);
@@ -224,8 +227,8 @@ export class ScanCommand extends BaseCommand {
 
   private printDiagnostics(context: CommandContext, t: ScanTarget): void {
     if (!t.diagnostics || t.diagnostics.length === 0) return;
-    for (const d of t.diagnostics.slice(0, 3)) {
-      context.output.warn(`  note:    ${truncate(d, DIAGNOSTIC_TRUNCATE_LIMIT)}`);
+    for (const d of t.diagnostics.slice(0, MAX_DIAGNOSTIC_LINES)) {
+      context.output.warn(MessageFormatter.targetNoteLine(truncate(d, DIAGNOSTIC_TRUNCATE_LIMIT)));
     }
   }
 
@@ -237,26 +240,30 @@ export class ScanCommand extends BaseCommand {
     const ruleId = t.ruleId ?? t.id;
     if (rulesEngine) {
       const decision = rulesEngine.decide(ruleId);
-      context.output.info(`  risk:    ${decision.risk}   safeAfterDays: ${decision.safeAfterDays}`);
-      context.output.info(`  rule:    ${decision.reasons[0] ?? "-"}`);
+      context.output.info(MessageFormatter.targetRiskLine(decision.risk, decision.safeAfterDays));
+      context.output.info(MessageFormatter.targetRuleLine(decision.reasons[0] ?? "-"));
       return;
     }
 
-    context.output.info(`  risk:    -   safeAfterDays: -`);
-    context.output.info(`  rule:    ${MessageFormatter.rulesConfigNotLoaded()}`);
+    context.output.info(MessageFormatter.targetRiskLine("-", "-"));
+    context.output.info(MessageFormatter.targetRuleLine(MessageFormatter.rulesConfigNotLoaded()));
   }
 
   private printAnalyzerError(context: CommandContext, t: ScanTarget): void {
     if (t.metrics?.skipped && t.metrics.error) {
       context.output.warn(
-        `  error:   ${truncate(toOneLine(t.metrics.error), ANALYZER_ERROR_TRUNCATE_LIMIT)}`,
+        MessageFormatter.targetErrorLine(
+          truncate(toOneLine(t.metrics.error), ANALYZER_ERROR_TRUNCATE_LIMIT),
+        ),
       );
     }
   }
 
   private printPartialNote(context: CommandContext, t: ScanTarget): void {
     if (t.metrics?.partial === true) {
-      context.output.warn(`  note:    ${MessageFormatter.partialEstimatedBytes()}`);
+      context.output.warn(
+        MessageFormatter.targetNoteLine(MessageFormatter.partialEstimatedBytes()),
+      );
     }
   }
 }

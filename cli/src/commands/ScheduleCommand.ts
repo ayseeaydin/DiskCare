@@ -4,6 +4,7 @@ import { z } from "zod";
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { ValidationError } from "../errors/DiskcareError.js";
+import { MessageFormatter } from "../utils/MessageFormatter.js";
 
 type ScheduleOptions = {
   apply?: boolean;
@@ -28,7 +29,7 @@ export class ScheduleCommand extends BaseCommand {
 
   protected async execute(_args: unknown[], context: CommandContext): Promise<void> {
     // Always prints stub message and exits cleanly.
-    context.output.info("Coming soon: This feature is not yet available.");
+    context.output.info(MessageFormatter.scheduleComingSoon());
     context.setExitCode(0);
     return;
   }

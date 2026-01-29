@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs/promises";
 
 import { RulesConfigError, RulesConfigLoader, RulesEngine } from "@diskcare/rules-engine";
 import type { RuleConfig } from "@diskcare/rules-engine";
@@ -35,12 +36,42 @@ export class RulesProvider {
     const msg = toOneLine(toErrorMessage(err));
 
     const filePath = err instanceof RulesConfigError ? err.filePath : this.rulesPath;
+    const location = await getJsonErrorLocation(filePath, err);
+    const locationSuffix = location ? ` (line=${location.line}, col=${location.column})` : "";
     context.output.warn(
-      `rules: ${MessageFormatter.rulesConfigNotLoaded()} (${filePath}: ${truncate(
+      `rules: ${MessageFormatter.rulesConfigNotLoaded()} (${filePath}${locationSuffix}: ${truncate(
         msg,
         ANALYZER_ERROR_TRUNCATE_LIMIT,
       )})`,
     );
     return null;
   }
+}
+
+async function getJsonErrorLocation(
+  filePath: string,
+  err: unknown,
+): Promise<{ line: number; column: number } | null> {
+  if (!(err instanceof RulesConfigError)) return null;
+  const cause = err.cause;
+  if (!(cause instanceof SyntaxError)) return null;
+
+  const message = cause.message;
+  const match = /position\s+(\d+)/i.exec(message);
+  if (!match) return null;
+  const position = Number.parseInt(match[1] ?? "", 10);
+  if (!Number.isFinite(position)) return null;
+
+  let raw: string;
+  try {
+    raw = await fs.readFile(filePath, "utf8");
+  } catch {
+    return null;
+  }
+
+  const slice = raw.slice(0, Math.max(0, position));
+  const lines = slice.split(/\r?\n/);
+  const line = lines.length;
+  const column = lines[lines.length - 1]?.length ?? 0;
+  return { line, column };
 }

@@ -1,6 +1,8 @@
 import { DiskcareError } from "../errors/DiskcareError.js";
 import type { CommandContext } from "../types/CommandContext.js";
 import { toErrorMessage, toOneLine } from "./errors.js";
+import { MessageFormatter } from "./MessageFormatter.js";
+import { MAX_CAUSE_CHAIN_DEPTH } from "./constants.js";
 
 function getCause(err: unknown): unknown {
   if (err && typeof err === "object" && "cause" in err) {
@@ -26,25 +28,6 @@ function formatDiskcareMeta(err: DiskcareError): string[] {
   }
 
   return lines;
-}
-
-function suggestionForCode(code: string): string | null {
-  switch (code) {
-    case "CONFIG_LOAD_ERROR":
-      return "Config file is corrupted or missing. Fix it manually or run 'diskcare init --force' to recreate.";
-    case "CONFIG_WRITE_ERROR":
-      return "Could not write config file. Check the path, permissions, and disk space. Try running as administrator or choose a different location.";
-    case "LOG_WRITE_ERROR":
-      return "Could not write to logs directory. Check permissions, disk space, or try a different location.";
-    case "SCAN_ERROR":
-      return "Scan failed. Check that you have access to all target folders. Re-run with --verbose for details.";
-    case "APPLY_ERROR":
-      return "Cleanup could not be applied. Try running in dry-run mode first. To actually clean, use: --apply --no-dry-run --yes.";
-    case "VALIDATION_ERROR":
-      return "Invalid input. Check CLI arguments and configuration values. Run 'diskcare <command> --help' for usage examples.";
-    default:
-      return null;
-  }
 }
 
 function formatCauseChain(err: unknown, maxDepth: number): string[] {
@@ -81,14 +64,14 @@ export function handleCommandError(context: CommandContext, err: unknown): void 
       context.output.error(line);
     }
 
-    const suggestion = suggestionForCode(err.code);
+    const suggestion = MessageFormatter.suggestionForCode(err.code);
     if (suggestion) {
       context.output.warn(`hint: ${suggestion}`);
     }
   }
 
   if (context.verbose === true) {
-    for (const line of formatCauseChain(err, 3)) {
+    for (const line of formatCauseChain(err, MAX_CAUSE_CHAIN_DEPTH)) {
       context.output.error(line);
     }
 
@@ -98,7 +81,7 @@ export function handleCommandError(context: CommandContext, err: unknown): void 
       context.output.error(stack);
     }
   } else {
-    context.output.warn("hint: re-run with --verbose for more detail");
+    context.output.warn(MessageFormatter.verboseHint());
   }
 
   context.setExitCode(1);

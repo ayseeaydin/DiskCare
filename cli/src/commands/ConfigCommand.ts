@@ -8,6 +8,8 @@ import { ValidationError } from "../errors/DiskcareError.js";
 import { toOneLine } from "../utils/errors.js";
 import { fromPromise } from "../utils/result.js";
 import { getErrnoCode } from "../utils/errno.js";
+import { MessageFormatter } from "../utils/MessageFormatter.js";
+import { JSON_INDENT } from "../utils/constants.js";
 
 type ConfigOptions = {
   json?: boolean;
@@ -52,8 +54,8 @@ export class ConfigCommand extends BaseCommand {
     const options: ConfigOptions = optionsParsed.data;
 
     if (action.length === 0) {
-      context.output.info("config commands:");
-      context.output.info("  diskcare config path    Print resolved rules config path");
+      context.output.info(MessageFormatter.configCommandsHeader());
+      context.output.info(MessageFormatter.configCommandsPath());
       return;
     }
 
@@ -75,17 +77,17 @@ export class ConfigCommand extends BaseCommand {
 
     const meta = await this.tryGetMeta(configPath);
     if (options.asJson) {
-      context.output.info(JSON.stringify({ configPath, ...meta }, null, 2));
+      context.output.info(JSON.stringify({ configPath, ...meta }, null, JSON_INDENT));
       return;
     }
 
-    context.output.info(`configPath: ${configPath}`);
+    context.output.info(MessageFormatter.configPathLine(configPath));
     if (meta.exists === true) {
-      context.output.info(`exists: yes (file=${meta.isFile === true ? "yes" : "no"})`);
+      context.output.info(MessageFormatter.configExistsYes(meta.isFile === true));
     } else if (meta.exists === false) {
-      context.output.info("exists: no");
+      context.output.info(MessageFormatter.configExistsNo());
     } else {
-      context.output.warn(`exists: unknown (${toOneLine(meta.error ?? "")})`);
+      context.output.warn(MessageFormatter.configExistsUnknown(toOneLine(meta.error ?? "")));
     }
   }
 

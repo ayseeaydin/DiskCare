@@ -59,3 +59,33 @@ export const ANALYZER_ERROR_TRUNCATE_LIMIT = 140;
  * Max length for trash error messages in apply results.
  */
 export const TRASH_ERROR_TRUNCATE_LIMIT = 180;
+
+/**
+ * Number of diagnostics lines shown per target in CLI output.
+ * Rationale: Keep output readable while showing key hints.
+ */
+export const MAX_DIAGNOSTIC_LINES = 3;
+
+/**
+ * Width for file count column in scan output.
+ * Rationale: Aligns counts in terminal output.
+ */
+export const FILE_COUNT_PAD_WIDTH = 6;
+
+/**
+ * Default JSON indentation for CLI output.
+ * Rationale: 2 spaces for readability.
+ */
+export const JSON_INDENT = 2;
+
+/**
+ * Padding width for report label column.
+ * Rationale: Keeps report output aligned for readability.
+ */
+export const REPORT_LABEL_PAD = 22;
+
+/**
+ * Max depth for error cause chain printing.
+ * Rationale: Keep verbose output useful without excessive noise.
+ */
+export const MAX_CAUSE_CHAIN_DEPTH = 3;

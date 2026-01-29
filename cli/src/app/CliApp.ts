@@ -10,6 +10,7 @@ import { handleCommandError } from "../utils/commandErrors.js";
 import { getDefaultConfigPath } from "../utils/configPaths.js";
 import { installSignalHandlers } from "../utils/signals.js";
 import { fromPromise } from "../utils/result.js";
+import { MessageFormatter } from "../utils/MessageFormatter.js";
 
 export class CliApp {
   private readonly program: Command;
@@ -45,18 +46,7 @@ export class CliApp {
 
     this.program
       .name("diskcare")
-      .description(
-        [
-          "Safe, explainable disk hygiene CLI for developers (safe by default).",
-          "",
-          "By default, nothing is deleted - you only see a clean plan.",
-          "To actually move files to Trash/Recycle Bin: --apply --no-dry-run --yes",
-          "",
-          "Commands: scan, clean, report, config, init",
-          "",
-          "Help: diskcare <command> --help",
-        ].join("\n"),
-      )
+      .description(MessageFormatter.cliDescription())
       .version(APP_VERSION)
       .option("--verbose", "Print stack traces and error causes")
       .option("-c, --config <path>", "Path to rules config (rules.json)");
@@ -75,20 +65,7 @@ export class CliApp {
     const isOnboardingCommand = onboardingCommands.some((cmd) => userArgs.includes(cmd));
     const isJson = userArgs.includes("--json");
     if (isOnboardingCommand && !isJson && !fs.existsSync(this.context.configPath)) {
-      this.context.output.info(
-        [
-          "\u001b[1mWelcome to DiskCare!\u001b[0m",
-          "",
-          "No rules.json config was found.",
-          "",
-          "To get started:",
-          "  1. Run \u001b[32mdiskcare init\u001b[0m to create a config.",
-          "  2. Then run \u001b[32mdiskcare scan\u001b[0m or \u001b[32mdiskcare clean\u001b[0m.",
-          "",
-          "Tip: Without a config, DiskCare uses safe default rules.",
-          "Help: diskcare --help",
-        ].join("\n"),
-      );
+      this.context.output.info(MessageFormatter.onboardingMessage());
     }
 
     for (const cmd of this.commands) {

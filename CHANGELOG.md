@@ -10,6 +10,13 @@
 - Log schema versioning (version: "0.0.1")
 - Local-only analytics (privacy-first)
 
+#### Highlights
+
+- **@diskcare/shared-utils** package introduced
+- Custom paths support in rules
+- Improved error context and logging
+- New edge-case and manual tests (symlink, permission, UNC, trash)
+
 ### Changed
 
 - None

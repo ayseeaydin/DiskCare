@@ -67,6 +67,9 @@ Rule of thumb: anything that touches the outside world is injectable.
 
 - Deterministic sorting where output order matters.
 - Avoid time-based flakiness (use fixed timestamps).
+- For CLI E2E error flows, use test-only env vars:
+  - `DISKCARE_TEST_TRASH_ERROR` to inject trash failures
+  - `DISKCARE_TEST_LOG_WRITE_ERROR` to inject log write failures
 
 ### Property-based tests (where valuable)
 

@@ -9,6 +9,8 @@ import { ConfigWriteError, ValidationError } from "../errors/DiskcareError.js";
 import { fromPromise } from "../utils/result.js";
 import { getErrnoCode } from "../utils/errno.js";
 import { getUserConfigPath } from "../utils/configPaths.js";
+import { MessageFormatter } from "../utils/MessageFormatter.js";
+import { JSON_INDENT } from "../utils/constants.js";
 
 type InitOptions = {
   policy?: string;
@@ -64,10 +66,12 @@ export class InitCommand extends BaseCommand {
     const options = this.parseOptions(args);
 
     if (options.listPolicies) {
-      context.output.info("Available policies:");
-      context.output.info("- conservative (safe defaults)");
-      context.output.info("- aggressive (clean sooner; higher risk tolerance)");
-      context.output.info("- custom (empty rules; edit manually)");
+      context.output.info(MessageFormatter.policiesHeader());
+      context.output.info(MessageFormatter.policyLine("conservative (safe defaults)"));
+      context.output.info(
+        MessageFormatter.policyLine("aggressive (clean sooner; higher risk tolerance)"),
+      );
+      context.output.info(MessageFormatter.policyLine("custom (empty rules; edit manually)"));
       return;
     }
 
@@ -113,7 +117,7 @@ export class InitCommand extends BaseCommand {
     }
 
     const writeResult = await fromPromise(
-      fsLike.writeFile(configPath, JSON.stringify(configJson, null, 2) + "\n", "utf8"),
+      fsLike.writeFile(configPath, JSON.stringify(configJson, null, JSON_INDENT) + "\n", "utf8"),
     );
     if (!writeResult.ok) {
       throw new ConfigWriteError(
@@ -123,8 +127,8 @@ export class InitCommand extends BaseCommand {
       );
     }
 
-    context.output.info(`Created rules config: ${configPath}`);
-    context.output.info(`Policy: ${policy}`);
+    context.output.info(MessageFormatter.rulesConfigCreated(configPath));
+    context.output.info(MessageFormatter.policySelected(policy));
   }
 
   private parseOptions(args: unknown[]): {

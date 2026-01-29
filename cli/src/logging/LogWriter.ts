@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import { APP_VERSION, LOG_META_DIR_NAME } from "../utils/constants.js";
+import { APP_VERSION, JSON_INDENT, LOG_META_DIR_NAME } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
 import { LogWriteError } from "../errors/DiskcareError.js";
 import { fromPromise } from "../utils/result.js";
@@ -86,7 +86,7 @@ export class LogWriter {
         logFile: path.basename(finalPath),
       },
       null,
-      2,
+      JSON_INDENT,
     );
 
     await fs.writeFile(tmpMetaPath, content, { encoding: "utf8" });
@@ -126,7 +126,7 @@ function randomSuffix(): string {
 
 function safeStringify(payload: unknown, nowFn: NowFn): string {
   try {
-    return JSON.stringify(payload, jsonReplacer, 2);
+    return JSON.stringify(payload, jsonReplacer, JSON_INDENT);
   } catch (err) {
     const message = toOneLine(toErrorMessage(err));
     // last-resort fallback: keep log file valid JSON
@@ -138,7 +138,7 @@ function safeStringify(payload: unknown, nowFn: NowFn): string {
         error: `LogWriter JSON.stringify failed: ${message}`,
       },
       null,
-      2,
+      JSON_INDENT,
     );
   }
 }

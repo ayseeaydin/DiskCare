@@ -20,11 +20,13 @@ import {
   MAX_DISPLAYED_REASONS,
   DIAGNOSTIC_TRUNCATE_LIMIT,
   TRASH_ERROR_TRUNCATE_LIMIT,
+  JSON_INDENT,
 } from "../utils/constants.js";
 import { toErrorMessage, toOneLine } from "../utils/errors.js";
 import { MessageFormatter } from "../utils/MessageFormatter.js";
 import { defaultScanAll } from "../scanning/defaultScanAll.js";
 import { getErrnoCode } from "../utils/errno.js";
+import { LogWriteError } from "../errors/DiskcareError.js";
 
 type CleanOptions = {
   json?: boolean;
@@ -76,10 +78,10 @@ export class CleanCommand extends BaseCommand {
     const options = this.parseOptions(args);
     const deps = this.resolveDeps(context);
 
-    context.output.progress("Building clean plan...");
+    context.output.progress(MessageFormatter.progressBuildingPlan());
     const timestampMs = deps.nowMs();
     const plan = await this.buildPlan(context, deps, options, timestampMs);
-    context.output.progress(`Clean plan ready. ${plan.items.length} items in plan.`);
+    context.output.progress(MessageFormatter.progressPlanReady(plan.items.length));
 
     const { canApply, applyResults, applySummary } = await this.applyIfNeeded(plan, options, deps);
     const logPath = await this.writeRunLog(context, deps, {
@@ -179,14 +181,14 @@ export class CleanCommand extends BaseCommand {
           configPath: input.configPath,
         };
       }
-      context.output.info(JSON.stringify(out, null, 2));
+      context.output.info(JSON.stringify(out, null, JSON_INDENT));
       return;
     }
 
     this.printPlan(context, input.plan, input.options);
-    context.output.info(`configPath: ${input.configPath}`);
+    context.output.info(MessageFormatter.configPathLine(input.configPath));
     this.printApplySection(context, input.options, input.canApply, input.applyResults);
-    context.output.info(`Saved log: ${input.logPath}`);
+    context.output.info(MessageFormatter.savedLog(input.logPath));
   }
 
   private parseOptions(args: unknown[]): {
@@ -213,11 +215,23 @@ export class CleanCommand extends BaseCommand {
   }
 
   private resolveDeps(context: CommandContext): CleanCommandDeps {
+    const injectedTrashCode = context.env.DISKCARE_TEST_TRASH_ERROR;
+    const injectedTrashFn =
+      typeof injectedTrashCode === "string" && injectedTrashCode.trim().length > 0
+        ? async () => {
+            const err = new Error(`Injected trash failure (${injectedTrashCode})`) as Error & {
+              code?: string;
+            };
+            err.code = injectedTrashCode;
+            throw err;
+          }
+        : undefined;
+
     return {
       nowMs: this.deps?.nowMs ?? (() => context.nowFn().getTime()),
       scanAll: this.deps?.scanAll ?? this.defaultScanAll.bind(this),
       loadRules: this.deps?.loadRules ?? this.defaultLoadRules.bind(this),
-      trashFn: this.deps?.trashFn ?? trash,
+      trashFn: this.deps?.trashFn ?? injectedTrashFn ?? trash,
       writeLog: this.deps?.writeLog ?? this.defaultWriteLog.bind(this),
     };
   }
@@ -340,26 +354,29 @@ export class CleanCommand extends BaseCommand {
   ): void {
     const { items, summary } = plan;
 
-    context.output.info(`clean plan (dryRun=${options.dryRun}, apply=${options.apply})`);
+    context.output.info(MessageFormatter.cleanPlanHeader(options.dryRun, options.apply));
     context.output.info("");
     context.output.info(
-      `summary: eligible=${summary.eligibleCount} | caution=${summary.cautionCount} | blocked=${summary.blockedCount} | estimatedFree=${formatBytes(
-        summary.estimatedBytesTotal,
-      )}`,
+      MessageFormatter.cleanPlanSummary(
+        summary.eligibleCount,
+        summary.cautionCount,
+        summary.blockedCount,
+        formatBytes(summary.estimatedBytesTotal),
+      ),
     );
     context.output.info("");
 
     for (const item of items) {
       context.output.info(`${item.displayName}`);
-      context.output.info(`  id:      ${item.id}`);
-      context.output.info(`  path:    ${item.path}`);
-      context.output.info(`  status:  ${item.status}`);
-      context.output.info(`  risk:    ${item.risk}   safeAfterDays: ${item.safeAfterDays}`);
-      context.output.info(`  est:     ${formatBytes(item.estimatedBytes)}`);
+      context.output.info(MessageFormatter.targetIdLine(item.id));
+      context.output.info(MessageFormatter.targetPathLine(item.path));
+      context.output.info(MessageFormatter.planStatusLine(item.status));
+      context.output.info(MessageFormatter.targetRiskLine(item.risk, item.safeAfterDays));
+      context.output.info(MessageFormatter.planEstLine(formatBytes(item.estimatedBytes)));
 
       const shown = item.reasons.slice(0, MAX_DISPLAYED_REASONS);
       for (const r of shown) {
-        context.output.info(`  why:     ${truncate(r, DIAGNOSTIC_TRUNCATE_LIMIT)}`);
+        context.output.info(MessageFormatter.planWhyLine(truncate(r, DIAGNOSTIC_TRUNCATE_LIMIT)));
       }
 
       context.output.info("");
@@ -369,15 +386,15 @@ export class CleanCommand extends BaseCommand {
       i.reasons.includes(MessageFormatter.partialEstimatedBytes()),
     );
     if (hasPartial) {
-      context.output.warn("Note: Estimated sizes may be inaccurate due to partial analysis.");
+      context.output.warn(MessageFormatter.notePartialEstimated());
     }
 
     if (summary.eligibleCount > 0) {
       context.output.info(
-        `\u001b[1m${formatBytes(summary.estimatedBytesTotal)} can be freed.\u001b[0m To actually clean, run: diskcare clean --apply --no-dry-run --yes`,
+        MessageFormatter.estimatedFreeMessage(formatBytes(summary.estimatedBytesTotal)),
       );
     } else {
-      context.output.info("No eligible items to clean.");
+      context.output.info(MessageFormatter.noEligibleItems());
     }
     context.output.info("");
   }
@@ -399,15 +416,17 @@ export class CleanCommand extends BaseCommand {
     const failedCount = applyResults.filter((r) => r.status === "failed").length;
     const skippedCount = applyResults.filter((r) => r.status === "skipped").length;
 
-    context.output.info(
-      `apply results: trashed=${trashedCount} failed=${failedCount} skipped=${skippedCount}`,
-    );
+    context.output.info(MessageFormatter.applyResultsLine(trashedCount, failedCount, skippedCount));
     for (const r of applyResults) {
       if (r.status === "failed") {
-        context.output.warn(`  failed: ${r.id} (${r.path}) - ${r.message ?? "unknown error"}`);
+        context.output.warn(
+          MessageFormatter.applyFailedLine(r.id, r.path, r.message ?? "unknown error"),
+        );
       }
       if (r.status === "skipped") {
-        context.output.warn(`  skipped: ${r.id} (${r.path}) - ${r.message ?? "skipped"}`);
+        context.output.warn(
+          MessageFormatter.applySkippedLine(r.id, r.path, r.message ?? "skipped"),
+        );
       }
     }
     context.output.info("");
@@ -418,18 +437,14 @@ export class CleanCommand extends BaseCommand {
     options: { dryRun: boolean; yes: boolean },
   ): void {
     if (options.dryRun) {
-      context.output.warn("apply requested, but dry-run is enabled; nothing was moved to Trash.");
+      context.output.warn(MessageFormatter.applyBlockedDryRun());
     } else if (!options.yes) {
-      context.output.warn(
-        "apply requested, but confirmation is missing; nothing was moved to Trash.",
-      );
+      context.output.warn(MessageFormatter.applyBlockedConfirmation());
     } else {
-      context.output.warn(
-        "apply requested, but apply gates were not satisfied; nothing was moved to Trash.",
-      );
+      context.output.warn(MessageFormatter.applyBlockedGates());
     }
 
-    context.output.warn("To actually apply, run: diskcare clean --apply --no-dry-run --yes");
+    context.output.warn(MessageFormatter.applyHowTo());
     context.output.info("");
   }
 
@@ -445,6 +460,18 @@ export class CleanCommand extends BaseCommand {
   }
 
   private async defaultWriteLog(context: CommandContext, payload: unknown): Promise<string> {
+    const injectedLogError = context.env.DISKCARE_TEST_LOG_WRITE_ERROR;
+    if (typeof injectedLogError === "string" && injectedLogError.trim().length > 0) {
+      const err = new Error(`Injected log write failure (${injectedLogError})`) as Error & {
+        code?: string;
+      };
+      err.code = injectedLogError;
+      throw new LogWriteError(
+        "Failed to write log file",
+        { logsDir: path.resolve(context.cwd, "logs") },
+        err,
+      );
+    }
     const logWriter = new LogWriter(path.resolve(context.cwd, "logs"), { pid: context.pid });
     return logWriter.writeRunLog(payload);
   }
