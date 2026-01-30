@@ -1,1 +1,1 @@
-This is a real file for symlink test.
+real

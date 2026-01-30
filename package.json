@@ -21,13 +21,13 @@
   "scripts": {
     "build": "npm run build:packages && npm run build:cli",
     "build:packages": "npm -w @diskcare/shared-utils run build && npm -w @diskcare/scanner-core run build && npm -w @diskcare/rules-engine run build",
-    "build:cli": "npm -w diskcare run build",
-    "dev": "npm run -w diskcare dev",
-    "lint": "npm run -w diskcare lint",
+    "build:cli": "npm -w @diskcare/cli run build",
+    "dev": "npm run -w @diskcare/cli dev",
+    "lint": "npm run -w @diskcare/cli lint",
     "format": "prettier -w .",
     "format:check": "prettier -c .",
     "test:packages": "npm -w @diskcare/shared-utils run test && npm -w @diskcare/scanner-core run test && npm -w @diskcare/rules-engine run test",
-    "test:cli": "npm -w diskcare run test",
+    "test:cli": "npm -w @diskcare/cli run test",
     "test": "npm run test:packages && npm run test:cli",
     "ci": "npm run format:check && npm run build && npm run test"
   },
