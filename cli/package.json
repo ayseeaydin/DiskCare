@@ -1,5 +1,5 @@
 {
-  "name": "diskcare",
+  "name": "@diskcare/cli",
   "version": "1.0.0",
   "private": false,
   "type": "module",
