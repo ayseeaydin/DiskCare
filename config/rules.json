@@ -11,34 +11,6 @@
       "risk": "safe",
       "safeAfterDays": 14,
       "description": "npm cache is reproducible; safe to clean when old."
-    },
-    {
-      "id": "trash-test",
-      "risk": "safe",
-      "safeAfterDays": 0,
-      "description": "Trash full test target.",
-      "paths": ["d:/diskcare/_manual/trash-test.txt"]
-    },
-    {
-      "id": "symlink-test",
-      "risk": "safe",
-      "safeAfterDays": 0,
-      "description": "Symlink delete test target.",
-      "paths": ["d:/diskcare/_manual/symlink-test/link.txt"]
-    },
-    {
-      "id": "perm-test",
-      "risk": "caution",
-      "safeAfterDays": 0,
-      "description": "Permission denied test target.",
-      "paths": ["d:/diskcare/_manual/perm-test"]
-    },
-    {
-      "id": "unc-test",
-      "risk": "caution",
-      "safeAfterDays": 0,
-      "description": "UNC path test target.",
-      "paths": ["\\\\localhost\\diskcare-share\\unc-test"]
     }
   ],
   "defaults": {

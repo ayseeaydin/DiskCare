@@ -273,6 +273,12 @@ Override path globally:
 diskcare --config ./my-rules.json scan
 ```
 
+Manual test rules:
+
+- The default `config/rules.json` is safe for normal use and does not include manual test targets.
+- For edge-case/manual testing, use `config/rules.manual.json` (includes symlink, permission, UNC, trash targets).
+- Example: `diskcare --config ./config/rules.manual.json scan`
+
 Default behavior when config is missing:
 
 - DiskCare continues with safe default rules (risk=caution, safeAfterDays=30)
