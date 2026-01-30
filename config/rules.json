@@ -16,28 +16,28 @@
       "id": "trash-test",
       "risk": "safe",
       "safeAfterDays": 0,
-      "description": "Trash dolu testi için kural.",
+      "description": "Trash full test target.",
       "paths": ["d:/diskcare/_manual/trash-test.txt"]
     },
     {
       "id": "symlink-test",
       "risk": "safe",
       "safeAfterDays": 0,
-      "description": "Symlink silme testi için kural.",
+      "description": "Symlink delete test target.",
       "paths": ["d:/diskcare/_manual/symlink-test/link.txt"]
     },
     {
       "id": "perm-test",
       "risk": "caution",
       "safeAfterDays": 0,
-      "description": "Permission denied testi için kural.",
+      "description": "Permission denied test target.",
       "paths": ["d:/diskcare/_manual/perm-test"]
     },
     {
       "id": "unc-test",
       "risk": "caution",
       "safeAfterDays": 0,
-      "description": "UNC path testi için kural.",
+      "description": "UNC path test target.",
       "paths": ["\\\\localhost\\diskcare-share\\unc-test"]
     }
   ],

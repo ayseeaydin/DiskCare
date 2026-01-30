@@ -1,6 +1,6 @@
 # DiskCare
 
-> ⚠️ **Windows-only beta:** DiskCare şu anda yalnızca Windows ortamında test edilmiştir. Linux/macOS desteği için katkı ve testlere ihtiyaç vardır. Diğer platformlarda çalıştırmadan önce dikkatli olun.
+> ?? **Windows-only beta:** DiskCare �u anda yaln�zca Windows ortam�nda test edilmi�tir. Linux/macOS deste�i i�in katk� ve testlere ihtiya� vard�r. Di�er platformlarda �al��t�rmadan �nce dikkatli olun.
 
 > Developer-focused disk hygiene CLI - analyze, plan, and safely clean cache and temp files with explainable rules and audit logs.
 
