@@ -1,6 +1,6 @@
 {
   "name": "@diskcare/cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": false,
   "type": "module",
   "bin": {
@@ -26,9 +26,9 @@
     "test": "npm run build && node --test dist/**/__tests__/**/*.test.js"
   },
   "dependencies": {
-    "@diskcare/rules-engine": "1.0.1",
-    "@diskcare/scanner-core": "1.0.1",
-    "@diskcare/shared-utils": "1.0.1",
+    "@diskcare/rules-engine": "1.0.2",
+    "@diskcare/scanner-core": "1.0.2",
+    "@diskcare/shared-utils": "1.0.2",
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
     "trash": "^10.0.1",
@@ -50,7 +50,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/diskcare/diskcare.git"
+    "url": "git+https://github.com/diskcare/diskcare.git"
   },
   "homepage": "https://github.com/diskcare/diskcare",
   "bugs": {

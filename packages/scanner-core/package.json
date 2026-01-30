@@ -1,6 +1,6 @@
 {
   "name": "@diskcare/scanner-core",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": false,
   "type": "module",
   "main": "dist/index.js",
@@ -11,13 +11,13 @@
     "test": "npm run build && node --test dist/**/__tests__/**/*.test.js"
   },
   "dependencies": {
-    "@diskcare/shared-utils": "1.0.1"
+    "@diskcare/shared-utils": "1.0.2"
   },
   "description": "DiskCare scanner core (targets + filesystem analysis).",
   "author": "DiskCare Contributors",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/diskcare/diskcare.git"
+    "url": "git+https://github.com/diskcare/diskcare.git"
   }
 }

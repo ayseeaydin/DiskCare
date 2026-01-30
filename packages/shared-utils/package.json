@@ -1,6 +1,6 @@
 {
   "name": "@diskcare/shared-utils",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": false,
   "type": "module",
   "main": "dist/index.js",
@@ -15,6 +15,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/diskcare/diskcare.git"
+    "url": "git+https://github.com/diskcare/diskcare.git"
   }
 }
