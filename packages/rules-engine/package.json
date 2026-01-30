@@ -1,6 +1,6 @@
 {
   "name": "@diskcare/rules-engine",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,7 @@
     "test": "npm run build && node --test dist/**/__tests__/**/*.test.js"
   },
   "dependencies": {
-    "@diskcare/shared-utils": "1.0.0"
+    "@diskcare/shared-utils": "1.0.1"
   },
   "description": "DiskCare rules engine (risk + safeAfterDays decisions).",
   "author": "DiskCare Contributors",
