@@ -1,4 +1,3 @@
-
 # @diskcare/rules-engine
 
 ## English
@@ -39,7 +38,7 @@ DiskCare için kural motoru. Risk ve uygunluk kararlarını kural yapılandırma
 ### Sağladıkları
 - Hedef id'ye göre kuralları değerlendiren `RulesEngine`
 - Kural dosyalarını yükleyen ve doğrulayan `RulesConfigLoader`
-- Kural yapılandırmaları ve kararları için tipler
+- Kural yapılandırmaları ve kararlar için tipler
 
 ### Kullanım
 ```ts

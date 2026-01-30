@@ -1,4 +1,3 @@
-
 # DiskCare Rules Engine
 
 ## English
@@ -48,8 +47,6 @@ For more, see docs/architecture.md and docs/safety-model.md.
 ---
 
 ## Türkçe
-
-# DiskCare Kural Motoru
 
 ## Özel Kural Yazımı
 

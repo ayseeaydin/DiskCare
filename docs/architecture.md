@@ -1,4 +1,3 @@
-
 # DiskCare Architecture
 
 ## English

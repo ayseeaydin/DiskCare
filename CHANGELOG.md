@@ -1,4 +1,3 @@
-
 # DiskCare Changelog
 
 ## English
@@ -38,7 +37,7 @@
 
 ## Türkçe
 
-## [1.0.0] - 27.01.2026
+## [1.0.0] - 2026-01-27
 
 ### Eklendi
 - İlk herkese açık sürüm: scan, clean, report, config, init komutları
@@ -56,10 +55,13 @@
 ### Değişti
 - Yok
 
-### Kaldırıldı
+### Deprecated
 - Yok
 
-### Düzeltildi
+### Removed
+- Yok
+
+### Fixed
 - Bilinen tüm edge-case'ler testlerle kapsandı
 
 ## Geriye Dönük Uyumluluk

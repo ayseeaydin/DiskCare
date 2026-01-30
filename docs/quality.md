@@ -1,4 +1,3 @@
-
 # DiskCare Quality & Testing Guide
 
 ## English
@@ -91,29 +90,27 @@ If a function breaks the budget:
 
 ## Türkçe
 
-# DiskCare Kalite & Test Rehberi
-
-> Yaşayan doküman: Kısa, pratik ve test/lint ile uygulanabilir tutun.
+> Yaşayan doküman: kısa, pratik ve test/lint ile uygulanabilir tutun.
 
 ## Hedefler
-- Önce güvenlik: Temizlik varsayılan olarak güvenlidir; yıkıcı işlemler açıkça onay gerektirir.
-- Açıklanabilirlik: Karar ve hatalar açıklanabilir olmalı (kurallar + tanılar + hata kodları).
-- Test edilebilirlik: Çekirdek mantık gerçek dosya sistemi veya shell'e dokunmadan test edilebilir olmalı.
-- Tutarlılık: Tutarlı hata biçimlendirme ve öngörülebilir CLI çıktısı.
+- Önce güvenlik: temizlik varsayılan olarak güvenlidir; yıkıcı işlemler açıkça opt-in gerektirir.
+- Açıklanabilirlik: kararlar ve hatalar açıklanabilir olmalıdır (kurallar + tanılar + hata kodları).
+- Test edilebilirlik: çekirdek mantık gerçek dosya sistemi veya shell'e dokunmadan test edilebilir olmalıdır.
+- Tutarlılık: tutarlı hata biçimlendirme ve öngörülebilir CLI çıktısı.
 
 ---
 
 ## Bağımlılık Enjeksiyonu (DI) İlkeleri
-Kural: Dış dünyaya dokunan her şey enjekte edilebilir olmalı.
+Kural: dış dünyaya dokunan her şey enjekte edilebilir olmalıdır.
 
-### Neleri enjekte ediyoruz?
-- CLI çıktısı: Komutlar bir Output arayüzü üzerinden yazar (testte kolayca taklit edilir).
-- Servislerde dosya sistemi erişimi: Okuma/yazma yapan servislere minimal fs arayüzü enjekte edin.
-- Shell komutları: Tarayıcılar için komut çalıştırmayı küçük bir arayüz arkasına alın.
-- Varlık kontrolü/analiz: scanner-core servislerine pathExists/analyzer implementasyonları enjekte edilebilir.
+### Neleri enjekte ediyoruz
+- CLI çıktısı: komutlar bir Output arayüzü üzerinden yazar (testte kolayca taklit edilir).
+- Servislerde dosya sistemi erişimi: okuma/yazma yapan servislere minimal fs arayüzü enjekte edin.
+- Shell çalıştırma: tarayıcılar için komut çalıştırmayı küçük bir arayüz arkasına alın.
+- Varlık kontrolü / analiz: scanner-core servislerine pathExists / analyzer implementasyonları enjekte edilebilir.
 
 ### Aşırı soyutlamadıklarımız
-- Arayüzleri minimal tutun (sadece kullandığınız metotlar).
+- Arayüzleri minimal tutun (yalnızca kullandığınız metotlar).
 - Test veya taşınabilirlik için net bir sebep yoksa sarmalayıcı sınıflardan kaçının.
 
 ---
@@ -130,7 +127,7 @@ Kural: Dış dünyaya dokunan her şey enjekte edilebilir olmalı.
 - --verbose ile stack trace ve sebep zinciri yazdırılır.
 
 ### scanner-core
-- Kurtarılabilir hatalar/fallbackler için Result tercih edilir.
+- Kurtarılabilir hatalar / fallback'ler için Result tercih edilir.
 - Dosya sistemi analizinde açıklanabilir metrikler tercih edilir:
   - okunamayan hedefler için skipped + error
   - bazı alt yollar atlandıysa partial + skippedEntries
@@ -151,8 +148,8 @@ Kural: Dış dünyaya dokunan her şey enjekte edilebilir olmalı.
 ### Testleri deterministik tutun
 - Çıktı sırasının önemli olduğu yerde deterministik sıralama kullanın.
 - Zamana bağlı kararsızlıktan kaçının (sabit timestamp kullanın).
-- CLI E2E hata akışlarında sadece testte kullanılan env değişkenleri:
-  - `DISKCARE_TEST_TRASH_ERROR` ile çöp kutusu hatası enjekte edin
+- CLI E2E hata akışlarında test-only env değişkenleri kullanın:
+  - `DISKCARE_TEST_TRASH_ERROR` ile trash hatası enjekte edin
   - `DISKCARE_TEST_LOG_WRITE_ERROR` ile log yazma hatası enjekte edin
 
 ### Özellik tabanlı testler (gerekli yerlerde)
@@ -164,8 +161,8 @@ Kural: Dış dünyaya dokunan her şey enjekte edilebilir olmalı.
 
 ## Stil / Karmaşıklık Bütçeleri
 CLI paketinde enforced edilir:
-- karmaşıklık (çevrimsel karmaşıklık bütçesi)
-- fonksiyon başına maksimum satır
+- complexity (çevrimsel karmaşıklık bütçesi)
+- max-lines-per-function
 
 Bir fonksiyon bütçeyi aşarsa:
 - Yardımcı fonksiyonlara ayırın

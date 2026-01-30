@@ -1,5 +1,7 @@
 # Edge Case Tests
 
+## English
+
 Happy-path tests are not enough. DiskCare must cover worst-case scenarios and fallback chains with first-class tests.
 
 ## Principles
@@ -24,3 +26,32 @@ Happy-path tests are not enough. DiskCare must cover worst-case scenarios and fa
 ---
 
 See related test files and docs/safety-model.md for more examples.
+
+---
+
+## Türkçe
+
+Happy-path testleri yeterli değildir. DiskCare worst-case senaryolarını ve fallback zincirlerini birinci sınıf testlerle kapsamalıdır.
+
+## İlkeler
+
+- Şunu sor: "En kötü senaryo nedir?" Sonra test et.
+- Her yeni özellik edge-case kapsamı içermelidir.
+
+## Örnekler
+
+- Alt yollar okunamazken kısmi analiz
+- Tarama veya apply sırasında izin reddi
+- Scan ve apply arasında kaybolan yollar
+- Apply sırasında sinyaller veya kesintiler
+
+## Trash güvenlik denetimi (manuel kontrol listesi)
+
+- Symlink hedef temizliği (link çöpe gitsin, hedef değil)
+- İzin reddi durumları (salt okunur klasörler, korumalı sistem yolları)
+- Windows'ta UNC yolları (platform ve ortam destekliyorsa)
+- Dolu Trash / Recycle Bin davranışı (hata yönetimi ve mesajları doğrula)
+
+---
+
+Daha fazla örnek için ilgili test dosyalarına ve docs/safety-model.md dokümanına bakın.

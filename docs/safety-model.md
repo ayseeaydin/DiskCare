@@ -1,4 +1,3 @@
-
 # DiskCare Safety Model: Triple-Gate
 
 ## English
@@ -27,8 +26,6 @@ See docs/architecture.md for design rationale.
 ---
 
 ## Türkçe
-
-# DiskCare Güvenlik Modeli: Üçlü Geçit
 
 DiskCare, üç güvenlik geçidinden geçmeden hiçbir dosyayı silmez:
 

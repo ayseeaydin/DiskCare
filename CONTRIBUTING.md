@@ -1,5 +1,7 @@
 # Null, Undefined, and Optional Field Conventions
 
+## English
+
 To ensure consistency and maintainability, DiskCare uses the following conventions for handling missing, optional, or unavailable data in TypeScript:
 
 ## 1. null
@@ -44,3 +46,52 @@ diagnostics: string[] | null;    // (never use null for arrays)
 ```
 
 > Note: This convention should be followed in all new code and when refactoring existing code. If you need to break this rule, document the reason clearly in code comments.
+
+---
+
+## Türkçe
+
+TypeScript'te eksik, opsiyonel veya erişilemeyen verileri tutarlı ve sürdürülebilir şekilde ele almak için DiskCare şu kuralları kullanır:
+
+## 1. null
+
+- Bilerek eksik, bilinmeyen veya uygulanamaz bir değeri temsil etmek için `null` kullanın.
+- Örnek: `lastAccessedAt: number | null` (zaman damgası yok veya uygulanamaz)
+
+## 2. undefined / Opsiyonel ( ? )
+
+- Nesneden tamamen çıkarılabilen alanlar için `?` (opsiyonel) kullanın.
+- Örnek: `diagnostics?: string[]` (yalnızca teşhis varsa alan bulunur)
+- Dizi veya nesnelerde `null` kullanmayın; alanı tamamen çıkarın.
+
+## 3. Diziler ve Nesneler
+
+- Bir alan varsa asla `null` olmamalıdır. Gerekirse boş dizi/nesne kullanın.
+- Bir alan yoksa çıkarın (`?` kullanın).
+- Örnek: `diagnostics?: string[]` (yoksa undefined, asla `null` değil)
+
+## 4. Sayılar ve String'ler
+
+- Değer gerekli ama bilinmiyor olabilir ise `| null` kullanın.
+- Değer gerçekten opsiyonelse (hiç var olmayabilir), `?` kullanın.
+- `?` ve `| null` birlikte kullanmayın (mutlak gerekçe yoksa).
+
+## 5. Genel Kurallar
+
+- "Kullanılamıyor" veya "uygulanamaz" için `null` kullanın (özellikle primitive'lerde).
+- "Opsiyonel, tamamen çıkarılabilir" için `?` kullanın (özellikle dizi/nesnelerde).
+- Aynı alan için hem `?` hem `| null` kullanmayın; güçlü bir gerekçe varsa belgelendirin.
+
+## Örnekler
+
+```ts
+// İyi
+lastAccessedAt: number | null;
+diagnostics?: string[];
+
+// Kötü
+lastAccessedAt?: number | null; // (güçlü gerekçe yoksa kaçının)
+diagnostics: string[] | null;    // (diziler için asla null kullanmayın)
+```
+
+> Not: Bu kurallar tüm yeni kodlarda ve mevcut kodu refaktör ederken izlenmelidir. Bu kuralı bozmanız gerekiyorsa, nedeni kod yorumlarında açıkça belgeleyin.

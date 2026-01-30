@@ -1,4 +1,3 @@
-
 # DiskCare Log Schema & Versioning
 
 ## English
@@ -46,9 +45,9 @@ If the next format adds new fields:
 
 ## Türkçe
 
-## Sürümleme Politikası
+## Sürümlendirme Politikası
 - Her log dosyası bir `version` alanı içerir (örneğin "0.0.1").
-- Geriye dönük uyumsuz bir log formatı değişikliği olduğunda, sürüm artırılır (ör. "0.0.2", "0.1.0", "1.0.0").
+- Geriye dönük uyumsuz bir log formatı değişikliğinde sürüm artırılır (ör. "0.0.2", "0.1.0", "1.0.0").
 - Her yeni format için bir geçiş (migration) fonksiyonu eklenir (ör. `migrateV1toV2`, `migrateV2toV3`).
 - Log okuma servisleri (ör. ReportService) version'u kontrol eder ve gerekirse geçiş pipeline'ını çalıştırır.
 
@@ -82,5 +81,5 @@ Bir sonraki format yeni alanlar eklerse:
 4. Gerekirse eski logları topluca dönüştürmek için bir script yazın.
 
 ## Notlar
-- Geçiş fonksiyonları ve sürümleme, teknik borcu ve geriye dönük karmaşık uyumluluk zincirlerini önler.
+- Geçiş fonksiyonları ve sürümlendirme, teknik borcu ve geriye dönük karmaşık uyumluluk zincirlerini önler.
 - Log şemasını değiştiren her PR'da bu dosyayı güncelleyin.
