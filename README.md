@@ -1,8 +1,44 @@
+
 # DiskCare
 
-> ?? **Windows-only beta:** DiskCare �u anda yaln�zca Windows ortam�nda test edilmi�tir. Linux/macOS deste�i i�in katk� ve testlere ihtiya� vard�r. Di�er platformlarda �al��t�rmadan �nce dikkatli olun.
+> **Windows-only beta:** DiskCare şu anda yalnızca Windows ortamında test edilmiştir. Linux/macOS desteği için katkı ve testlere ihtiyaç vardır. Diğer platformlarda çalıştırmadan önce dikkatli olun.
 
-> Developer-focused disk hygiene CLI - analyze, plan, and safely clean cache and temp files with explainable rules and audit logs.
+> DiskCare, geliştiriciler için açıklanabilir kurallarla disk temizliği yapmayı sağlayan, güvenli ve denetlenebilir bir CLI aracıdır.
+
+---
+
+## 📦 Yayınlanmış NPM Paketi
+
+DiskCare, npm üzerinde [@diskcare/cli](https://www.npmjs.com/package/@diskcare/cli) adıyla yayınlanmıştır. Herkes tarafından indirilebilir ve kullanılabilir.
+
+### Hızlı Başlangıç
+
+1. **Node.js (>=18) kurulu olmalı.**
+2. Terminale şunu yazın:
+
+  ```sh
+  npm install -g @diskcare/cli
+  ```
+
+3. Kurulumdan sonra komut satırında:
+
+  ```sh
+  diskcare --help
+  ```
+  ile tüm komutları görebilirsiniz.
+
+4. Temel kullanım örnekleri:
+
+  ```sh
+  diskcare scan
+  diskcare clean
+  diskcare clean --apply --no-dry-run --yes
+  diskcare report
+  ```
+
+Tüm bağımlılıklar otomatik olarak kurulur. Sadece @diskcare/cli paketini yüklemeniz yeterlidir.
+
+---
 
 ---
 
