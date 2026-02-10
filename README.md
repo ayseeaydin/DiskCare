@@ -17,24 +17,24 @@ DiskCare is published on npm as [@diskcare/cli](https://www.npmjs.com/package/@d
 1. **Node.js (>=18) must be installed.**
 2. In your terminal, run:
 
-  ```sh
-  npm install -g @diskcare/cli
-  ```
+```sh
+npm install -g @diskcare/cli
+```
 
 3. After installation, see all commands with:
 
-  ```sh
-  diskcare --help
-  ```
+```sh
+diskcare --help
+```
 
 4. Basic usage examples:
 
-  ```sh
-  diskcare scan
-  diskcare clean
-  diskcare clean --apply --no-dry-run --yes
-  diskcare report
-  ```
+```sh
+diskcare scan
+diskcare clean
+diskcare clean --apply --no-dry-run --yes
+diskcare report
+```
 
 All dependencies are installed automatically. Installing only @diskcare/cli is sufficient.
 
@@ -531,24 +531,24 @@ DiskCare, npm üzerinde [@diskcare/cli](https://www.npmjs.com/package/@diskcare/
 1. **Node.js (>=18) kurulu olmalı.**
 2. Terminalde şu komutu çalıştırın:
 
-  ```sh
-  npm install -g @diskcare/cli
-  ```
+```sh
+npm install -g @diskcare/cli
+```
 
 3. Kurulumdan sonra tüm komutları görmek için:
 
-  ```sh
-  diskcare --help
-  ```
+```sh
+diskcare --help
+```
 
 4. Temel kullanım örnekleri:
 
-  ```sh
-  diskcare scan
-  diskcare clean
-  diskcare clean --apply --no-dry-run --yes
-  diskcare report
-  ```
+```sh
+diskcare scan
+diskcare clean
+diskcare clean --apply --no-dry-run --yes
+diskcare report
+```
 
 Tüm bağımlılıklar otomatik olarak kurulur. Sadece @diskcare/cli paketini yüklemek yeterlidir.
 

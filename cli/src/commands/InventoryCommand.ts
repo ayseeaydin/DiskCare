@@ -109,7 +109,10 @@ export class InventoryCommand extends BaseCommand {
     const result = InventoryOptionsSchema.safeParse(raw);
 
     if (!result.success) {
-      throw new ValidationError("Invalid inventory options", result.error as unknown as Record<string, unknown>);
+      throw new ValidationError(
+        "Invalid inventory options",
+        result.error as unknown as Record<string, unknown>,
+      );
     }
 
     return {
@@ -197,7 +200,12 @@ export class InventoryCommand extends BaseCommand {
     // Infer category from target id (temporary until we integrate artifact catalog)
     const id = target.id.toLowerCase();
 
-    if (id.includes("chrome") || id.includes("firefox") || id.includes("edge") || id.includes("brave")) {
+    if (
+      id.includes("chrome") ||
+      id.includes("firefox") ||
+      id.includes("edge") ||
+      id.includes("brave")
+    ) {
       return "browsers";
     }
     if (id.includes("vscode") || id.includes("jetbrains")) {
@@ -206,7 +214,12 @@ export class InventoryCommand extends BaseCommand {
     if (id.includes("npm") || id.includes("pip") || id.includes("cargo")) {
       return "language-caches";
     }
-    if (id.includes("next") || id.includes("turbo") || id.includes("vite") || id.includes("parcel")) {
+    if (
+      id.includes("next") ||
+      id.includes("turbo") ||
+      id.includes("vite") ||
+      id.includes("parcel")
+    ) {
       return "repo-local";
     }
     if (id.includes("temp")) {

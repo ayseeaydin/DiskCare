@@ -50,7 +50,7 @@ export type ArtifactPrecondition = {
    * Requires admin/elevated permissions to access safely.
    */
   requiresAdmin?: boolean;
-  
+
   /**
    * Alias for requiresAdmin (backwards compatibility).
    */

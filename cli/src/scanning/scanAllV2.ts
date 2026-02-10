@@ -40,32 +40,32 @@ import {
 function registerAllScanners(registry: ScannerRegistry): void {
   // v1 scanners (cleanable)
   registry.register({
-    id: 'os-temp',
-    artifacts: [getArtifactById('os-temp')].filter(Boolean) as any[],
+    id: "os-temp",
+    artifacts: [getArtifactById("os-temp")].filter(Boolean) as any[],
     factory: () => new OsTempScanner(),
     enabled: true,
   });
-  
+
   registry.register({
-    id: 'npm-cache',
-    artifacts: [getArtifactById('npm-cache')].filter(Boolean) as any[],
+    id: "npm-cache",
+    artifacts: [getArtifactById("npm-cache")].filter(Boolean) as any[],
     factory: () => new NpmCacheScanner(),
     enabled: true,
   });
-  
-  // v2 browser scanners  
+
+  // v2 browser scanners
   const chromeBrowsers = [
-    ['chrome-cache', createChromeCacheScanner],
-    ['chrome-code-cache', createChromeCodeCacheScanner],
-    ['chrome-gpu-cache', createChromeGPUCacheScanner],
-    ['edge-cache', createEdgeCacheScanner],
-    ['edge-code-cache', createEdgeCodeCacheScanner],
-    ['edge-gpu-cache', createEdgeGPUCacheScanner],
-    ['brave-cache', createBraveCacheScanner],
-    ['brave-code-cache', createBraveCodeCacheScanner],
-    ['brave-gpu-cache', createBraveGPUCacheScanner],
+    ["chrome-cache", createChromeCacheScanner],
+    ["chrome-code-cache", createChromeCodeCacheScanner],
+    ["chrome-gpu-cache", createChromeGPUCacheScanner],
+    ["edge-cache", createEdgeCacheScanner],
+    ["edge-code-cache", createEdgeCodeCacheScanner],
+    ["edge-gpu-cache", createEdgeGPUCacheScanner],
+    ["brave-cache", createBraveCacheScanner],
+    ["brave-code-cache", createBraveCodeCacheScanner],
+    ["brave-gpu-cache", createBraveGPUCacheScanner],
   ] as const;
-  
+
   for (const [id, factory] of chromeBrowsers) {
     registry.register({
       id,
@@ -74,21 +74,21 @@ function registerAllScanners(registry: ScannerRegistry): void {
       enabled: true,
     });
   }
-  
+
   registry.register({
-    id: 'firefox-cache',
-    artifacts: [getArtifactById('firefox-cache')].filter(Boolean) as any[],
+    id: "firefox-cache",
+    artifacts: [getArtifactById("firefox-cache")].filter(Boolean) as any[],
     factory: () => new FirefoxCacheScanner(),
     enabled: true,
   });
-  
+
   // v2 IDE scanners
   const vscodeCache = [
-    ['vscode-cache', createVSCodeCacheScanner],
-    ['vscode-cached-data', createVSCodeCachedDataScanner],
-    ['vscode-gpu-cache', createVSCodeGPUCacheScanner],
+    ["vscode-cache", createVSCodeCacheScanner],
+    ["vscode-cached-data", createVSCodeCachedDataScanner],
+    ["vscode-gpu-cache", createVSCodeGPUCacheScanner],
   ] as const;
-  
+
   for (const [id, factory] of vscodeCache) {
     registry.register({
       id,
@@ -97,31 +97,40 @@ function registerAllScanners(registry: ScannerRegistry): void {
       enabled: true,
     });
   }
-  
+
   // JetBrains IDEs (single scanner handles all IDEs)
   registry.register({
-    id: 'jetbrains-caches',
+    id: "jetbrains-caches",
     artifacts: [
-      'intellij', 'pycharm', 'webstorm', 'phpstorm', 
-      'rider', 'clion', 'goland', 'rubymine', 'datagrip'
-    ].map(ide => getArtifactById(`jetbrains-${ide}`)).filter(Boolean) as any[],
+      "intellij",
+      "pycharm",
+      "webstorm",
+      "phpstorm",
+      "rider",
+      "clion",
+      "goland",
+      "rubymine",
+      "datagrip",
+    ]
+      .map((ide) => getArtifactById(`jetbrains-${ide}`))
+      .filter(Boolean) as any[],
     factory: () => new JetBrainsCacheScanner(),
     enabled: true,
   });
-  
+
   // Language cache scanners
   registry.register({
-    id: 'pip-cache',
-    artifacts: [getArtifactById('pip-cache')].filter(Boolean) as any[],
+    id: "pip-cache",
+    artifacts: [getArtifactById("pip-cache")].filter(Boolean) as any[],
     factory: () => new PipCacheScanner(),
     enabled: true,
   });
-  
+
   // Repo-local scanners (single scanner handles all patterns)
   registry.register({
-    id: 'repo-local-caches',
-    artifacts: ['nextjs', 'turbo', 'vite', 'parcel']
-      .map(tool => getArtifactById(`repo-local-${tool}`))
+    id: "repo-local-caches",
+    artifacts: ["nextjs", "turbo", "vite", "parcel"]
+      .map((tool) => getArtifactById(`repo-local-${tool}`))
       .filter(Boolean) as any[],
     factory: (deps) => new RepoLocalCacheScanner(deps),
     enabled: true,
@@ -136,14 +145,14 @@ function registerAllScanners(registry: ScannerRegistry): void {
 export async function scanAllV2(context: CommandContext): Promise<ScanTarget[]> {
   // Load scanner configuration
   const config = loadScannerConfig();
-  
+
   // Create and configure registry
   const registry = new ScannerRegistry();
   registerAllScanners(registry);
-  
+
   // Apply user configuration
   registry.applyConfig(config);
-  
+
   // Run all enabled scanners
   const discoveredTargets = await registry.scanAll({ cwd: context.cwd });
 
@@ -153,7 +162,7 @@ export async function scanAllV2(context: CommandContext): Promise<ScanTarget[]> 
     discoveredTargets.map(async (discovered) => {
       const metrics = await analyzer.analyze(discovered.path);
       const exists = metrics.error === undefined;
-      
+
       return {
         ...discovered,
         exists,

@@ -50,7 +50,14 @@ function getChromiumCachePaths(
     const browserPaths: Record<ChromiumBrowser, string> = {
       chrome: resolver.join(homedir, "Library", "Caches", "Google", "Chrome", "Default"),
       edge: resolver.join(homedir, "Library", "Caches", "Microsoft Edge", "Default"),
-      brave: resolver.join(homedir, "Library", "Caches", "BraveSoftware", "Brave-Browser", "Default"),
+      brave: resolver.join(
+        homedir,
+        "Library",
+        "Caches",
+        "BraveSoftware",
+        "Brave-Browser",
+        "Default",
+      ),
     };
 
     const basePath = browserPaths[browser];

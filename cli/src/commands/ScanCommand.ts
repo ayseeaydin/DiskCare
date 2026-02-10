@@ -226,7 +226,12 @@ export class ScanCommand extends BaseCommand {
     }
     context.output.info(MessageFormatter.targetPathLine(t.path));
     context.output.info(
-      MessageFormatter.targetExistsLine(metrics.exists, metrics.skipped, metrics.partial, metrics.skippedEntries),
+      MessageFormatter.targetExistsLine(
+        metrics.exists,
+        metrics.skipped,
+        metrics.partial,
+        metrics.skippedEntries,
+      ),
     );
     context.output.info(MessageFormatter.targetSizeLine(metrics.size, metrics.files));
     context.output.info(MessageFormatter.targetMtimeLine(metrics.modified));

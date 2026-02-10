@@ -27,6 +27,7 @@ import { MessageFormatter } from "../utils/MessageFormatter.js";
 import { defaultScanAll } from "../scanning/defaultScanAll.js";
 import { getErrnoCode } from "../utils/errno.js";
 import { LogWriteError } from "../errors/DiskcareError.js";
+import { getMatchedForbiddenPrefix } from "../safety/PathGuard.js";
 
 type _CleanOptions = {
   json?: boolean;
@@ -270,9 +271,23 @@ export class CleanCommand extends BaseCommand {
       }));
     }
 
-    // Apply per path so failures do not block the whole apply.
+    // PathGuard: Validate all eligible paths before applying
     const results: ApplyResult[] = [];
     for (const item of eligible) {
+      // Safety check: Reject forbidden paths
+      const forbiddenPrefix = getMatchedForbiddenPrefix(item.path);
+      if (forbiddenPrefix) {
+        results.push({
+          id: item.id,
+          path: item.path,
+          status: "blocked",
+          estimatedBytes: item.estimatedBytes,
+          message: `SAFETY: Path rejected (inside forbidden directory: ${forbiddenPrefix})`,
+        });
+        continue;
+      }
+
+      // Attempt to trash the path
       try {
         await deps.trashFn([item.path]);
         results.push({

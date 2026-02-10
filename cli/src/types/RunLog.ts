@@ -1,7 +1,7 @@
 export type ApplyResult = {
   id: string;
   path: string;
-  status: "trashed" | "skipped" | "failed";
+  status: "trashed" | "skipped" | "failed" | "blocked";
   /**
    * Best-effort bytes for this item (usually the planned estimate).
    * Used to compute trashedEstimatedBytes accurately from apply results.

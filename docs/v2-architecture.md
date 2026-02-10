@@ -330,19 +330,19 @@ export interface ScanTarget extends DiscoveredTarget {
 ```typescript
 /**
  * VS Code Cache Scanner (v2 scan-only)
- * 
+ *
  * Discovers VS Code cache directories.
  * Action: scan-only (never auto-deleted)
  * Risk: caution (rebuilding is expensive)
  */
 export class VSCodeCacheScanner implements Scanner {
   constructor(
-    private readonly cacheType: 'cache' | 'cached-data' | 'gpu-cache',
+    private readonly cacheType: "cache" | "cached-data" | "gpu-cache",
     private readonly deps?: {
       platform?: NodeJS.Platform;
       env?: NodeJS.ProcessEnv;
       homedir?: string;
-    }
+    },
   ) {}
 
   async scan(): Promise<DiscoveredTarget[]> {
@@ -352,45 +352,52 @@ export class VSCodeCacheScanner implements Scanner {
     const cachePath = this.getVSCodeCachePath(platform, homedir);
     if (!cachePath) return [];
 
-    return [{
-      id: `vscode-${this.cacheType}`,
-      kind: 'custom-path',
-      path: cachePath,
-      displayName: `VS Code ${this.capitalize(this.cacheType)}`,
-      evidence: `Matched VS Code ${this.cacheType} pattern for ${platform}`,
-      diagnostics: [
-        'v2 scan-only: discovered but never auto-deleted',
-        'Requires VS Code to be closed for cleanup',
-        'Cache rebuilds automatically on next launch',
-      ],
-    }];
+    return [
+      {
+        id: `vscode-${this.cacheType}`,
+        kind: "custom-path",
+        path: cachePath,
+        displayName: `VS Code ${this.capitalize(this.cacheType)}`,
+        evidence: `Matched VS Code ${this.cacheType} pattern for ${platform}`,
+        diagnostics: [
+          "v2 scan-only: discovered but never auto-deleted",
+          "Requires VS Code to be closed for cleanup",
+          "Cache rebuilds automatically on next launch",
+        ],
+      },
+    ];
   }
 
   private getVSCodeCachePath(platform: NodeJS.Platform, homedir: string): string | null {
     const resolver = new PathResolver(platform);
-    
-    if (platform === 'win32') {
-      const appData = process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming');
-      return resolver.join(appData, 'Code', this.getCacheDir());
+
+    if (platform === "win32") {
+      const appData = process.env.APPDATA || path.join(homedir, "AppData", "Roaming");
+      return resolver.join(appData, "Code", this.getCacheDir());
     }
-    
-    if (platform === 'darwin') {
-      return resolver.join(homedir, 'Library', 'Application Support', 'Code', this.getCacheDir());
+
+    if (platform === "darwin") {
+      return resolver.join(homedir, "Library", "Application Support", "Code", this.getCacheDir());
     }
-    
+
     return null; // Linux support TODO
   }
 
   private getCacheDir(): string {
     switch (this.cacheType) {
-      case 'cache': return 'Cache/Cache_Data';
-      case 'cached-data': return 'CachedData';
-      case 'gpu-cache': return 'GPUCache';
+      case "cache":
+        return "Cache/Cache_Data";
+      case "cached-data":
+        return "CachedData";
+      case "gpu-cache":
+        return "GPUCache";
     }
   }
 
   private capitalize(str: string): string {
-    return str.replace(/-(.)/g, (_, c) => ` ${c.toUpperCase()}`).replace(/^./, c => c.toUpperCase());
+    return str
+      .replace(/-(.)/g, (_, c) => ` ${c.toUpperCase()}`)
+      .replace(/^./, (c) => c.toUpperCase());
   }
 }
 
@@ -398,7 +405,7 @@ export class VSCodeCacheScanner implements Scanner {
  * Factory function for scanner creation.
  */
 export function createVSCodeCacheScanner(deps?: { platform?: NodeJS.Platform }): Scanner {
-  return new VSCodeCacheScanner('cache', deps);
+  return new VSCodeCacheScanner("cache", deps);
 }
 ```
 
@@ -407,7 +414,7 @@ export function createVSCodeCacheScanner(deps?: { platform?: NodeJS.Platform }):
 ```typescript
 /**
  * Scanner Registry for plugin-based scanner management.
- * 
+ *
  * Responsibilities:
  * - Register scanner factories with metadata
  * - Enable/disable scanners via config
@@ -447,9 +454,7 @@ export class ScannerRegistry {
    */
   async scanAll(deps?: ScannerDeps): Promise<DiscoveredTarget[]> {
     const enabled = this.getEnabled();
-    const results = await Promise.allSettled(
-      enabled.map(entry => entry.factory(deps).scan())
-    );
+    const results = await Promise.allSettled(enabled.map((entry) => entry.factory(deps).scan()));
 
     const targets: DiscoveredTarget[] = [];
     const errors: string[] = [];
@@ -458,7 +463,7 @@ export class ScannerRegistry {
       const result = results[i];
       const entry = enabled[i];
 
-      if (result.status === 'fulfilled') {
+      if (result.status === "fulfilled") {
         targets.push(...result.value);
       } else {
         errors.push(`Scanner ${entry.id} failed: ${String(result.reason)}`);
@@ -466,7 +471,7 @@ export class ScannerRegistry {
     }
 
     if (errors.length > 0) {
-      console.warn('[ScannerRegistry] Some scanners failed:', errors);
+      console.warn("[ScannerRegistry] Some scanners failed:", errors);
     }
 
     return targets;
@@ -476,7 +481,7 @@ export class ScannerRegistry {
    * Get all enabled scanners.
    */
   getEnabled(): ScannerRegistryEntry[] {
-    return Array.from(this.entries.values()).filter(e => e.enabled);
+    return Array.from(this.entries.values()).filter((e) => e.enabled);
   }
 }
 
@@ -530,16 +535,16 @@ const registry = new ScannerRegistry();
 
 // Register v1 scanners
 registry.register({
-  id: 'npm-cache',
-  artifacts: [getArtifactById('npm-cache')],
+  id: "npm-cache",
+  artifacts: [getArtifactById("npm-cache")],
   factory: () => new NpmCacheScanner(),
   enabled: true,
 });
 
 // Register v2 scanners
 registry.register({
-  id: 'vscode-cache',
-  artifacts: [getArtifactById('vscode-cache')],
+  id: "vscode-cache",
+  artifacts: [getArtifactById("vscode-cache")],
   factory: createVSCodeCacheScanner,
   enabled: true,
 });
@@ -660,15 +665,15 @@ export interface DiscoveredTarget {
   id: string;
   path: string;
   displayName: string;
-  
+
   // Safety metadata
-  evidence?: string;  // Why this target matched
-  diagnostics?: string[];  // Warnings, notes
-  
+  evidence?: string; // Why this target matched
+  diagnostics?: string[]; // Warnings, notes
+
   // From artifact catalog
-  action?: 'cleanable' | 'scan-only';
-  risk?: 'safe' | 'caution' | 'dangerous';
-  scope?: 'global' | 'repo-local';
+  action?: "cleanable" | "scan-only";
+  risk?: "safe" | "caution" | "dangerous";
+  scope?: "global" | "repo-local";
 }
 
 // Safety checks (evaluated at runtime)
@@ -681,10 +686,10 @@ export interface SafetyCheckResult {
 
 // Safety preconditions (from artifact catalog)
 export interface ArtifactPrecondition {
-  requiresCwd?: boolean;           // Needs --cwd flag
-  requiresElevated?: boolean;      // Needs admin/root
-  requiresProcessStopped?: string[];  // Process names
-  platforms?: NodeJS.Platform[];   // Supported platforms
+  requiresCwd?: boolean; // Needs --cwd flag
+  requiresElevated?: boolean; // Needs admin/root
+  requiresProcessStopped?: string[]; // Process names
+  platforms?: NodeJS.Platform[]; // Supported platforms
 }
 ```
 
@@ -703,11 +708,11 @@ const gate = new SafetyGate({
 });
 
 // Check preconditions before scan
-const artifact = getArtifactById('vscode-cache');
+const artifact = getArtifactById("vscode-cache");
 const result = gate.checkPreconditions(artifact);
 
 if (result.shouldSkip) {
-  console.warn('Skipping:', result.warnings.join(', '));
+  console.warn("Skipping:", result.warnings.join(", "));
 }
 
 // Validate discovered targets
@@ -735,7 +740,7 @@ export class PathResolver {
    * Uses platform-specific separators.
    */
   resolve(...segments: string[]): string {
-    const separator = this.platform === 'win32' ? '\\' : '/';
+    const separator = this.platform === "win32" ? "\\" : "/";
     return segments.join(separator);
   }
 
@@ -750,10 +755,10 @@ export class PathResolver {
    * Normalize path for target platform.
    */
   normalize(p: string): string {
-    if (this.platform === 'win32') {
-      return p.replace(/\//g, '\\');
+    if (this.platform === "win32") {
+      return p.replace(/\//g, "\\");
     }
-    return p.replace(/\\/g, '/');
+    return p.replace(/\\/g, "/");
   }
 }
 ```
@@ -763,17 +768,17 @@ export class PathResolver {
 ```typescript
 /**
  * TODO: Platform-specific path expansion
- * 
+ *
  * PROBLEM: Environment variable syntax differs across platforms:
  * - Windows: %APPDATA%, %LOCALAPPDATA%, %USERPROFILE%
  * - Unix: $HOME, ${XDG_CACHE_HOME}
- * 
+ *
  * STRATEGY:
  * 1. Create PlatformPaths class with platform-specific methods
  * 2. Implement getAppData(), getCacheDir(), getHomeDir() per platform
  * 3. Use dependency injection for testing
  * 4. Cache resolved paths (avoid repeated env var lookups)
- * 
+ *
  * IMPLEMENTATION PRIORITY: Medium
  * Currently using node:os.homedir() + hardcoded relative paths.
  * Works for common cases but not XDG_*_HOME overrides.
@@ -790,10 +795,10 @@ export class PlatformPaths {
    * Respects $HOME (Unix) and %USERPROFILE% (Windows).
    */
   getHomeDir(): string {
-    if (this.platform === 'win32') {
-      return this.env.USERPROFILE || 'C:\\Users\\Default';
+    if (this.platform === "win32") {
+      return this.env.USERPROFILE || "C:\\Users\\Default";
     }
-    return this.env.HOME || '/home/user';
+    return this.env.HOME || "/home/user";
   }
 
   /**
@@ -803,14 +808,14 @@ export class PlatformPaths {
    * Linux: $XDG_DATA_HOME or ~/.local/share
    */
   getAppData(): string {
-    if (this.platform === 'win32') {
-      return this.env.APPDATA || path.join(this.getHomeDir(), 'AppData', 'Roaming');
+    if (this.platform === "win32") {
+      return this.env.APPDATA || path.join(this.getHomeDir(), "AppData", "Roaming");
     }
-    if (this.platform === 'darwin') {
-      return path.join(this.getHomeDir(), 'Library', 'Application Support');
+    if (this.platform === "darwin") {
+      return path.join(this.getHomeDir(), "Library", "Application Support");
     }
     // Linux
-    return this.env.XDG_DATA_HOME || path.join(this.getHomeDir(), '.local', 'share');
+    return this.env.XDG_DATA_HOME || path.join(this.getHomeDir(), ".local", "share");
   }
 
   /**
@@ -820,13 +825,13 @@ export class PlatformPaths {
    * Linux: $XDG_CACHE_HOME or ~/.cache
    */
   getCacheDir(): string {
-    if (this.platform === 'win32') {
-      return this.env.LOCALAPPDATA || path.join(this.getHomeDir(), 'AppData', 'Local');
+    if (this.platform === "win32") {
+      return this.env.LOCALAPPDATA || path.join(this.getHomeDir(), "AppData", "Local");
     }
-    if (this.platform === 'darwin') {
-      return path.join(this.getHomeDir(), 'Library', 'Caches');
+    if (this.platform === "darwin") {
+      return path.join(this.getHomeDir(), "Library", "Caches");
     }
-    return this.env.XDG_CACHE_HOME || path.join(this.getHomeDir(), '.cache');
+    return this.env.XDG_CACHE_HOME || path.join(this.getHomeDir(), ".cache");
   }
 }
 ```
@@ -846,6 +851,7 @@ All JSON outputs MUST include `schemaVersion`:
 ```
 
 Version compatibility rules:
+
 - **Major version change** (0.x → 1.x): Breaking changes, clients must update
 - **Minor version change** (0.1 → 0.2): Backwards-compatible additions
 - **Patch version** (0.1.0 → 0.1.1): Bug fixes only

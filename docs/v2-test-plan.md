@@ -3,6 +3,7 @@
 ## Overview
 
 Testing strategy for v2 follows a layered approach:
+
 1. **Unit tests**: Individual scanner logic, path resolution
 2. **Integration tests**: Scanner registry, config loading, safety gates
 3. **E2E tests**: Full CLI workflows, JSON output validation
@@ -18,41 +19,41 @@ Testing strategy for v2 follows a layered approach:
 
 ```typescript
 // VSCodeCacheScanner.test.ts
-import { describe, it, expect } from 'node:test';
-import { VSCodeCacheScanner } from '../VSCodeCacheScanner.js';
-import type { Scanner } from '../BaseScanner.js';
+import { describe, it, expect } from "node:test";
+import { VSCodeCacheScanner } from "../VSCodeCacheScanner.js";
+import type { Scanner } from "../BaseScanner.js";
 
-describe('VSCodeCacheScanner', () => {
-  it('should discover VS Code cache on Windows', async () => {
-    const scanner: Scanner = new VSCodeCacheScanner('cache', {
-      platform: 'win32',
-      homedir: 'C:\\Users\\testuser',
-      env: { APPDATA: 'C:\\Users\\testuser\\AppData\\Roaming' },
+describe("VSCodeCacheScanner", () => {
+  it("should discover VS Code cache on Windows", async () => {
+    const scanner: Scanner = new VSCodeCacheScanner("cache", {
+      platform: "win32",
+      homedir: "C:\\Users\\testuser",
+      env: { APPDATA: "C:\\Users\\testuser\\AppData\\Roaming" },
     });
 
     const targets = await scanner.scan();
 
     expect(targets.length).toBe(1);
-    expect(targets[0].id).toBe('vscode-cache');
-    expect(targets[0].path).toContain('Code\\Cache\\Cache_Data');
-    expect(targets[0].displayName).toBe('VS Code Cache');
-    expect(targets[0].evidence).toContain('Matched VS Code cache pattern');
+    expect(targets[0].id).toBe("vscode-cache");
+    expect(targets[0].path).toContain("Code\\Cache\\Cache_Data");
+    expect(targets[0].displayName).toBe("VS Code Cache");
+    expect(targets[0].evidence).toContain("Matched VS Code cache pattern");
   });
 
-  it('should return empty array on unsupported platform', async () => {
-    const scanner: Scanner = new VSCodeCacheScanner('cache', {
-      platform: 'freebsd' as NodeJS.Platform,
-      homedir: '/home/testuser',
+  it("should return empty array on unsupported platform", async () => {
+    const scanner: Scanner = new VSCodeCacheScanner("cache", {
+      platform: "freebsd" as NodeJS.Platform,
+      homedir: "/home/testuser",
     });
 
     const targets = await scanner.scan();
     expect(targets.length).toBe(0);
   });
 
-  it('should NOT throw on missing paths', async () => {
-    const scanner: Scanner = new VSCodeCacheScanner('cache', {
-      platform: 'win32',
-      homedir: 'C:\\NonExistent',
+  it("should NOT throw on missing paths", async () => {
+    const scanner: Scanner = new VSCodeCacheScanner("cache", {
+      platform: "win32",
+      homedir: "C:\\NonExistent",
     });
 
     // Should not throw - just return discovered path (exists=false later)
@@ -60,46 +61,46 @@ describe('VSCodeCacheScanner', () => {
     expect(targets.length).toBeGreaterThan(0);
   });
 
-  it('should include diagnostics in output', async () => {
-    const scanner = new VSCodeCacheScanner('cache');
+  it("should include diagnostics in output", async () => {
+    const scanner = new VSCodeCacheScanner("cache");
     const targets = await scanner.scan();
 
     if (targets.length > 0) {
       expect(targets[0].diagnostics).toBeDefined();
-      expect(targets[0].diagnostics).toContain('v2 scan-only: discovered but never auto-deleted');
+      expect(targets[0].diagnostics).toContain("v2 scan-only: discovered but never auto-deleted");
     }
   });
 });
 
 // RepoLocalCacheScanner.test.ts
-describe('RepoLocalCacheScanner', () => {
-  it('should return empty array without cwd', async () => {
+describe("RepoLocalCacheScanner", () => {
+  it("should return empty array without cwd", async () => {
     const scanner = new RepoLocalCacheScanner();
     const targets = await scanner.scan();
-    
-    expect(targets.length).toBe(0);  // v2 philosophy: never global scan
+
+    expect(targets.length).toBe(0); // v2 philosophy: never global scan
   });
 
-  it('should discover .next/cache with cwd', async () => {
+  it("should discover .next/cache with cwd", async () => {
     const scanner = new RepoLocalCacheScanner({
-      cwd: '/path/to/project',
-      platform: 'linux',
+      cwd: "/path/to/project",
+      platform: "linux",
     });
 
     const targets = await scanner.scan();
 
     expect(targets.length).toBeGreaterThan(0);
-    const nextCache = targets.find(t => t.id === 'nextjs-cache');
+    const nextCache = targets.find((t) => t.id === "nextjs-cache");
     expect(nextCache).toBeDefined();
-    expect(nextCache?.path).toBe('/path/to/project/.next/cache');
+    expect(nextCache?.path).toBe("/path/to/project/.next/cache");
   });
 
-  it('should include repo-local diagnostics', async () => {
-    const scanner = new RepoLocalCacheScanner({ cwd: '/test' });
+  it("should include repo-local diagnostics", async () => {
+    const scanner = new RepoLocalCacheScanner({ cwd: "/test" });
     const targets = await scanner.scan();
 
-    targets.forEach(target => {
-      expect(target.diagnostics).toContain('repo-local: requires --cwd flag');
+    targets.forEach((target) => {
+      expect(target.diagnostics).toContain("repo-local: requires --cwd flag");
     });
   });
 });
@@ -109,35 +110,35 @@ describe('RepoLocalCacheScanner', () => {
 
 ```typescript
 // PathResolver.test.ts
-import { describe, it, expect } from 'node:test';
-import { PathResolver } from '../pathResolver.js';
+import { describe, it, expect } from "node:test";
+import { PathResolver } from "../pathResolver.js";
 
-describe('PathResolver', () => {
-  describe('Windows paths', () => {
-    it('should use backslashes', () => {
-      const resolver = new PathResolver('win32');
-      const result = resolver.join('C:', 'Users', 'test', 'AppData');
-      expect(result).toBe('C:\\Users\\test\\AppData');
+describe("PathResolver", () => {
+  describe("Windows paths", () => {
+    it("should use backslashes", () => {
+      const resolver = new PathResolver("win32");
+      const result = resolver.join("C:", "Users", "test", "AppData");
+      expect(result).toBe("C:\\Users\\test\\AppData");
     });
 
-    it('should normalize forward slashes', () => {
-      const resolver = new PathResolver('win32');
-      const result = resolver.normalize('C:/Users/test');
-      expect(result).toBe('C:\\Users\\test');
+    it("should normalize forward slashes", () => {
+      const resolver = new PathResolver("win32");
+      const result = resolver.normalize("C:/Users/test");
+      expect(result).toBe("C:\\Users\\test");
     });
   });
 
-  describe('Unix paths', () => {
-    it('should use forward slashes', () => {
-      const resolver = new PathResolver('linux');
-      const result = resolver.join('/home', 'test', '.cache');
-      expect(result).toBe('/home/test/.cache');
+  describe("Unix paths", () => {
+    it("should use forward slashes", () => {
+      const resolver = new PathResolver("linux");
+      const result = resolver.join("/home", "test", ".cache");
+      expect(result).toBe("/home/test/.cache");
     });
 
-    it('should normalize backslashes', () => {
-      const resolver = new PathResolver('darwin');
-      const result = resolver.normalize('\\home\\test');
-      expect(result).toBe('/home/test');
+    it("should normalize backslashes", () => {
+      const resolver = new PathResolver("darwin");
+      const result = resolver.normalize("\\home\\test");
+      expect(result).toBe("/home/test");
     });
   });
 });
@@ -147,55 +148,55 @@ describe('PathResolver', () => {
 
 ```typescript
 // ArtifactCatalog.test.ts
-import { describe, it, expect } from 'node:test';
+import { describe, it, expect } from "node:test";
 import {
   getArtifactById,
   getArtifactsByCategory,
   getCleanableArtifacts,
   getScanOnlyArtifacts,
   checkPreconditions,
-} from '../ArtifactCatalog.js';
+} from "../ArtifactCatalog.js";
 
-describe('ArtifactCatalog', () => {
-  it('should find artifact by id', () => {
-    const artifact = getArtifactById('npm-cache');
+describe("ArtifactCatalog", () => {
+  it("should find artifact by id", () => {
+    const artifact = getArtifactById("npm-cache");
     expect(artifact).toBeDefined();
-    expect(artifact?.displayName).toBe('npm Cache Directory');
-    expect(artifact?.action).toBe('cleanable');
+    expect(artifact?.displayName).toBe("npm Cache Directory");
+    expect(artifact?.action).toBe("cleanable");
   });
 
-  it('should return undefined for unknown id', () => {
-    const artifact = getArtifactById('nonexistent-artifact');
+  it("should return undefined for unknown id", () => {
+    const artifact = getArtifactById("nonexistent-artifact");
     expect(artifact).toBeUndefined();
   });
 
-  it('should filter artifacts by category', () => {
-    const browsers = getArtifactsByCategory('browsers');
+  it("should filter artifacts by category", () => {
+    const browsers = getArtifactsByCategory("browsers");
     expect(browsers.length).toBeGreaterThan(0);
-    expect(browsers.every(a => a.category === 'browsers')).toBe(true);
+    expect(browsers.every((a) => a.category === "browsers")).toBe(true);
   });
 
-  it('should separate cleanable from scan-only', () => {
+  it("should separate cleanable from scan-only", () => {
     const cleanable = getCleanableArtifacts();
     const scanOnly = getScanOnlyArtifacts();
 
-    expect(cleanable.every(a => a.action === 'cleanable')).toBe(true);
-    expect(scanOnly.every(a => a.action === 'scan-only')).toBe(true);
-    
+    expect(cleanable.every((a) => a.action === "cleanable")).toBe(true);
+    expect(scanOnly.every((a) => a.action === "scan-only")).toBe(true);
+
     // v1 artifacts are cleanable
-    expect(cleanable.some(a => a.id === 'npm-cache')).toBe(true);
-    expect(cleanable.some(a => a.id === 'os-temp')).toBe(true);
-    
+    expect(cleanable.some((a) => a.id === "npm-cache")).toBe(true);
+    expect(cleanable.some((a) => a.id === "os-temp")).toBe(true);
+
     // v2 artifacts are scan-only
-    expect(scanOnly.some(a => a.id === 'vscode-cache')).toBe(true);
+    expect(scanOnly.some((a) => a.id === "vscode-cache")).toBe(true);
   });
 
-  it('should check preconditions', () => {
-    const repoArtifact = getArtifactById('repo-local-nextjs');
+  it("should check preconditions", () => {
+    const repoArtifact = getArtifactById("repo-local-nextjs");
     const result = checkPreconditions(repoArtifact!, { cwd: undefined });
 
     expect(result.met).toBe(false);
-    expect(result.missing).toContain('requiresCwd');
+    expect(result.missing).toContain("requiresCwd");
   });
 });
 ```
@@ -208,31 +209,31 @@ describe('ArtifactCatalog', () => {
 
 ```typescript
 // ScannerRegistry.test.ts
-import { describe, it, expect, beforeEach } from 'node:test';
-import { ScannerRegistry } from '../ScannerRegistry.js';
-import type { Scanner, DiscoveredTarget } from '../types/ScanTarget.js';
+import { describe, it, expect, beforeEach } from "node:test";
+import { ScannerRegistry } from "../ScannerRegistry.js";
+import type { Scanner, DiscoveredTarget } from "../types/ScanTarget.js";
 
-describe('ScannerRegistry', () => {
+describe("ScannerRegistry", () => {
   let registry: ScannerRegistry;
 
   beforeEach(() => {
     registry = new ScannerRegistry();
   });
 
-  it('should register scanner successfully', () => {
+  it("should register scanner successfully", () => {
     registry.register({
-      id: 'test-scanner',
+      id: "test-scanner",
       artifacts: [],
       factory: () => createMockScanner([]),
       enabled: true,
     });
 
-    expect(registry.get('test-scanner')).toBeDefined();
+    expect(registry.get("test-scanner")).toBeDefined();
   });
 
-  it('should throw on duplicate registration', () => {
+  it("should throw on duplicate registration", () => {
     registry.register({
-      id: 'test-scanner',
+      id: "test-scanner",
       artifacts: [],
       factory: () => createMockScanner([]),
       enabled: true,
@@ -240,17 +241,17 @@ describe('ScannerRegistry', () => {
 
     expect(() => {
       registry.register({
-        id: 'test-scanner',
+        id: "test-scanner",
         artifacts: [],
         factory: () => createMockScanner([]),
         enabled: true,
       });
-    }).toThrow('Scanner already registered');
+    }).toThrow("Scanner already registered");
   });
 
-  it('should apply config to enable/disable scanners', () => {
+  it("should apply config to enable/disable scanners", () => {
     registry.register({
-      id: 'scanner-a',
+      id: "scanner-a",
       artifacts: [],
       factory: () => createMockScanner([]),
       enabled: true,
@@ -258,51 +259,58 @@ describe('ScannerRegistry', () => {
 
     registry.applyConfig({
       scanners: {
-        'scanner-a': { enabled: false },
+        "scanner-a": { enabled: false },
       },
       globalExcludePaths: [],
     });
 
     const enabled = registry.getEnabled();
-    expect(enabled.some(e => e.id === 'scanner-a')).toBe(false);
+    expect(enabled.some((e) => e.id === "scanner-a")).toBe(false);
   });
 
-  it('should run all enabled scanners in parallel', async () => {
+  it("should run all enabled scanners in parallel", async () => {
     registry.register({
-      id: 'scanner-1',
+      id: "scanner-1",
       artifacts: [],
-      factory: () => createMockScanner([{ id: 'target-1', kind: 'custom-path', path: '/path1', displayName: 'T1' }]),
+      factory: () =>
+        createMockScanner([
+          { id: "target-1", kind: "custom-path", path: "/path1", displayName: "T1" },
+        ]),
       enabled: true,
     });
 
     registry.register({
-      id: 'scanner-2',
+      id: "scanner-2",
       artifacts: [],
-      factory: () => createMockScanner([{ id: 'target-2', kind: 'custom-path', path: '/path2', displayName: 'T2' }]),
+      factory: () =>
+        createMockScanner([
+          { id: "target-2", kind: "custom-path", path: "/path2", displayName: "T2" },
+        ]),
       enabled: true,
     });
 
     const targets = await registry.scanAll();
 
     expect(targets.length).toBe(2);
-    expect(targets.some(t => t.id === 'target-1')).toBe(true);
-    expect(targets.some(t => t.id === 'target-2')).toBe(true);
+    expect(targets.some((t) => t.id === "target-1")).toBe(true);
+    expect(targets.some((t) => t.id === "target-2")).toBe(true);
   });
 
-  it('should handle scanner failures gracefully', async () => {
+  it("should handle scanner failures gracefully", async () => {
     registry.register({
-      id: 'good-scanner',
+      id: "good-scanner",
       artifacts: [],
-      factory: () => createMockScanner([{ id: 't1', kind: 'custom-path', path: '/p1', displayName: 'T1' }]),
+      factory: () =>
+        createMockScanner([{ id: "t1", kind: "custom-path", path: "/p1", displayName: "T1" }]),
       enabled: true,
     });
 
     registry.register({
-      id: 'bad-scanner',
+      id: "bad-scanner",
       artifacts: [],
       factory: () => ({
         scan: async () => {
-          throw new Error('Scanner failed');
+          throw new Error("Scanner failed");
         },
       }),
       enabled: true,
@@ -311,8 +319,8 @@ describe('ScannerRegistry', () => {
     // Should not throw - returns partial results
     const targets = await registry.scanAll();
 
-    expect(targets.length).toBe(1);  // Only good scanner's result
-    expect(targets[0].id).toBe('t1');
+    expect(targets.length).toBe(1); // Only good scanner's result
+    expect(targets[0].id).toBe("t1");
   });
 });
 
@@ -327,14 +335,14 @@ function createMockScanner(targets: DiscoveredTarget[]): Scanner {
 
 ```typescript
 // SafetyGate.test.ts
-import { describe, it, expect } from 'node:test';
-import { SafetyGate } from '../SafetyGate.js';
-import { getArtifactById } from '../ArtifactCatalog.js';
+import { describe, it, expect } from "node:test";
+import { SafetyGate } from "../SafetyGate.js";
+import { getArtifactById } from "../ArtifactCatalog.js";
 
-describe('SafetyGate', () => {
-  it('should pass check for artifact without preconditions', () => {
+describe("SafetyGate", () => {
+  it("should pass check for artifact without preconditions", () => {
     const gate = new SafetyGate();
-    const artifact = getArtifactById('npm-cache');
+    const artifact = getArtifactById("npm-cache");
     const result = gate.checkPreconditions(artifact!);
 
     expect(result.safe).toBe(true);
@@ -342,24 +350,24 @@ describe('SafetyGate', () => {
     expect(result.warnings.length).toBe(0);
   });
 
-  it('should warn about missing cwd for repo-local', () => {
-    const gate = new SafetyGate();  // No cwd
-    const artifact = getArtifactById('repo-local-nextjs');
+  it("should warn about missing cwd for repo-local", () => {
+    const gate = new SafetyGate(); // No cwd
+    const artifact = getArtifactById("repo-local-nextjs");
     const result = gate.checkPreconditions(artifact!);
 
     expect(result.shouldSkip).toBe(true);
-    expect(result.warnings.some(w => w.includes('requires --cwd'))).toBe(true);
+    expect(result.warnings.some((w) => w.includes("requires --cwd"))).toBe(true);
   });
 
-  it('should pass check when cwd is provided', () => {
-    const gate = new SafetyGate({ cwd: '/test/project' });
-    const artifact = getArtifactById('repo-local-nextjs');
+  it("should pass check when cwd is provided", () => {
+    const gate = new SafetyGate({ cwd: "/test/project" });
+    const artifact = getArtifactById("repo-local-nextjs");
     const result = gate.checkPreconditions(artifact!);
 
     expect(result.shouldSkip).toBe(false);
   });
 
-  it('should warn about running processes', async () => {
+  it("should warn about running processes", async () => {
     const mockProcessChecker = {
       checkRunning: async (names: string[]) => names, // All running
     };
@@ -368,19 +376,19 @@ describe('SafetyGate', () => {
       processChecker: mockProcessChecker,
     });
 
-    const artifact = getArtifactById('vscode-cache');
+    const artifact = getArtifactById("vscode-cache");
     const target = {
-      id: 'vscode-cache',
-      kind: 'custom-path' as const,
-      path: '/path/to/cache',
-      displayName: 'VS Code Cache',
+      id: "vscode-cache",
+      kind: "custom-path" as const,
+      path: "/path/to/cache",
+      displayName: "VS Code Cache",
       exists: true,
     };
 
     const result = await gate.validateTarget(target, artifact);
 
-    expect(result.warnings.some(w => w.includes('running'))).toBe(true);
-    expect(result.safe).toBe(true);  // Warn but don't block
+    expect(result.warnings.some((w) => w.includes("running"))).toBe(true);
+    expect(result.safe).toBe(true); // Warn but don't block
   });
 });
 ```
@@ -389,52 +397,55 @@ describe('SafetyGate', () => {
 
 ```typescript
 // ScannerConfig.test.ts
-import { describe, it, expect } from 'node:test';
-import { loadScannerConfig, mergeScannerConfig } from '../ScannerConfig.js';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { tmpdir } from 'node:os';
+import { describe, it, expect } from "node:test";
+import { loadScannerConfig, mergeScannerConfig } from "../ScannerConfig.js";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { tmpdir } from "node:os";
 
-describe('ScannerConfig', () => {
-  it('should return default config when no file exists', () => {
-    const config = loadScannerConfig('/nonexistent/path/scanners.json');
+describe("ScannerConfig", () => {
+  it("should return default config when no file exists", () => {
+    const config = loadScannerConfig("/nonexistent/path/scanners.json");
 
     expect(config.scanners).toBeDefined();
-    expect(config.scanners['npm-cache']?.enabled).toBe(true);
-    expect(config.globalExcludePaths).toContain('**/node_modules/**');
+    expect(config.scanners["npm-cache"]?.enabled).toBe(true);
+    expect(config.globalExcludePaths).toContain("**/node_modules/**");
   });
 
-  it('should load valid config file', () => {
+  it("should load valid config file", () => {
     const tmpFile = path.join(tmpdir(), `test-config-${Date.now()}.json`);
-    fs.writeFileSync(tmpFile, JSON.stringify({
-      scanners: {
-        'npm-cache': { enabled: false },
-      },
-      globalExcludePaths: ['**/test/**'],
-    }));
+    fs.writeFileSync(
+      tmpFile,
+      JSON.stringify({
+        scanners: {
+          "npm-cache": { enabled: false },
+        },
+        globalExcludePaths: ["**/test/**"],
+      }),
+    );
 
     try {
       const config = loadScannerConfig(tmpFile);
 
-      expect(config.scanners['npm-cache']?.enabled).toBe(false);
-      expect(config.globalExcludePaths).toContain('**/test/**');
+      expect(config.scanners["npm-cache"]?.enabled).toBe(false);
+      expect(config.globalExcludePaths).toContain("**/test/**");
     } finally {
       fs.unlinkSync(tmpFile);
     }
   });
 
-  it('should merge user config with defaults', () => {
+  it("should merge user config with defaults", () => {
     const merged = mergeScannerConfig({
       scanners: {
-        'vscode-cache': { enabled: false },
+        "vscode-cache": { enabled: false },
       },
-      globalExcludePaths: ['**/custom/**'],
+      globalExcludePaths: ["**/custom/**"],
     });
 
-    expect(merged.scanners['npm-cache']?.enabled).toBe(true);  // Default
-    expect(merged.scanners['vscode-cache']?.enabled).toBe(false);  // Override
-    expect(merged.globalExcludePaths).toContain('**/node_modules/**');  // Default
-    expect(merged.globalExcludePaths).toContain('**/custom/**');  // User
+    expect(merged.scanners["npm-cache"]?.enabled).toBe(true); // Default
+    expect(merged.scanners["vscode-cache"]?.enabled).toBe(false); // Override
+    expect(merged.globalExcludePaths).toContain("**/node_modules/**"); // Default
+    expect(merged.globalExcludePaths).toContain("**/custom/**"); // User
   });
 });
 ```
@@ -447,86 +458,88 @@ describe('ScannerConfig', () => {
 
 ```typescript
 // inventory.e2e.test.ts
-import { describe, it, expect } from 'node:test';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { describe, it, expect } from "node:test";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
-describe('diskcare inventory (E2E)', () => {
-  it('should discover artifacts and output human-readable format', async () => {
-    const { stdout } = await execAsync('node cli/dist/index.js inventory');
+describe("diskcare inventory (E2E)", () => {
+  it("should discover artifacts and output human-readable format", async () => {
+    const { stdout } = await execAsync("node cli/dist/index.js inventory");
 
-    expect(stdout).toContain('DiskCare Artifact Inventory');
-    expect(stdout).toContain('Total:');
-    expect(stdout).toContain('artifact(s)');
-    expect(stdout).toContain('This is inventory mode - no files are deleted');
+    expect(stdout).toContain("DiskCare Artifact Inventory");
+    expect(stdout).toContain("Total:");
+    expect(stdout).toContain("artifact(s)");
+    expect(stdout).toContain("This is inventory mode - no files are deleted");
   });
 
-  it('should output valid JSON with schemaVersion', async () => {
-    const { stdout } = await execAsync('node cli/dist/index.js inventory --json');
+  it("should output valid JSON with schemaVersion", async () => {
+    const { stdout } = await execAsync("node cli/dist/index.js inventory --json");
     const output = JSON.parse(stdout);
 
-    expect(output.schemaVersion).toBe('0.1');
-    expect(output.command).toBe('inventory');
+    expect(output.schemaVersion).toBe("0.1");
+    expect(output.command).toBe("inventory");
     expect(output.timestamp).toBeDefined();
     expect(output.categories).toBeInstanceOf(Array);
     expect(output.summary).toBeDefined();
     expect(output.summary.totalTargets).toBeGreaterThan(0);
   });
 
-  it('should filter by category', async () => {
-    const { stdout } = await execAsync('node cli/dist/index.js inventory --category browsers --json');
+  it("should filter by category", async () => {
+    const { stdout } = await execAsync(
+      "node cli/dist/index.js inventory --category browsers --json",
+    );
     const output = JSON.parse(stdout);
 
     expect(output.categories.length).toBeGreaterThanOrEqual(0);
     output.categories.forEach((cat: any) => {
-      expect(cat.category).toBe('browsers');
+      expect(cat.category).toBe("browsers");
     });
   });
 
-  it('should include repo-local with cwd', async () => {
-    const { stdout } = await execAsync('node cli/dist/index.js inventory --cwd . --json');
+  it("should include repo-local with cwd", async () => {
+    const { stdout } = await execAsync("node cli/dist/index.js inventory --cwd . --json");
     const output = JSON.parse(stdout);
 
     // Should have custom category with node_modules/.cache etc
-    const customCat = output.categories.find((c: any) => c.category === 'custom');
+    const customCat = output.categories.find((c: any) => c.category === "custom");
     expect(customCat).toBeDefined();
   });
 
-  it('should respect scanner config', async () => {
+  it("should respect scanner config", async () => {
     // Create temp config disabling all v2 scanners
     const configContent = {
       scanners: {
-        'chrome-cache': { enabled: false },
-        'chrome-code-cache': { enabled: false },
-        'chrome-gpu-cache': { enabled: false },
-        'edge-cache': { enabled: false },
-        'edge-code-cache': { enabled: false },
-        'edge-gpu-cache': { enabled: false },
-        'brave-cache': { enabled: false },
-        'brave-code-cache': { enabled: false },
-        'brave-gpu-cache': { enabled: false },
-        'firefox-cache': { enabled: false },
-        'vscode-cache': { enabled: false },
-        'vscode-cached-data': { enabled: false },
-        'vscode-gpu-cache': { enabled: false },
+        "chrome-cache": { enabled: false },
+        "chrome-code-cache": { enabled: false },
+        "chrome-gpu-cache": { enabled: false },
+        "edge-cache": { enabled: false },
+        "edge-code-cache": { enabled: false },
+        "edge-gpu-cache": { enabled: false },
+        "brave-cache": { enabled: false },
+        "brave-code-cache": { enabled: false },
+        "brave-gpu-cache": { enabled: false },
+        "firefox-cache": { enabled: false },
+        "vscode-cache": { enabled: false },
+        "vscode-cached-data": { enabled: false },
+        "vscode-gpu-cache": { enabled: false },
       },
       globalExcludePaths: [],
     };
 
-    require('fs').writeFileSync('config/scanners.json', JSON.stringify(configContent));
+    require("fs").writeFileSync("config/scanners.json", JSON.stringify(configContent));
 
     try {
-      const { stdout } = await execAsync('node cli/dist/index.js inventory --json');
+      const { stdout } = await execAsync("node cli/dist/index.js inventory --json");
       const output = JSON.parse(stdout);
 
       // Should only have v1 artifacts (os-temp, npm-cache)
-      const browserCat = output.categories.find((c: any) => c.category === 'browsers');
+      const browserCat = output.categories.find((c: any) => c.category === "browsers");
       expect(browserCat).toBeUndefined();
     } finally {
       // Restore default config
-      require('fs').unlinkSync('config/scanners.json');
+      require("fs").unlinkSync("config/scanners.json");
     }
   });
 });
@@ -536,25 +549,25 @@ describe('diskcare inventory (E2E)', () => {
 
 ```typescript
 // jsonSchema.e2e.test.ts
-import { describe, it, expect } from 'node:test';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
-import Ajv from 'ajv';
+import { describe, it, expect } from "node:test";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+import Ajv from "ajv";
 
 const execAsync = promisify(exec);
 
-describe('JSON Schema validation', () => {
-  it('should produce output conforming to schema', async () => {
-    const { stdout } = await execAsync('node cli/dist/index.js inventory --json');
+describe("JSON Schema validation", () => {
+  it("should produce output conforming to schema", async () => {
+    const { stdout } = await execAsync("node cli/dist/index.js inventory --json");
     const output = JSON.parse(stdout);
 
-    const schema = require('../config/artifacts.schema.json');
+    const schema = require("../config/artifacts.schema.json");
     const ajv = new Ajv();
     const validate = ajv.compile(schema);
     const valid = validate(output);
 
     if (!valid) {
-      console.error('Validation errors:', validate.errors);
+      console.error("Validation errors:", validate.errors);
     }
 
     expect(valid).toBe(true);
@@ -570,16 +583,16 @@ describe('JSON Schema validation', () => {
 
 ```typescript
 // determinism.test.ts
-import { describe, it, expect } from 'node:test';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { describe, it, expect } from "node:test";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
-describe('Scan determinism', () => {
-  it('should produce identical results on repeated scans', async () => {
-    const { stdout: run1 } = await execAsync('node cli/dist/index.js inventory --json');
-    const { stdout: run2 } = await execAsync('node cli/dist/index.js inventory --json');
+describe("Scan determinism", () => {
+  it("should produce identical results on repeated scans", async () => {
+    const { stdout: run1 } = await execAsync("node cli/dist/index.js inventory --json");
+    const { stdout: run2 } = await execAsync("node cli/dist/index.js inventory --json");
 
     const output1 = JSON.parse(run1);
     const output2 = JSON.parse(run2);
@@ -598,13 +611,13 @@ describe('Scan determinism', () => {
     expect(paths1.sort()).toEqual(paths2.sort());
   });
 
-  it('should maintain stable ordering within categories', async () => {
-    const { stdout } = await execAsync('node cli/dist/index.js inventory --json');
+  it("should maintain stable ordering within categories", async () => {
+    const { stdout } = await execAsync("node cli/dist/index.js inventory --json");
     const output = JSON.parse(stdout);
 
     for (const category of output.categories) {
       const sizes = category.targets.map((t: any) => t.metrics.totalBytes);
-      
+
       // Targets should be ordered by size (descending)
       const sorted = [...sizes].sort((a, b) => b - a);
       expect(sizes).toEqual(sorted);
@@ -627,19 +640,19 @@ function extractPaths(output: any): string[] {
 
 ```typescript
 // logDeterminism.test.ts
-import { describe, it, expect } from 'node:test';
-import { readFileSync, readdirSync } from 'node:fs';
+import { describe, it, expect } from "node:test";
+import { readFileSync, readdirSync } from "node:fs";
 
-describe('Log file determinism', () => {
-  it('should write logs with consistent format', () => {
-    const logFiles = readdirSync('logs')
-      .filter(f => f.startsWith('run-'))
-      .map(f => `logs/${f}`);
+describe("Log file determinism", () => {
+  it("should write logs with consistent format", () => {
+    const logFiles = readdirSync("logs")
+      .filter((f) => f.startsWith("run-"))
+      .map((f) => `logs/${f}`);
 
     expect(logFiles.length).toBeGreaterThan(0);
 
     for (const logFile of logFiles) {
-      const log = JSON.parse(readFileSync(logFile, 'utf-8'));
+      const log = JSON.parse(readFileSync(logFile, "utf-8"));
 
       // Every log must have these fields
       expect(log.timestamp).toBeDefined();
@@ -652,8 +665,8 @@ describe('Log file determinism', () => {
     }
   });
 
-  it('should generate unique log filenames', () => {
-    const logFiles = readdirSync('logs').filter(f => f.startsWith('run-'));
+  it("should generate unique log filenames", () => {
+    const logFiles = readdirSync("logs").filter((f) => f.startsWith("run-"));
     const uniqueFiles = new Set(logFiles);
 
     expect(logFiles.length).toBe(uniqueFiles.size);
@@ -667,28 +680,28 @@ describe('Log file determinism', () => {
 
 ```typescript
 // performance.test.ts
-import { describe, it, expect } from 'node:test';
-import { performance } from 'node:perf_hooks';
-import { scanAllV2 } from '../scanning/scanAllV2.js';
+import { describe, it, expect } from "node:test";
+import { performance } from "node:perf_hooks";
+import { scanAllV2 } from "../scanning/scanAllV2.js";
 
-describe('Performance benchmarks', () => {
-  it('should complete full scan in under 5 seconds', async () => {
+describe("Performance benchmarks", () => {
+  it("should complete full scan in under 5 seconds", async () => {
     const start = performance.now();
-    
+
     await scanAllV2({ cwd: process.cwd(), output: console });
-    
+
     const duration = performance.now() - start;
-    expect(duration).toBeLessThan(5000);  // 5 seconds
+    expect(duration).toBeLessThan(5000); // 5 seconds
   });
 
-  it('should run scanners in parallel', async () => {
+  it("should run scanners in parallel", async () => {
     // Mock scanners with artificial delay
     const registry = new ScannerRegistry();
-    
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    
+
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
     registry.register({
-      id: 'slow-1',
+      id: "slow-1",
       artifacts: [],
       factory: () => ({
         scan: async () => {
@@ -700,7 +713,7 @@ describe('Performance benchmarks', () => {
     });
 
     registry.register({
-      id: 'slow-2',
+      id: "slow-2",
       artifacts: [],
       factory: () => ({
         scan: async () => {
@@ -716,14 +729,14 @@ describe('Performance benchmarks', () => {
     const duration = performance.now() - start;
 
     // If sequential: 200ms, if parallel: ~100ms
-    expect(duration).toBeLessThan(150);  // Parallel execution
+    expect(duration).toBeLessThan(150); // Parallel execution
   });
 });
 ```
 
 ---
 
-## 6. Test Execution 
+## 6. Test Execution
 
 ### Running Tests
 
@@ -787,13 +800,13 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         node: [18, 20, 22]
-    
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-      
+
       - run: npm ci
       - run: npm run build
       - run: npm run lint

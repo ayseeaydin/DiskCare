@@ -20,10 +20,5 @@
     "pip-cache": { "enabled": true },
     "repo-local-caches": { "enabled": true }
   },
-  "globalExcludePaths": [
-    "**/node_modules/**",
-    "**/.git/**",
-    "**/.svn/**",
-    "**/.hg/**"
-  ]
+  "globalExcludePaths": ["**/node_modules/**", "**/.git/**", "**/.svn/**", "**/.hg/**"]
 }

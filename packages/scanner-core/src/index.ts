@@ -6,23 +6,31 @@ export { OsTempScanner } from "./scanners/OsTempScanner.js";
 export { NpmCacheScanner } from "./scanners/NpmCacheScanner.js";
 
 // v2: New scanners (scan-only)
-export { 
-  ChromiumCacheScanner, 
-  createChromeCacheScanner, 
-  createChromeCodeCacheScanner, 
-  createChromeGPUCacheScanner, 
+export {
+  ChromiumCacheScanner,
+  createChromeCacheScanner,
+  createChromeCodeCacheScanner,
+  createChromeGPUCacheScanner,
   createEdgeCacheScanner,
   createEdgeCodeCacheScanner,
   createEdgeGPUCacheScanner,
   createBraveCacheScanner,
   createBraveCodeCacheScanner,
-  createBraveGPUCacheScanner
+  createBraveGPUCacheScanner,
 } from "./scanners/ChromiumCacheScanner.js";
 export { FirefoxCacheScanner } from "./scanners/FirefoxCacheScanner.js";
-export { VSCodeCacheScanner, createVSCodeCacheScanner, createVSCodeCachedDataScanner, createVSCodeGPUCacheScanner } from "./scanners/VSCodeCacheScanner.js";
+export {
+  VSCodeCacheScanner,
+  createVSCodeCacheScanner,
+  createVSCodeCachedDataScanner,
+  createVSCodeGPUCacheScanner,
+} from "./scanners/VSCodeCacheScanner.js";
 export { JetBrainsCacheScanner } from "./scanners/JetBrainsCacheScanner.js";
 export { PipCacheScanner } from "./scanners/PipCacheScanner.js";
-export { RepoLocalCacheScanner, createRepoLocalCacheScanner } from "./scanners/RepoLocalCacheScanner.js";
+export {
+  RepoLocalCacheScanner,
+  createRepoLocalCacheScanner,
+} from "./scanners/RepoLocalCacheScanner.js";
 
 export type { DiscoveredTarget, ScanTarget, ScanTargetKind } from "./types/ScanTarget.js";
 export type { ScanMetrics } from "./types/ScanMetrics.js";
@@ -60,9 +68,5 @@ export type {
 export { ScannerRegistry, defaultRegistry } from "./registry/ScannerRegistry.js";
 
 // v2: Safety Gates (precondition validation for safe operations)
-export type {
-  SafetyCheckResult,
-  ProcessChecker,
-  PermissionChecker,
-} from "./safety/SafetyGate.js";
+export type { SafetyCheckResult, ProcessChecker, PermissionChecker } from "./safety/SafetyGate.js";
 export { SafetyGate } from "./safety/SafetyGate.js";
