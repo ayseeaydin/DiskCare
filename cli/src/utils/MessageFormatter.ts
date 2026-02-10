@@ -259,7 +259,7 @@ export class MessageFormatter {
     return msg;
   }
 
-  static userFriendly(context: string, message: string, opts?: Record<string, unknown>): string {
+  static userFriendly(context: string, message: string, _opts?: Record<string, unknown>): string {
     // Example: "Could not determine npm cache path. Using default."
     return message;
   }

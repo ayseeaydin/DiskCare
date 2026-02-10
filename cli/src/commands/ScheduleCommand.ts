@@ -1,22 +1,8 @@
 import type { Command } from "commander";
-import { z } from "zod";
 
 import { BaseCommand } from "./BaseCommand.js";
 import type { CommandContext } from "../types/CommandContext.js";
-import { ValidationError } from "../errors/DiskcareError.js";
 import { MessageFormatter } from "../utils/MessageFormatter.js";
-
-type ScheduleOptions = {
-  apply?: boolean;
-};
-
-const ScheduleFrequencySchema = z.enum(["weekly", "daily"]);
-
-const ScheduleOptionsSchema = z
-  .object({
-    apply: z.boolean().optional(),
-  })
-  .passthrough();
 
 export class ScheduleCommand extends BaseCommand {
   readonly name = "schedule";

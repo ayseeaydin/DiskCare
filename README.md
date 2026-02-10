@@ -17,24 +17,24 @@ DiskCare is published on npm as [@diskcare/cli](https://www.npmjs.com/package/@d
 1. **Node.js (>=18) must be installed.**
 2. In your terminal, run:
 
-  ```sh
-  npm install -g @diskcare/cli
-  ```
+```sh
+npm install -g @diskcare/cli
+```
 
 3. After installation, see all commands with:
 
-  ```sh
-  diskcare --help
-  ```
+```sh
+diskcare --help
+```
 
 4. Basic usage examples:
 
-  ```sh
-  diskcare scan
-  diskcare clean
-  diskcare clean --apply --no-dry-run --yes
-  diskcare report
-  ```
+```sh
+diskcare scan
+diskcare clean
+diskcare clean --apply --no-dry-run --yes
+diskcare report
+```
 
 All dependencies are installed automatically. Installing only @diskcare/cli is sufficient.
 
@@ -187,14 +187,16 @@ Get a summary of:
 
 ```
 cli/
-  commands/        -> scan, clean, report, init, config (schedule is disabled)
+  commands/        -> scan, clean, report, init, config, inventory (v2)
   cleaning/        -> plan builder
   logging/         -> atomic audit logs
   reporting/       -> historical aggregation
+  scanning/        -> v2 scan orchestration (scanAllV2)
 
 packages/
-  scanner-core/    -> filesystem analyzers and scanners
+  scanner-core/    -> filesystem analyzers, scanners, artifact catalog
   rules-engine/    -> policy and risk decision engine
+  shared-utils/    -> process/permission checkers, path resolvers
 ```
 
 ### Design Principles
@@ -203,6 +205,145 @@ packages/
 - dependency injection everywhere
 - testable without touching real disk
 - logs as a first-class product feature
+
+---
+
+## v2 Architecture: Scan-First Philosophy
+
+**Version 2.0** introduces a major shift: **scan-only mode** for IDE caches, browser caches, and repo-local artifacts.
+
+### Why Scan-Only?
+
+v1 cleaned everything automatically. But certain targets are:
+
+- **frequently regenerated** (VS Code cache, Chrome cache)
+- **locked during use** (browser running → cache files locked)
+- **repo-specific** (node_modules/.cache should not be global)
+
+Cleaning these is **low ROI** and **high risk**.
+
+v2 philosophy:
+
+1. **Discover** all artifacts (cleanable + scan-only)
+2. **Report** size/location without deleting
+3. **Warn** if processes are running or permissions missing
+4. **Let users decide** to manually clean when safe
+
+### Inventory Mode
+
+New command:
+
+```bash
+diskcare inventory
+```
+
+What it does:
+
+- Scans all registered artifacts (v1 + v2)
+- Outputs human-readable report with categories:
+  - **OS Temp** (cleanable)
+  - **Language Caches** (cleanable: npm, pip)
+  - **Browsers** (scan-only: Chrome, Edge, Brave, Firefox)
+  - **IDEs** (scan-only: VS Code, JetBrains)
+  - **Repo-local** (scan-only: .next/cache, node_modules/.cache)
+- Shows total size per category
+- **Does NOT delete anything**
+
+JSON output:
+
+```bash
+diskcare inventory --json
+```
+
+Produces versioned JSON:
+
+```json
+{
+  "schemaVersion": "0.1",
+  "command": "inventory",
+  "timestamp": "2026-01-28T18:00:00.000Z",
+  "categories": [
+    {
+      "category": "browsers",
+      "displayName": "Web Browsers",
+      "targets": [
+        {
+          "id": "chrome-cache",
+          "path": "C:\\Users\\...\\Chrome\\Cache",
+          "exists": true,
+          "metrics": { "totalBytes": 524288000 },
+          "action": "scan-only"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalTargets": 30,
+    "totalBytes": 11400000000
+  }
+}
+```
+
+### Repo-Local Scanning
+
+Use `--cwd` flag to scan current project:
+
+```bash
+diskcare inventory --cwd .
+```
+
+Discovers:
+
+- `.next/cache` (Next.js)
+- `node_modules/.cache` (Webpack, Babel, ESLint)
+- `.turbo` (Turborepo)
+- `.parcel-cache` (Parcel)
+
+These are **never scanned globally** to avoid false positives.
+
+### Category Filtering
+
+```bash
+diskcare inventory --category browsers
+diskcare inventory --category ides
+diskcare inventory --category language-caches
+```
+
+### Safety Gates
+
+v2 adds runtime safety checks:
+
+1. **Process detection**: Warns if Chrome/VS Code/Node.js running
+2. **Permission checks**: Warns if paths require elevation
+3. **Preconditions**: Validates `requiresCwd` for repo-local artifacts
+
+Safety gates **warn but don't block** (partial results are OK).
+
+### Migration from v1
+
+- **v1 artifacts** (os-temp, npm-cache, pip-cache): Still **cleanable** via `diskcare clean`
+- **v2 artifacts** (browsers, IDEs, repo-local): Only **discovered** via `diskcare inventory`
+- Both use same **artifact catalog** (`packages/scanner-core/src/catalog/artifacts.json`)
+- Scanner plugins can be **enabled/disabled** in `config/scanners.json`
+
+Example config:
+
+```json
+{
+  "scanners": {
+    "chrome-cache": { "enabled": true },
+    "vscode-cache": { "enabled": false }
+  },
+  "globalExcludePaths": ["**/node_modules/**"]
+}
+```
+
+### Documentation
+
+Full specs:
+
+- [v2-architecture.md](docs/v2-architecture.md) - JSON Schema, scanner interface, CLI updates
+- [v2-test-plan.md](docs/v2-test-plan.md) - Unit/integration/E2E tests
 
 ---
 
@@ -369,6 +510,143 @@ If you test DiskCare on other platforms, please share your findings and help imp
 
 ---
 
+## Troubleshooting
+
+### `diskcare: command not found`
+
+**Cause:** Global npm binary not in PATH or installation failed.
+
+**Fix:**
+
+1. Verify installation:
+   ```sh
+   npm list -g @diskcare/cli
+   ```
+
+2. If missing, reinstall:
+   ```sh
+   npm install -g @diskcare/cli
+   ```
+
+3. Check npm global bin path is in PATH:
+   ```sh
+   npm bin -g
+   ```
+
+4. If not in PATH, add to your shell profile (e.g., `.bashrc`, `.zshrc`, PowerShell profile):
+   ```sh
+   export PATH="$(npm bin -g):$PATH"
+   ```
+
+---
+
+### `EACCES: permission denied` (Linux/macOS)
+
+**Cause:** Attempting to delete files/folders without proper permissions.
+
+**Fix:**
+
+1. **Do NOT run diskcare with sudo** - this may delete system-critical files
+2. Check file ownership:
+   ```sh
+   ls -la <path>
+   ```
+3. If files are owned by another user, change ownership:
+   ```sh
+   sudo chown -R $USER:$USER <path>
+   ```
+4. If permission errors persist, check if files are in use or system-protected
+
+---
+
+### `Cannot find module '@diskcare/...'`
+
+**Cause:** Workspace dependencies not installed or corrupted.
+
+**Fix (Development only):**
+
+```sh
+cd diskcare
+npm install
+npm run build
+```
+
+For global installation users: reinstall from scratch:
+
+```sh
+npm uninstall -g @diskcare/cli
+npm install -g @diskcare/cli
+```
+
+---
+
+### `SAFETY: Path rejected (inside forbidden directory: ...)`
+
+**Cause:** PathGuard blocked a system-critical directory (e.g., C:\Windows, /usr, /etc).
+
+**Expected behavior:** This is a safety feature, not a bug.
+
+**Details:**
+
+- Windows forbidden paths: C:\Windows, C:\Program Files, C:\Program Files (x86), C:\System Volume Information
+- Unix forbidden paths: /bin, /sbin, /etc, /usr, /lib, /lib64, /boot, /dev, /proc, /sys
+
+**Fix:** Do not attempt to clean these directories. They are system-critical. If you need to clean inside them, use platform-specific tools (e.g., Disk Cleanup on Windows, apt-get autoclean on Ubuntu).
+
+---
+
+### `trash failed: ...`
+
+**Cause:** Underlying trash utility failed (e.g., file in use, permission denied, disk full).
+
+**Fix:**
+
+1. **File in use:** Close programs that may be using the file (browsers, IDEs, build tools)
+2. **Permission denied:** See "EACCES" section above
+3. **Disk full:** Free up space manually or restart machine
+4. **Trash corrupted (rare):** Empty system trash manually:
+   - Windows: Right-click Recycle Bin → Empty
+   - macOS: Finder → Empty Trash
+   - Linux: `rm -rf ~/.local/share/Trash/*`
+
+---
+
+### Tests failing during development
+
+**Symptom:** `npm test` fails with module resolution errors or timeout.
+
+**Fix:**
+
+1. Rebuild:
+   ```sh
+   npm run build
+   ```
+
+2. Check Node version (>=18 required):
+   ```sh
+   node --version
+   ```
+
+3. Clean install:
+   ```sh
+   rm -rf node_modules package-lock.json
+   npm install
+   npm run build
+   npm test
+   ```
+
+---
+
+### Lint warnings: `max-lines-per-function`
+
+**Status:** Resolved in v2 refactor (commit 96f9f5c).
+
+**Historical context:** Functions longer than 60 lines triggered lint warnings. Refactored using helper extraction (e.g., `registerAllScanners` → `registerV1Scanners`, `registerBrowserScanners`, etc.).
+
+If you encounter this warning in custom code, extract helper functions or use `eslint-disable` comments sparingly.
+
+---
+
 If DiskCare saved you from manual cleanup hell, it did its job.
 
 # DiskCare
@@ -390,24 +668,24 @@ DiskCare, npm üzerinde [@diskcare/cli](https://www.npmjs.com/package/@diskcare/
 1. **Node.js (>=18) kurulu olmalı.**
 2. Terminalde şu komutu çalıştırın:
 
-  ```sh
-  npm install -g @diskcare/cli
-  ```
+```sh
+npm install -g @diskcare/cli
+```
 
 3. Kurulumdan sonra tüm komutları görmek için:
 
-  ```sh
-  diskcare --help
-  ```
+```sh
+diskcare --help
+```
 
 4. Temel kullanım örnekleri:
 
-  ```sh
-  diskcare scan
-  diskcare clean
-  diskcare clean --apply --no-dry-run --yes
-  diskcare report
-  ```
+```sh
+diskcare scan
+diskcare clean
+diskcare clean --apply --no-dry-run --yes
+diskcare report
+```
 
 Tüm bağımlılıklar otomatik olarak kurulur. Sadece @diskcare/cli paketini yüklemek yeterlidir.
 

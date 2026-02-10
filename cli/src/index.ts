@@ -6,10 +6,12 @@ import { CleanCommand } from "./commands/CleanCommand.js";
 import { ReportCommand } from "./commands/ReportCommand.js";
 import { ScheduleCommand } from "./commands/ScheduleCommand.js";
 import { InitCommand } from "./commands/InitCommand.js";
+import { InventoryCommand } from "./commands/InventoryCommand.js";
 import type { BaseCommand } from "./commands/BaseCommand.js";
 // Feature flags for incomplete/experimental features
 const FEATURES = {
   SCHEDULE: false, // v2
+  INVENTORY: true, // v2 scan-first philosophy (enabled)
   DOCKER_CACHE: false, // v3
 };
 
@@ -20,6 +22,10 @@ const commands: BaseCommand[] = [
   new CleanCommand(),
   new ReportCommand(),
 ];
+
+if (FEATURES.INVENTORY) {
+  commands.push(new InventoryCommand());
+}
 
 if (FEATURES.SCHEDULE) {
   commands.push(new ScheduleCommand());

@@ -171,7 +171,7 @@ test("CLI E2E - scan --json is parseable and stable", async () => {
     let parsed: any;
     try {
       parsed = JSON.parse(result.stdout);
-    } catch (e) {
+    } catch {
       assert.fail(`Could not parse stdout as JSON. Output:\n${result.stdout}`);
     }
     assert.equal(parsed.command, "scan");
@@ -200,7 +200,7 @@ test("CLI E2E - clean --json includes configPath", async () => {
     let parsed: any;
     try {
       parsed = JSON.parse(result.stdout);
-    } catch (e) {
+    } catch {
       assert.fail(`Could not parse stdout as JSON. Output:\n${result.stdout}`);
     }
     assert.ok(

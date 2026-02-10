@@ -11,10 +11,6 @@ import { ValidationError } from "../errors/DiskcareError.js";
 import { MessageFormatter } from "../utils/MessageFormatter.js";
 import { JSON_INDENT, REPORT_LABEL_PAD } from "../utils/constants.js";
 
-type ReportOptions = {
-  json?: boolean;
-};
-
 const ReportOptionsSchema = z
   .object({
     json: z.boolean().optional(),
@@ -35,6 +31,76 @@ export class ReportCommand extends BaseCommand {
 
   protected configure(cmd: Command): void {
     cmd.option("--json", "Output JSON");
+  }
+
+  private printScanSummary(
+    context: CommandContext,
+    summary: {
+      latestScanAt: string | null;
+      scanTotalBytes: number;
+      scanMissingTargets: number;
+      scanSkippedTargets: number;
+    },
+  ): void {
+    context.output.info(MessageFormatter.reportSection("scan (latest)"));
+    context.output.info(
+      MessageFormatter.reportLine("latest scan:", summary.latestScanAt ?? "-", REPORT_LABEL_PAD),
+    );
+    context.output.info(
+      MessageFormatter.reportLine(
+        "total bytes:",
+        formatBytes(summary.scanTotalBytes),
+        REPORT_LABEL_PAD,
+      ),
+    );
+    context.output.info(
+      MessageFormatter.reportLine(
+        "missing targets:",
+        String(summary.scanMissingTargets),
+        REPORT_LABEL_PAD,
+      ),
+    );
+    context.output.info(
+      MessageFormatter.reportLine(
+        "skipped targets:",
+        String(summary.scanSkippedTargets),
+        REPORT_LABEL_PAD,
+      ),
+    );
+    context.output.info("");
+  }
+
+  private printApplySummary(
+    context: CommandContext,
+    summary: {
+      applyRuns: number;
+      trashedCount: number;
+      failedCount: number;
+      latestApplyAt: string | null;
+      trashedEstimatedBytes: number;
+    },
+  ): void {
+    context.output.info(MessageFormatter.reportSection("apply (clean --apply)"));
+    context.output.info(
+      MessageFormatter.reportLine("apply runs:", String(summary.applyRuns), REPORT_LABEL_PAD),
+    );
+    context.output.info(
+      MessageFormatter.reportLine("trashed:", String(summary.trashedCount), REPORT_LABEL_PAD),
+    );
+    context.output.info(
+      MessageFormatter.reportLine("failed:", String(summary.failedCount), REPORT_LABEL_PAD),
+    );
+    context.output.info(
+      MessageFormatter.reportLine("latest apply:", summary.latestApplyAt ?? "-", REPORT_LABEL_PAD),
+    );
+    context.output.info(
+      MessageFormatter.reportLine(
+        "trashed est bytes:",
+        formatBytes(summary.trashedEstimatedBytes),
+        REPORT_LABEL_PAD,
+      ),
+    );
+    context.output.info("");
   }
 
   protected async execute(_args: unknown[], context: CommandContext): Promise<void> {
@@ -64,53 +130,8 @@ export class ReportCommand extends BaseCommand {
     );
     context.output.info("");
 
-    context.output.info(MessageFormatter.reportSection("scan (latest)"));
-    context.output.info(
-      MessageFormatter.reportLine("latest scan:", summary.latestScanAt ?? "-", REPORT_LABEL_PAD),
-    );
-    context.output.info(
-      MessageFormatter.reportLine(
-        "total bytes:",
-        formatBytes(summary.scanTotalBytes),
-        REPORT_LABEL_PAD,
-      ),
-    );
-    context.output.info(
-      MessageFormatter.reportLine(
-        "missing targets:",
-        String(summary.scanMissingTargets),
-        REPORT_LABEL_PAD,
-      ),
-    );
-    context.output.info(
-      MessageFormatter.reportLine(
-        "skipped targets:",
-        String(summary.scanSkippedTargets),
-        REPORT_LABEL_PAD,
-      ),
-    );
-    context.output.info("");
-
-    context.output.info(MessageFormatter.reportSection("apply (clean --apply)"));
-    context.output.info(
-      MessageFormatter.reportLine("apply runs:", String(summary.applyRuns), REPORT_LABEL_PAD),
-    );
-    context.output.info(
-      MessageFormatter.reportLine("trashed:", String(summary.trashedCount), REPORT_LABEL_PAD),
-    );
-    context.output.info(
-      MessageFormatter.reportLine("failed:", String(summary.failedCount), REPORT_LABEL_PAD),
-    );
-    context.output.info(
-      MessageFormatter.reportLine("latest apply:", summary.latestApplyAt ?? "-", REPORT_LABEL_PAD),
-    );
-    context.output.info(
-      MessageFormatter.reportLine(
-        "trashed est bytes:",
-        formatBytes(summary.trashedEstimatedBytes),
-        REPORT_LABEL_PAD,
-      ),
-    );
+    this.printScanSummary(context, summary);
+    this.printApplySummary(context, summary);
   }
 
   private resolveDeps(): ReportCommandDeps {
