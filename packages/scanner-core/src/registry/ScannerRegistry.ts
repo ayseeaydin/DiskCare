@@ -8,6 +8,7 @@
 import type { Scanner } from "../scanners/BaseScanner.js";
 import type { DiscoveredTarget } from "../types/ScanTarget.js";
 import type { ArtifactDefinition } from "../catalog/ArtifactCatalog.js";
+import type { ScannerConfig } from "@diskcare/shared-utils";
 
 /**
  * Scanner factory function signature.
@@ -75,6 +76,18 @@ export type ScannerRegistryEntry = {
  */
 export class ScannerRegistry {
   private readonly entries = new Map<string, ScannerRegistryEntry>();
+
+  /**
+   * Apply scanner configuration to enable/disable scanners.
+   */
+  applyConfig(config: ScannerConfig): void {
+    for (const entry of this.entries.values()) {
+      const settings = config.scanners[entry.id];
+      if (settings) {
+        entry.enabled = settings.enabled;
+      }
+    }
+  }
 
   /**
    * Register a scanner with its factory and metadata.

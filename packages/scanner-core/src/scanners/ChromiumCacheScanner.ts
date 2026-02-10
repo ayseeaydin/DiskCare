@@ -174,3 +174,47 @@ export function createBraveCacheScanner(deps?: {
 }): Scanner {
   return new ChromiumCacheScanner("brave", "cache", deps);
 }
+
+/**
+ * Convenience factory for Edge Code Cache scanner.
+ */
+export function createEdgeCodeCacheScanner(deps?: {
+  platform?: NodeJS.Platform;
+  env?: NodeJS.ProcessEnv;
+  homedir?: string;
+}): Scanner {
+  return new ChromiumCacheScanner("edge", "code-cache", deps);
+}
+
+/**
+ * Convenience factory for Edge GPU Cache scanner.
+ */
+export function createEdgeGPUCacheScanner(deps?: {
+  platform?: NodeJS.Platform;
+  env?: NodeJS.ProcessEnv;
+  homedir?: string;
+}): Scanner {
+  return new ChromiumCacheScanner("edge", "gpu-cache", deps);
+}
+
+/**
+ * Convenience factory for Brave Code Cache scanner.
+ */
+export function createBraveCodeCacheScanner(deps?: {
+  platform?: NodeJS.Platform;
+  env?: NodeJS.ProcessEnv;
+  homedir?: string;
+}): Scanner {
+  return new ChromiumCacheScanner("brave", "code-cache", deps);
+}
+
+/**
+ * Convenience factory for Brave GPU Cache scanner.
+ */
+export function createBraveGPUCacheScanner(deps?: {
+  platform?: NodeJS.Platform;
+  env?: NodeJS.ProcessEnv;
+  homedir?: string;
+}): Scanner {
+  return new ChromiumCacheScanner("brave", "gpu-cache", deps);
+}

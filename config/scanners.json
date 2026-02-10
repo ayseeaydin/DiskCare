@@ -1,0 +1,29 @@
+{
+  "$schema": "https://diskcare.dev/schemas/scanners.json",
+  "scanners": {
+    "os-temp": { "enabled": true },
+    "npm-cache": { "enabled": true },
+    "chrome-cache": { "enabled": true },
+    "chrome-code-cache": { "enabled": true },
+    "chrome-gpu-cache": { "enabled": true },
+    "edge-cache": { "enabled": true },
+    "edge-code-cache": { "enabled": true },
+    "edge-gpu-cache": { "enabled": true },
+    "brave-cache": { "enabled": true },
+    "brave-code-cache": { "enabled": true },
+    "brave-gpu-cache": { "enabled": true },
+    "firefox-cache": { "enabled": true },
+    "vscode-cache": { "enabled": true },
+    "vscode-cached-data": { "enabled": true },
+    "vscode-gpu-cache": { "enabled": true },
+    "jetbrains-caches": { "enabled": true },
+    "pip-cache": { "enabled": true },
+    "repo-local-caches": { "enabled": true }
+  },
+  "globalExcludePaths": [
+    "**/node_modules/**",
+    "**/.git/**",
+    "**/.svn/**",
+    "**/.hg/**"
+  ]
+}

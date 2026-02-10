@@ -6,7 +6,18 @@ export { OsTempScanner } from "./scanners/OsTempScanner.js";
 export { NpmCacheScanner } from "./scanners/NpmCacheScanner.js";
 
 // v2: New scanners (scan-only)
-export { ChromiumCacheScanner, createChromeCacheScanner, createChromeCodeCacheScanner, createChromeGPUCacheScanner, createEdgeCacheScanner, createBraveCacheScanner } from "./scanners/ChromiumCacheScanner.js";
+export { 
+  ChromiumCacheScanner, 
+  createChromeCacheScanner, 
+  createChromeCodeCacheScanner, 
+  createChromeGPUCacheScanner, 
+  createEdgeCacheScanner,
+  createEdgeCodeCacheScanner,
+  createEdgeGPUCacheScanner,
+  createBraveCacheScanner,
+  createBraveCodeCacheScanner,
+  createBraveGPUCacheScanner
+} from "./scanners/ChromiumCacheScanner.js";
 export { FirefoxCacheScanner } from "./scanners/FirefoxCacheScanner.js";
 export { VSCodeCacheScanner, createVSCodeCacheScanner, createVSCodeCachedDataScanner, createVSCodeGPUCacheScanner } from "./scanners/VSCodeCacheScanner.js";
 export { JetBrainsCacheScanner } from "./scanners/JetBrainsCacheScanner.js";
