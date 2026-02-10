@@ -25,11 +25,6 @@ import { defaultScanAll } from "../scanning/defaultScanAll.js";
 import { ValidationError } from "../errors/DiskcareError.js";
 import { MessageFormatter } from "../utils/MessageFormatter.js";
 
-type _ScanOptions = {
-  json?: boolean;
-  dryRun?: boolean;
-};
-
 const ScanOptionsSchema = z
   .object({
     json: z.boolean().optional(),

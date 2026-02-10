@@ -16,12 +16,6 @@ import { JSON_INDENT } from "../utils/constants.js";
 import { formatBytes } from "../formatters/formatBytes.js";
 import type { ScanTarget } from "@diskcare/scanner-core";
 
-type _InventoryOptions = {
-  json?: boolean;
-  category?: string;
-  includeRepoLocal?: boolean;
-};
-
 const InventoryOptionsSchema = z
   .object({
     json: z.boolean().optional(),

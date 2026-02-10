@@ -81,11 +81,6 @@ type LoggedApplySummary = {
   trashedEstimatedBytes?: unknown;
 };
 
-type _LoggedApplyResult = {
-  status?: unknown;
-  estimatedBytes?: unknown;
-};
-
 export type ReportSummary = {
   runCount: number;
   latestRunAt: string | null;

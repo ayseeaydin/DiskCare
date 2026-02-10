@@ -35,10 +35,9 @@ import {
 } from "@diskcare/scanner-core";
 
 /**
- * Register all available scanners to the registry.
+ * Register v1 scanners (os-temp, npm-cache).
  */
-function registerAllScanners(registry: ScannerRegistry): void {
-  // v1 scanners (cleanable)
+function registerV1Scanners(registry: ScannerRegistry): void {
   registry.register({
     id: "os-temp",
     artifacts: [getArtifactById("os-temp")].filter(Boolean) as any[],
@@ -52,8 +51,12 @@ function registerAllScanners(registry: ScannerRegistry): void {
     factory: () => new NpmCacheScanner(),
     enabled: true,
   });
+}
 
-  // v2 browser scanners
+/**
+ * Register browser cache scanners (Chrome, Edge, Brave, Firefox).
+ */
+function registerBrowserScanners(registry: ScannerRegistry): void {
   const chromeBrowsers = [
     ["chrome-cache", createChromeCacheScanner],
     ["chrome-code-cache", createChromeCodeCacheScanner],
@@ -81,8 +84,12 @@ function registerAllScanners(registry: ScannerRegistry): void {
     factory: () => new FirefoxCacheScanner(),
     enabled: true,
   });
+}
 
-  // v2 IDE scanners
+/**
+ * Register IDE cache scanners (VSCode, JetBrains).
+ */
+function registerIDEScanners(registry: ScannerRegistry): void {
   const vscodeCache = [
     ["vscode-cache", createVSCodeCacheScanner],
     ["vscode-cached-data", createVSCodeCachedDataScanner],
@@ -98,7 +105,6 @@ function registerAllScanners(registry: ScannerRegistry): void {
     });
   }
 
-  // JetBrains IDEs (single scanner handles all IDEs)
   registry.register({
     id: "jetbrains-caches",
     artifacts: [
@@ -117,16 +123,24 @@ function registerAllScanners(registry: ScannerRegistry): void {
     factory: () => new JetBrainsCacheScanner(),
     enabled: true,
   });
+}
 
-  // Language cache scanners
+/**
+ * Register language cache scanners (Pip).
+ */
+function registerLanguageScanners(registry: ScannerRegistry): void {
   registry.register({
     id: "pip-cache",
     artifacts: [getArtifactById("pip-cache")].filter(Boolean) as any[],
     factory: () => new PipCacheScanner(),
     enabled: true,
   });
+}
 
-  // Repo-local scanners (single scanner handles all patterns)
+/**
+ * Register repo-local cache scanners (Next.js, Turbo, Vite, Parcel).
+ */
+function registerRepoLocalScanners(registry: ScannerRegistry): void {
   registry.register({
     id: "repo-local-caches",
     artifacts: ["nextjs", "turbo", "vite", "parcel"]
@@ -135,6 +149,17 @@ function registerAllScanners(registry: ScannerRegistry): void {
     factory: (deps) => new RepoLocalCacheScanner(deps),
     enabled: true,
   });
+}
+
+/**
+ * Register all available scanners to the registry.
+ */
+function registerAllScanners(registry: ScannerRegistry): void {
+  registerV1Scanners(registry);
+  registerBrowserScanners(registry);
+  registerIDEScanners(registry);
+  registerLanguageScanners(registry);
+  registerRepoLocalScanners(registry);
 }
 
 /**

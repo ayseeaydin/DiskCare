@@ -29,13 +29,6 @@ import { getErrnoCode } from "../utils/errno.js";
 import { LogWriteError } from "../errors/DiskcareError.js";
 import { getMatchedForbiddenPrefix } from "../safety/PathGuard.js";
 
-type _CleanOptions = {
-  json?: boolean;
-  dryRun?: boolean; // commander sets this; default should be true (safe)
-  apply?: boolean;
-  yes?: boolean;
-};
-
 const CleanOptionsSchema = z
   .object({
     json: z.boolean().optional(),
@@ -250,6 +243,55 @@ export class CleanCommand extends BaseCommand {
     return options.apply && options.dryRun === false && options.yes === true;
   }
 
+  private async applyEligibleItem(
+    item: { id: string; path: string; estimatedBytes: number; status: string },
+    trashFn: (paths: string[]) => Promise<void>,
+  ): Promise<ApplyResult> {
+    // PathGuard: Reject forbidden paths
+    const forbiddenPrefix = getMatchedForbiddenPrefix(item.path);
+    if (forbiddenPrefix) {
+      return {
+        id: item.id,
+        path: item.path,
+        status: "blocked",
+        estimatedBytes: item.estimatedBytes,
+        message: `SAFETY: Path rejected (inside forbidden directory: ${forbiddenPrefix})`,
+      };
+    }
+
+    // Attempt to trash the path
+    try {
+      await trashFn([item.path]);
+      return {
+        id: item.id,
+        path: item.path,
+        status: "trashed",
+        estimatedBytes: item.estimatedBytes,
+      };
+    } catch (err) {
+      const code = getErrnoCode(err);
+      if (code === "ENOENT" || code === "ENOTDIR") {
+        return {
+          id: item.id,
+          path: item.path,
+          status: "skipped",
+          estimatedBytes: item.estimatedBytes,
+          message: "Path missing at apply time; nothing was moved to Trash.",
+        };
+      }
+      return {
+        id: item.id,
+        path: item.path,
+        status: "failed",
+        estimatedBytes: item.estimatedBytes,
+        message: truncate(
+          `trash failed: ${toOneLine(toErrorMessage(err))}`,
+          TRASH_ERROR_TRUNCATE_LIMIT,
+        ),
+      };
+    }
+  }
+
   private async maybeApplyPlan(
     plan: ReturnType<typeof buildCleanPlan>,
     options: { dryRun: boolean; apply: boolean; yes: boolean },
@@ -271,54 +313,11 @@ export class CleanCommand extends BaseCommand {
       }));
     }
 
-    // PathGuard: Validate all eligible paths before applying
+    // Apply all eligible items with PathGuard validation
     const results: ApplyResult[] = [];
     for (const item of eligible) {
-      // Safety check: Reject forbidden paths
-      const forbiddenPrefix = getMatchedForbiddenPrefix(item.path);
-      if (forbiddenPrefix) {
-        results.push({
-          id: item.id,
-          path: item.path,
-          status: "blocked",
-          estimatedBytes: item.estimatedBytes,
-          message: `SAFETY: Path rejected (inside forbidden directory: ${forbiddenPrefix})`,
-        });
-        continue;
-      }
-
-      // Attempt to trash the path
-      try {
-        await deps.trashFn([item.path]);
-        results.push({
-          id: item.id,
-          path: item.path,
-          status: "trashed",
-          estimatedBytes: item.estimatedBytes,
-        });
-      } catch (err) {
-        const code = getErrnoCode(err);
-        if (code === "ENOENT" || code === "ENOTDIR") {
-          results.push({
-            id: item.id,
-            path: item.path,
-            status: "skipped",
-            estimatedBytes: item.estimatedBytes,
-            message: "Path missing at apply time; nothing was moved to Trash.",
-          });
-          continue;
-        }
-        results.push({
-          id: item.id,
-          path: item.path,
-          status: "failed",
-          estimatedBytes: item.estimatedBytes,
-          message: truncate(
-            `trash failed: ${toOneLine(toErrorMessage(err))}`,
-            TRASH_ERROR_TRUNCATE_LIMIT,
-          ),
-        });
-      }
+      const result = await this.applyEligibleItem(item, deps.trashFn);
+      results.push(result);
     }
     return results;
   }
