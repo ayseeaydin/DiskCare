@@ -81,7 +81,7 @@ type LoggedApplySummary = {
   trashedEstimatedBytes?: unknown;
 };
 
-type LoggedApplyResult = {
+type _LoggedApplyResult = {
   status?: unknown;
   estimatedBytes?: unknown;
 };

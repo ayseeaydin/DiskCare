@@ -47,4 +47,19 @@ export default [
       "max-lines-per-function": "off",
     },
   },
+  {
+    files: ["scripts/**/*.cjs", "scripts/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.commonjs,
+      },
+      ecmaVersion: "latest",
+      sourceType: "commonjs",
+    },
+    rules: {
+      "no-undef": "off",
+      "no-console": "off",
+    },
+  },
 ];

@@ -11,7 +11,7 @@ import { ValidationError } from "../errors/DiskcareError.js";
 import { MessageFormatter } from "../utils/MessageFormatter.js";
 import { JSON_INDENT, REPORT_LABEL_PAD } from "../utils/constants.js";
 
-type ReportOptions = {
+type _ReportOptions = {
   json?: boolean;
 };
 

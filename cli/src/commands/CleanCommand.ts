@@ -28,7 +28,7 @@ import { defaultScanAll } from "../scanning/defaultScanAll.js";
 import { getErrnoCode } from "../utils/errno.js";
 import { LogWriteError } from "../errors/DiskcareError.js";
 
-type CleanOptions = {
+type _CleanOptions = {
   json?: boolean;
   dryRun?: boolean; // commander sets this; default should be true (safe)
   apply?: boolean;

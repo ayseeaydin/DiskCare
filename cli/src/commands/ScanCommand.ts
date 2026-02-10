@@ -25,7 +25,7 @@ import { defaultScanAll } from "../scanning/defaultScanAll.js";
 import { ValidationError } from "../errors/DiskcareError.js";
 import { MessageFormatter } from "../utils/MessageFormatter.js";
 
-type ScanOptions = {
+type _ScanOptions = {
   json?: boolean;
   dryRun?: boolean;
 };
@@ -190,21 +190,34 @@ export class ScanCommand extends BaseCommand {
     context.output.info(MessageFormatter.savedLog(input.logPath));
   }
 
+  private formatMetrics(t: ScanTarget): {
+    exists: string;
+    skipped: string;
+    partial: string;
+    skippedEntries: number;
+    size: string;
+    files: string;
+    modified: string;
+    accessed: string;
+  } {
+    return {
+      exists: t.exists === true ? "yes" : "no",
+      skipped: t.metrics?.skipped === true ? "yes" : "no",
+      partial: t.metrics?.partial === true ? "yes" : "no",
+      skippedEntries: t.metrics?.skippedEntries ?? 0,
+      size: formatBytes(t.metrics?.totalBytes ?? 0),
+      files: String(t.metrics?.fileCount ?? 0).padStart(FILE_COUNT_PAD_WIDTH, " "),
+      modified: formatDate(t.metrics?.lastModifiedAt),
+      accessed: formatDate(t.metrics?.lastAccessedAt),
+    };
+  }
+
   private printTarget(
     context: CommandContext,
     t: ScanTarget,
     rulesEngine: RulesEngine | null,
   ): void {
-    const exists = t.exists === true ? "yes" : "no";
-    const skipped = t.metrics?.skipped === true ? "yes" : "no";
-
-    const partial = t.metrics?.partial === true ? "yes" : "no";
-    const skippedEntries = t.metrics?.skippedEntries ?? 0;
-
-    const size = formatBytes(t.metrics?.totalBytes ?? 0);
-    const files = String(t.metrics?.fileCount ?? 0).padStart(FILE_COUNT_PAD_WIDTH, " ");
-    const modified = formatDate(t.metrics?.lastModifiedAt);
-    const accessed = formatDate(t.metrics?.lastAccessedAt);
+    const metrics = this.formatMetrics(t);
 
     context.output.info(`${t.displayName}`);
     context.output.info(MessageFormatter.targetIdLine(t.id));
@@ -213,11 +226,11 @@ export class ScanCommand extends BaseCommand {
     }
     context.output.info(MessageFormatter.targetPathLine(t.path));
     context.output.info(
-      MessageFormatter.targetExistsLine(exists, skipped, partial, skippedEntries),
+      MessageFormatter.targetExistsLine(metrics.exists, metrics.skipped, metrics.partial, metrics.skippedEntries),
     );
-    context.output.info(MessageFormatter.targetSizeLine(size, files));
-    context.output.info(MessageFormatter.targetMtimeLine(modified));
-    context.output.info(MessageFormatter.targetAtimeLine(accessed));
+    context.output.info(MessageFormatter.targetSizeLine(metrics.size, metrics.files));
+    context.output.info(MessageFormatter.targetMtimeLine(metrics.modified));
+    context.output.info(MessageFormatter.targetAtimeLine(metrics.accessed));
 
     this.printDiagnostics(context, t);
     this.printRuleDecision(context, t, rulesEngine);
