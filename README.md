@@ -510,6 +510,143 @@ If you test DiskCare on other platforms, please share your findings and help imp
 
 ---
 
+## Troubleshooting
+
+### `diskcare: command not found`
+
+**Cause:** Global npm binary not in PATH or installation failed.
+
+**Fix:**
+
+1. Verify installation:
+   ```sh
+   npm list -g @diskcare/cli
+   ```
+
+2. If missing, reinstall:
+   ```sh
+   npm install -g @diskcare/cli
+   ```
+
+3. Check npm global bin path is in PATH:
+   ```sh
+   npm bin -g
+   ```
+
+4. If not in PATH, add to your shell profile (e.g., `.bashrc`, `.zshrc`, PowerShell profile):
+   ```sh
+   export PATH="$(npm bin -g):$PATH"
+   ```
+
+---
+
+### `EACCES: permission denied` (Linux/macOS)
+
+**Cause:** Attempting to delete files/folders without proper permissions.
+
+**Fix:**
+
+1. **Do NOT run diskcare with sudo** - this may delete system-critical files
+2. Check file ownership:
+   ```sh
+   ls -la <path>
+   ```
+3. If files are owned by another user, change ownership:
+   ```sh
+   sudo chown -R $USER:$USER <path>
+   ```
+4. If permission errors persist, check if files are in use or system-protected
+
+---
+
+### `Cannot find module '@diskcare/...'`
+
+**Cause:** Workspace dependencies not installed or corrupted.
+
+**Fix (Development only):**
+
+```sh
+cd diskcare
+npm install
+npm run build
+```
+
+For global installation users: reinstall from scratch:
+
+```sh
+npm uninstall -g @diskcare/cli
+npm install -g @diskcare/cli
+```
+
+---
+
+### `SAFETY: Path rejected (inside forbidden directory: ...)`
+
+**Cause:** PathGuard blocked a system-critical directory (e.g., C:\Windows, /usr, /etc).
+
+**Expected behavior:** This is a safety feature, not a bug.
+
+**Details:**
+
+- Windows forbidden paths: C:\Windows, C:\Program Files, C:\Program Files (x86), C:\System Volume Information
+- Unix forbidden paths: /bin, /sbin, /etc, /usr, /lib, /lib64, /boot, /dev, /proc, /sys
+
+**Fix:** Do not attempt to clean these directories. They are system-critical. If you need to clean inside them, use platform-specific tools (e.g., Disk Cleanup on Windows, apt-get autoclean on Ubuntu).
+
+---
+
+### `trash failed: ...`
+
+**Cause:** Underlying trash utility failed (e.g., file in use, permission denied, disk full).
+
+**Fix:**
+
+1. **File in use:** Close programs that may be using the file (browsers, IDEs, build tools)
+2. **Permission denied:** See "EACCES" section above
+3. **Disk full:** Free up space manually or restart machine
+4. **Trash corrupted (rare):** Empty system trash manually:
+   - Windows: Right-click Recycle Bin → Empty
+   - macOS: Finder → Empty Trash
+   - Linux: `rm -rf ~/.local/share/Trash/*`
+
+---
+
+### Tests failing during development
+
+**Symptom:** `npm test` fails with module resolution errors or timeout.
+
+**Fix:**
+
+1. Rebuild:
+   ```sh
+   npm run build
+   ```
+
+2. Check Node version (>=18 required):
+   ```sh
+   node --version
+   ```
+
+3. Clean install:
+   ```sh
+   rm -rf node_modules package-lock.json
+   npm install
+   npm run build
+   npm test
+   ```
+
+---
+
+### Lint warnings: `max-lines-per-function`
+
+**Status:** Resolved in v2 refactor (commit 96f9f5c).
+
+**Historical context:** Functions longer than 60 lines triggered lint warnings. Refactored using helper extraction (e.g., `registerAllScanners` → `registerV1Scanners`, `registerBrowserScanners`, etc.).
+
+If you encounter this warning in custom code, extract helper functions or use `eslint-disable` comments sparingly.
+
+---
+
 If DiskCare saved you from manual cleanup hell, it did its job.
 
 # DiskCare
