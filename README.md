@@ -187,14 +187,16 @@ Get a summary of:
 
 ```
 cli/
-  commands/        -> scan, clean, report, init, config (schedule is disabled)
+  commands/        -> scan, clean, report, init, config, inventory (v2)
   cleaning/        -> plan builder
   logging/         -> atomic audit logs
   reporting/       -> historical aggregation
+  scanning/        -> v2 scan orchestration (scanAllV2)
 
 packages/
-  scanner-core/    -> filesystem analyzers and scanners
+  scanner-core/    -> filesystem analyzers, scanners, artifact catalog
   rules-engine/    -> policy and risk decision engine
+  shared-utils/    -> process/permission checkers, path resolvers
 ```
 
 ### Design Principles
@@ -203,6 +205,145 @@ packages/
 - dependency injection everywhere
 - testable without touching real disk
 - logs as a first-class product feature
+
+---
+
+## v2 Architecture: Scan-First Philosophy
+
+**Version 2.0** introduces a major shift: **scan-only mode** for IDE caches, browser caches, and repo-local artifacts.
+
+### Why Scan-Only?
+
+v1 cleaned everything automatically. But certain targets are:
+
+- **frequently regenerated** (VS Code cache, Chrome cache)
+- **locked during use** (browser running → cache files locked)
+- **repo-specific** (node_modules/.cache should not be global)
+
+Cleaning these is **low ROI** and **high risk**.
+
+v2 philosophy:
+
+1. **Discover** all artifacts (cleanable + scan-only)
+2. **Report** size/location without deleting
+3. **Warn** if processes are running or permissions missing
+4. **Let users decide** to manually clean when safe
+
+### Inventory Mode
+
+New command:
+
+```bash
+diskcare inventory
+```
+
+What it does:
+
+- Scans all registered artifacts (v1 + v2)
+- Outputs human-readable report with categories:
+  - **OS Temp** (cleanable)
+  - **Language Caches** (cleanable: npm, pip)
+  - **Browsers** (scan-only: Chrome, Edge, Brave, Firefox)
+  - **IDEs** (scan-only: VS Code, JetBrains)
+  - **Repo-local** (scan-only: .next/cache, node_modules/.cache)
+- Shows total size per category
+- **Does NOT delete anything**
+
+JSON output:
+
+```bash
+diskcare inventory --json
+```
+
+Produces versioned JSON:
+
+```json
+{
+  "schemaVersion": "0.1",
+  "command": "inventory",
+  "timestamp": "2026-01-28T18:00:00.000Z",
+  "categories": [
+    {
+      "category": "browsers",
+      "displayName": "Web Browsers",
+      "targets": [
+        {
+          "id": "chrome-cache",
+          "path": "C:\\Users\\...\\Chrome\\Cache",
+          "exists": true,
+          "metrics": { "totalBytes": 524288000 },
+          "action": "scan-only"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalTargets": 30,
+    "totalBytes": 11400000000
+  }
+}
+```
+
+### Repo-Local Scanning
+
+Use `--cwd` flag to scan current project:
+
+```bash
+diskcare inventory --cwd .
+```
+
+Discovers:
+
+- `.next/cache` (Next.js)
+- `node_modules/.cache` (Webpack, Babel, ESLint)
+- `.turbo` (Turborepo)
+- `.parcel-cache` (Parcel)
+
+These are **never scanned globally** to avoid false positives.
+
+### Category Filtering
+
+```bash
+diskcare inventory --category browsers
+diskcare inventory --category ides
+diskcare inventory --category language-caches
+```
+
+### Safety Gates
+
+v2 adds runtime safety checks:
+
+1. **Process detection**: Warns if Chrome/VS Code/Node.js running
+2. **Permission checks**: Warns if paths require elevation
+3. **Preconditions**: Validates `requiresCwd` for repo-local artifacts
+
+Safety gates **warn but don't block** (partial results are OK).
+
+### Migration from v1
+
+- **v1 artifacts** (os-temp, npm-cache, pip-cache): Still **cleanable** via `diskcare clean`
+- **v2 artifacts** (browsers, IDEs, repo-local): Only **discovered** via `diskcare inventory`
+- Both use same **artifact catalog** (`packages/scanner-core/src/catalog/artifacts.json`)
+- Scanner plugins can be **enabled/disabled** in `config/scanners.json`
+
+Example config:
+
+```json
+{
+  "scanners": {
+    "chrome-cache": { "enabled": true },
+    "vscode-cache": { "enabled": false }
+  },
+  "globalExcludePaths": ["**/node_modules/**"]
+}
+```
+
+### Documentation
+
+Full specs:
+
+- [v2-architecture.md](docs/v2-architecture.md) - JSON Schema, scanner interface, CLI updates
+- [v2-test-plan.md](docs/v2-test-plan.md) - Unit/integration/E2E tests
 
 ---
 
