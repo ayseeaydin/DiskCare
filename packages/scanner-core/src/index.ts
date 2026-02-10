@@ -59,3 +59,10 @@ export type {
 } from "./registry/ScannerRegistry.js";
 export { ScannerRegistry, defaultRegistry } from "./registry/ScannerRegistry.js";
 
+// v2: Safety Gates (precondition validation for safe operations)
+export type {
+  SafetyCheckResult,
+  ProcessChecker,
+  PermissionChecker,
+} from "./safety/SafetyGate.js";
+export { SafetyGate } from "./safety/SafetyGate.js";

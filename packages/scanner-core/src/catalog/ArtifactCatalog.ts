@@ -50,6 +50,17 @@ export type ArtifactPrecondition = {
    * Requires admin/elevated permissions to access safely.
    */
   requiresAdmin?: boolean;
+  
+  /**
+   * Alias for requiresAdmin (backwards compatibility).
+   */
+  requiresElevated?: boolean;
+
+  /**
+   * List of process names that should be stopped before cleanup.
+   * Used for warning - doesn't block scanning.
+   */
+  requiresProcessStopped?: string[];
 
   /**
    * Only available on specific platforms.
